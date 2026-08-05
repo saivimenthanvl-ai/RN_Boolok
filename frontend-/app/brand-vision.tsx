@@ -1,740 +1,134 @@
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import { router } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
 import {
-  View,
-  Text,
+  Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
-  Animated,
-  Dimensions,
-  Pressable,
-  Platform,
+  Text,
   useWindowDimensions,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
-import BoolokLogo from '../components/BoolokLogo';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { useAuth } from '../context/AuthContext';
 
-// ─── Theme Configurations ───────────────────────────────────────────────────────
-const lightTheme = {
-  primary: '#DAA520',
-  primaryContainer: '#DAA520',
-  onPrimary: '#0A0F23',
-  onPrimaryContainer: '#0A0F23',
-  secondary: '#1C2238',
-  surface: '#ffffff',
-  background: '#FAFAFA',
-  onSurface: '#0A0F23',
-  onSurfaceVariant: '#1C2238',
-  surfaceContainerLow: '#E6E6E6',
-  surfaceContainerLowest: '#ffffff',
-  outline: '#E6E6E6',
-  onBackground: '#0A0F23',
-  surfaceVariant: '#E6E6E6',
-  glassCard: '#ffffff',
-  glassCardBorder: 'rgba(218,165,32,0.3)',
-  glassCardGrey: '#EAEAEA',
-  pillarIconBg: '#FFF8E7',
-  footerBg: '#F0F0F0',
-  footerBorder: '#E0E0E0',
-  footerText: '#333333',
-  footerCopy: '#666666',
-};
+const GOLD = '#E7AD17';
+const NAVY = '#070C21';
+const BLACK = '#050505';
+const PANEL = '#0B0B0B';
+const BORDER = '#202020';
+const MUTED = '#B9B9C2';
 
-const darkTheme = {
-  primary: '#DAA520',
-  primaryContainer: '#DAA520',
-  onPrimary: '#ffffff',
-  onPrimaryContainer: '#ffffff',
-  secondary: '#E6E6E6',
-  surface: '#121212',
-  background: '#050714', // Deep premium dark background
-  onSurface: '#ffffff',
-  onSurfaceVariant: '#CCCCCC',
-  surfaceContainerLow: '#1C2238',
-  surfaceContainerLowest: '#0A0F23',
-  outline: '#333333',
-  onBackground: '#ffffff',
-  surfaceVariant: '#1C2238',
-  glassCard: '#161B33',
-  glassCardBorder: 'rgba(218,165,32,0.2)',
-  glassCardGrey: '#1C2238',
-  pillarIconBg: '#231B0A',
-  footerBg: '#030510',
-  footerBorder: '#161B33',
-  footerText: '#CCCCCC',
-  footerCopy: '#888888',
-};
+const FONT = Platform.select({
+  ios: 'System',
+  android: 'sans-serif',
+  web: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  default: 'sans-serif',
+});
 
-// ─── Fade-in animated wrapper ─────────────────────────────────────────────────
-const FadeIn = ({
-  children,
-  delay = 0,
-}: {
-  children: React.ReactNode;
-  delay?: number;
-}) => {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(20)).current;
+type IconName = 'search' | 'sparkles' | 'chart' | 'globe';
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 700,
-        delay,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 700,
-        delay,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
+const features: Array<{ icon: IconName; title: string; description: string }> = [
+  { icon: 'search', title: 'Smart Search', description: 'Find exactly what you need with semantic property discovery.' },
+  { icon: 'sparkles', title: 'AI Advisor', description: 'Get professional guidance on valuations and legalities.' },
+  { icon: 'chart', title: 'Market Insights', description: 'Real-time data visualization of global market trends.' },
+  { icon: 'globe', title: 'Global Reach', description: 'Connect with opportunities across borders instantly.' },
+];
 
-  return (
-    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
-      {children}
-    </Animated.View>
-  );
-};
-
-// ─── Interactive Hover Wrapper ────────────────────────────────────────────────
-const HoverButton = ({
-  children,
-  style,
-  onPress,
-  scaleTo = 1.03,
-  activeOpacity = 0.7,
-}: {
-  children: React.ReactNode;
-  style?: any;
-  onPress?: () => void;
-  scaleTo?: number;
-  activeOpacity?: number;
-}) => {
-  const scale = useRef(new Animated.Value(1)).current;
-  const opacity = useRef(new Animated.Value(1)).current;
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onHoverIn={() => Animated.spring(scale, { toValue: scaleTo, useNativeDriver: true }).start()}
-      onHoverOut={() => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start()}
-      onPressIn={() => {
-        Animated.timing(opacity, { toValue: activeOpacity, duration: 100, useNativeDriver: true }).start();
-        Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start();
-      }}
-      onPressOut={() => {
-        Animated.timing(opacity, { toValue: 1, duration: 150, useNativeDriver: true }).start();
-        Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
-      }}
-    >
-      <Animated.View style={[style, { transform: [{ scale }], opacity }]}>
-        {children}
-      </Animated.View>
-    </Pressable>
-  );
-};
-
-// ─── Theme Toggle Button ──────────────────────────────────────────────────────
-const ThemeToggle = ({ isDark, onToggle, theme }: { isDark: boolean; onToggle: () => void; theme: typeof lightTheme }) => {
-  const rotation = useRef(new Animated.Value(isDark ? 1 : 0)).current;
-
-  useEffect(() => {
-    Animated.spring(rotation, {
-      toValue: isDark ? 1 : 0,
-      useNativeDriver: true,
-      friction: 5,
-      tension: 40,
-    }).start();
-  }, [isDark]);
-
-  const spin = rotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
-  });
-
-  const scale = rotation.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [1, 0.7, 1],
-  });
-
-  return (
-    <Pressable onPress={onToggle} style={{ marginHorizontal: 8 }}>
-      <Animated.View style={{ transform: [{ rotate: spin }, { scale }], padding: 8 }}>
-        <Feather name={isDark ? "moon" : "sun"} size={22} color={theme.primary} />
-      </Animated.View>
-    </Pressable>
-  );
-};
-
-// ─── Pillar card ──────────────────────────────────────────────────────────────
-interface PillarCardProps {
-  icon: keyof typeof Feather.glyphMap;
-  title: string;
-  description: string;
-  greyBg?: boolean;
-  theme: typeof lightTheme;
-  styles: any;
+function FeatureIcon({ name }: { name: IconName }) {
+  if (name === 'search') {
+    return <Svg width={27} height={27} viewBox="0 0 24 24"><Circle cx="10.5" cy="10.5" r="5.6" fill="none" stroke={GOLD} strokeWidth="2.2" /><Path d="M14.7 14.7 20 20" fill="none" stroke={GOLD} strokeLinecap="round" strokeWidth="2.2" /></Svg>;
+  }
+  if (name === 'sparkles') {
+    return <Svg width={29} height={29} viewBox="0 0 24 24"><Path d="M9 2.5c.55 3.8 2.25 5.5 6 6-3.75.5-5.45 2.2-6 6-.55-3.8-2.25-5.5-6-6 3.75-.5 5.45-2.2 6-6Z" fill={GOLD} /><Path d="M17.5 12.2c.35 2.45 1.55 3.65 4 4-2.45.35-3.65 1.55-4 4-.35-2.45-1.55-3.65-4-4 2.45-.35 3.65-1.55 4-4ZM17.5 2.3c.2 1.35.85 2 2.2 2.2-1.35.2-2 .85-2.2 2.2-.2-1.35-.85-2-2.2-2.2 1.35-.2 2-.85 2.2-2.2Z" fill={GOLD} /></Svg>;
+  }
+  if (name === 'chart') {
+    return <Svg width={29} height={29} viewBox="0 0 24 24"><Path d="m3.5 17 5-5 3.4 3.4L20 7.3" fill="none" stroke={GOLD} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" /><Path d="M14.5 7.3H20v5.4" fill="none" stroke={GOLD} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.1" /></Svg>;
+  }
+  return <Svg width={28} height={28} viewBox="0 0 24 24"><Circle cx="12" cy="12" r="8.3" fill="none" stroke={GOLD} strokeWidth="2" /><Path d="M3.9 10h4l1.6-2.5 2.2.6.8 2.1 2.5.8.2 2.5-2.1 1.1-.5 2.8-2.2 1.4-1.8-2.5-2.8-.4M13 3.9c1.1 1.2 1.9 2.8 2.1 4.5M17.4 16.6c-.8 1.4-2 2.6-3.4 3.3" fill="none" stroke={GOLD} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.45" /></Svg>;
 }
 
-const PillarCard = ({ icon, title, description, greyBg, theme, styles }: PillarCardProps) => (
-  <HoverButton scaleTo={1.02} style={[styles.glassCard, greyBg && styles.glassCardGrey]}>
-    <View style={styles.pillarIcon}>
-      <Feather name={icon} size={24} color={theme.primary} />
+function NeuralNode({ compact = false }: { compact?: boolean }) {
+  const size = compact ? 39 : 150;
+  const dot = compact ? 5 : 12;
+  const positions = [[0, 0], [1, 0], [2, 0], [0, 1], [2, 1], [0, 2], [1, 2], [2, 2]];
+  return (
+    <View style={{ width: size, height: size }}>
+      {positions.map(([x, y]) => <View key={`${x}-${y}`} style={{ position: 'absolute', left: x * (size - dot) / 2, top: y * (size - dot) / 2, width: dot, height: dot, borderRadius: dot / 2, backgroundColor: GOLD }} />)}
+      <Svg width={compact ? 17 : 46} height={compact ? 17 : 46} viewBox="0 0 26 26" style={{ position: 'absolute', left: '50%', top: '50%', transform: [{ translateX: compact ? -8.5 : -23 }, { translateY: compact ? -8.5 : -23 }] }}>
+        <Path d="M13 0c1.1 7.2 2.8 8.9 10 10-7.2 1.1-8.9 2.8-10 10-1.1-7.2-2.8-8.9-10-10 7.2-1.1 8.9-2.8 10-10Z" fill="#FFFFFF" />
+      </Svg>
     </View>
-    <Text style={styles.pillarTitle}>{title}</Text>
-    <Text style={styles.pillarDesc}>{description}</Text>
-  </HoverButton>
-);
-
-// ─── Mission value item ───────────────────────────────────────────────────────
-const MissionValue = ({ title, body, styles }: { title: string; body: string; styles: any }) => (
-  <View style={styles.missionValue}>
-    <Text style={styles.missionValueTitle}>{title}</Text>
-    <Text style={styles.missionValueBody}>{body}</Text>
-  </View>
-);
-
-// ─── Main Screen ──────────────────────────────────────────────────────────────
-export default function BrandVisionScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { width: SCREEN_W } = useWindowDimensions();
-  const { user } = useAuth();
-  
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const theme = isDarkMode ? darkTheme : lightTheme;
-  const styles = useMemo(() => getStyles(theme, insets, SCREEN_W), [theme, insets, SCREEN_W]);
-
-  const toggleTheme = () => setIsDarkMode((prev) => !prev);
-
-  return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* ── Top Navigation Bar ── */}
-      <View style={styles.navbar}>
-        <View style={styles.navBrand}>
-          <BoolokLogo size={32} color={theme.onSurface} />
-          <Text style={styles.navBrandText}>
-            BOOLOK <Text style={styles.navBrandGold}>GPT</Text>
-          </Text>
-        </View>
-
-        <View style={styles.navLinks}>
-          <HoverButton><Text style={[styles.navLink, styles.navLinkActive]}>Vision</Text></HoverButton>
-          <HoverButton><Text style={styles.navLink}>Listings</Text></HoverButton>
-          <HoverButton><Text style={styles.navLink}>Market Data</Text></HoverButton>
-          <HoverButton><Text style={styles.navLink}>Agents</Text></HoverButton>
-        </View>
-
-        <View style={styles.navActions}>
-          <ThemeToggle isDark={isDarkMode} onToggle={toggleTheme} theme={theme} />
-          {user ? (
-            <HoverButton
-              style={styles.navJoin}
-              onPress={() => router.push('/(app)/dashboard')}
-            >
-              <Text style={styles.navJoinText}>Dashboard</Text>
-            </HoverButton>
-          ) : (
-            <>
-              <HoverButton
-                style={styles.navSignIn}
-                onPress={() => router.push('/(auth)/login')}
-              >
-                <Text style={styles.navSignInText}>Sign In</Text>
-              </HoverButton>
-              <HoverButton
-                style={styles.navJoin}
-                onPress={() => router.push('/(auth)/register')}
-              >
-                <Text style={styles.navJoinText}>Join Now</Text>
-              </HoverButton>
-            </>
-          )}
-        </View>
-      </View>
-
-      {/* ── Hero Section ── */}
-      <View style={styles.hero}>
-        <FadeIn delay={0}>
-          <View style={styles.heroLogo}>
-            <BoolokLogo size={120} color={theme.onSurface} />
-          </View>
-        </FadeIn>
-
-        <FadeIn delay={200}>
-          <Text style={styles.heroHeadline}>The Geometry of Precision</Text>
-        </FadeIn>
-
-        <FadeIn delay={400}>
-          <Text style={styles.heroSubtitle}>
-            At the heart of BOOLOK GPT lies the{' '}
-            <Text style={styles.heroHighlight}>Neural Node</Text>—a 9-dot
-            architecture representing the convergence of local data, global trends,
-            and human intent, unified by the central spark of Artificial Intelligence.
-          </Text>
-        </FadeIn>
-
-        <FadeIn delay={600}>
-          <HoverButton style={styles.heroCta} scaleTo={1.05}>
-            <Text style={styles.heroCtaText}>Explore Pillars  ↓</Text>
-          </HoverButton>
-        </FadeIn>
-      </View>
-
-      {/* ── Architectural Core ── */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>The Architectural Core</Text>
-          <View style={styles.sectionDivider} />
-        </View>
-
-        <View style={styles.pillarRow}>
-          <View style={{ flex: 1.5 }}>
-            <PillarCard
-              icon="search"
-              title="Smart Search"
-              description="Moving beyond simple filters. Our natural language engine understands context, lifestyle needs, and architectural preferences to surface properties that feel like home before you even visit."
-              theme={theme}
-              styles={styles}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <PillarCard
-              icon="zap"
-              title="AI Advisor"
-              description="A persistent digital concierge that analyzes legal documents, zoning laws, and financing options in real-time."
-              greyBg
-              theme={theme}
-              styles={styles}
-            />
-          </View>
-        </View>
-
-        <View style={styles.pillarRow}>
-          <View style={{ flex: 1 }}>
-            <PillarCard
-              icon="trending-up"
-              title="Market Insights"
-              description="Predictive analytics that forecast neighborhood appreciation with 94% accuracy, leveraging 15 years of historical data."
-              theme={theme}
-              styles={styles}
-            />
-          </View>
-          <View style={{ flex: 1.5 }}>
-            <PillarCard
-              icon="globe"
-              title="Global Reach"
-              description="Our network bridges the gap between international capital and local opportunities. From the streets of Tokyo to the skylines of New York, BOOLOK GPT standardizes property data across 45 countries."
-              theme={theme}
-              styles={styles}
-            />
-          </View>
-        </View>
-      </View>
-
-      {/* ── Mission Statement ── */}
-      <View style={styles.missionSection}>
-        <Text style={styles.missionLabel}>OUR MISSION</Text>
-        <Text style={styles.missionHeadline}>
-          Evolving real estate from{' '}
-          <Text style={styles.missionItalic}>intuition-based</Text> to{' '}
-          <Text style={styles.missionGold}>data-driven</Text> intelligence.
-        </Text>
-
-        <View style={styles.missionGrid}>
-          <MissionValue
-            title="Transparency"
-            body="Eliminating information asymmetry by providing every user with professional-grade analytical tools previously reserved for institutional investors."
-            styles={styles}
-          />
-          <MissionValue
-            title="Efficiency"
-            body="Reducing the time-to-transaction from months to days through automated due diligence and AI-optimized match-making."
-            styles={styles}
-          />
-          <MissionValue
-            title="Sustainability"
-            body="Prioritizing climate-risk assessments and energy efficiency data to ensure long-term value for a changing world."
-            styles={styles}
-          />
-        </View>
-      </View>
-
-      {/* ── Call to Action ── */}
-      <View style={styles.ctaSection}>
-        <Text style={styles.ctaHeadline}>Ready to navigate the future?</Text>
-        <HoverButton style={styles.ctaButton} onPress={() => router.push(user ? '/(app)/dashboard' : '/(auth)/login')}>
-          <Text style={styles.ctaButtonText}>{user ? 'Go to Dashboard →' : 'Sign In to Start →'}</Text>
-        </HoverButton>
-      </View>
-
-      {/* ── Footer ── */}
-      <View style={styles.footer}>
-        <View style={styles.footerLeft}>
-          <View style={styles.footerBrand}>
-            <BoolokLogo size={20} color={theme.onSurface} />
-            <Text style={styles.footerBrandText}>
-              BOOLOK <Text style={styles.navBrandGold}>GPT</Text>
-            </Text>
-          </View>
-          <Text style={styles.footerCopy}>© 2024 BOOLOK GPT. All rights reserved.</Text>
-        </View>
-        <View style={styles.footerLinks}>
-          {['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'Contact Support'].map(
-            (link) => (
-              <HoverButton key={link} onPress={() => {}}>
-                <Text style={styles.footerLink}>{link}</Text>
-              </HoverButton>
-            )
-          )}
-        </View>
-      </View>
-    </ScrollView>
   );
 }
 
-// ─── Dynamic Styles ───────────────────────────────────────────────────────────
-const getStyles = (theme: typeof lightTheme, insets: any, SCREEN_W: number) => StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: theme.background,
-  },
-  scrollContent: {
-    paddingBottom: 0,
-  },
+function Header() {
+  return (
+    <View style={styles.header}>
+      <Pressable accessibilityRole="link" onPress={() => router.replace('/brand-vision' as never)} style={styles.brandRow}>
+        <NeuralNode compact />
+        <Text style={styles.brandText}>BOOLOK <Text style={styles.goldText}>GPT</Text></Text>
+      </Pressable>
+      <View style={styles.navActions}>
+        <Pressable accessibilityRole="link" onPress={() => router.push('/(auth)/login')} style={styles.signInButton}><Text style={styles.signInText}>Sign In</Text></Pressable>
+        <Pressable accessibilityRole="link" onPress={() => router.push('/(auth)/register')} style={styles.joinButton}><Text style={styles.joinText}>Join Now</Text></Pressable>
+      </View>
+    </View>
+  );
+}
 
-  // Navbar
-  navbar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: theme.surfaceContainerLowest,
-    paddingHorizontal: 24,
-    paddingTop: Math.max(insets.top, Platform.OS === 'web' ? 16 : 16),
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.outline,
-  },
-  navBrand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  navBrandText: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 16,
-    color: theme.onSurface,
-    marginLeft: 8,
-  },
-  navBrandGold: {
-    color: theme.primary,
-  },
-  navLinks: {
-    flexDirection: 'row',
-    gap: 32,
-    display: SCREEN_W > 768 ? 'flex' : 'none',
-  },
-  navLink: {
-    fontFamily: 'Poppins_400Regular',
-    fontSize: 14,
-    color: theme.onSurfaceVariant,
-  },
-  navLinkActive: {
-    color: theme.primary,
-    fontFamily: 'Poppins_600SemiBold',
-    borderBottomWidth: 2,
-    borderBottomColor: theme.primary,
-    paddingBottom: 4,
-  },
-  navActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  navSignIn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  navSignInText: {
-    fontFamily: 'Poppins_400Regular',
-    fontSize: 14,
-    color: theme.onSurfaceVariant,
-  },
-  navJoin: {
-    backgroundColor: theme.primaryContainer,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  navJoinText: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 14,
-    color: '#0A0F23', // Always dark for contrast on gold
-  },
+export default function BrandVisionScreen() {
+  const { isAuthenticated, loading } = useAuth();
+  const { width } = useWindowDimensions();
 
-  // Hero
-  hero: {
-    paddingTop: 48,
-    paddingBottom: 48,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-    backgroundColor: theme.surface,
-  },
-  heroLogo: {
-    marginBottom: 40,
-  },
-  heroHeadline: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: SCREEN_W > 768 ? 42 : 32,
-    lineHeight: SCREEN_W > 768 ? 52 : 42,
-    color: theme.onSurface,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  heroSubtitle: {
-    fontFamily: 'Poppins_400Regular',
-    fontSize: 18,
-    lineHeight: 28,
-    color: theme.onSurfaceVariant,
-    textAlign: 'center',
-    marginBottom: 40,
-    maxWidth: 700,
-  },
-  heroHighlight: {
-    color: theme.primaryContainer,
-    fontFamily: 'Poppins_600SemiBold',
-  },
-  heroCta: {
-    backgroundColor: theme.primaryContainer,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 8,
-  },
-  heroCtaText: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 14,
-    letterSpacing: 0.5,
-    color: '#0A0F23', // Always dark for contrast on gold
-  },
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      router.replace('/(app)/dashboard');
+    }
+  }, [isAuthenticated, loading]);
+  const narrow = width < 720;
+  const scrollRef = useRef<ScrollView>(null);
+  return (
+    <View style={styles.page}>
+      <Header />
+      <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.hero}>
+          <NeuralNode />
+          <Text style={[styles.heroTitle, narrow && styles.heroTitleNarrow]}>The Geometry of Precision</Text>
+          <Text style={[styles.heroCopy, narrow && styles.heroCopyNarrow]}>At the heart of BOOLOK GPT lies the <Text style={styles.goldText}>Neural Node</Text>—a 9-dot architecture representing the convergence of local data, global trends, and human intent, unified by the central spark of Artificial Intelligence.</Text>
+          <Pressable accessibilityRole="button" onPress={() => scrollRef.current?.scrollTo({ y: 645, animated: true })} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryButtonText}>Explore Pillars  ↓</Text></Pressable>
+        </View>
+        <View style={styles.coreSection}>
+          <Text style={[styles.sectionTitle, narrow && styles.sectionTitleNarrow]}>The Architectural Core</Text>
+          <Text style={styles.sectionEyebrow}>INTELLIGENCE BUILT FOR REAL ESTATE</Text>
+          <View style={[styles.featureGrid, narrow && styles.featureGridNarrow]}>
+            {features.map((feature) => (
+              <View key={feature.title} style={[styles.featureCard, narrow && styles.featureCardNarrow]}>
+                <View style={styles.iconBox}><FeatureIcon name={feature.icon} /></View>
+                <View style={styles.featureTextWrap}><Text style={styles.featureTitle}>{feature.title}</Text><Text style={styles.featureDescription}>{feature.description}</Text></View>
+              </View>
+            ))}
+          </View>
+        </View>
+        <View style={styles.ctaSection}>
+          <Text style={[styles.ctaTitle, narrow && styles.ctaTitleNarrow]}>Ready to find your next opportunity?</Text>
+          <Text style={styles.ctaCopy}>Create your account and put intelligent property discovery to work.</Text>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/(auth)/register')} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryButtonText}>Get Started</Text></Pressable>
+        </View>
+        <Text style={styles.footer}>© 2026 BOOLOK GPT. INTELLIGENT PRECISION.</Text>
+      </ScrollView>
+    </View>
+  );
+}
 
-  // Pillar section
-  section: {
-    paddingVertical: 64,
-    paddingHorizontal: 24,
-    backgroundColor: theme.background,
-    maxWidth: 1200,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  sectionHeader: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  sectionTitle: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 32,
-    lineHeight: 40,
-    color: theme.onSurface,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  sectionDivider: {
-    width: 80,
-    height: 4,
-    backgroundColor: theme.primaryContainer,
-    borderRadius: 2,
-  },
-
-  glassCard: {
-    backgroundColor: theme.glassCard,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.glassCardBorder,
-    padding: 32,
-    marginBottom: 16,
-    flex: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-  },
-  glassCardGrey: {
-    backgroundColor: theme.glassCardGrey,
-    borderColor: 'transparent',
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  pillarRow: {
-    flexDirection: SCREEN_W > 768 ? 'row' : 'column',
-    gap: 16,
-    marginBottom: 16,
-  },
-  pillarIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: theme.pillarIconBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  pillarTitle: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 20,
-    lineHeight: 28,
-    color: theme.onSurface,
-    marginBottom: 12,
-  },
-  pillarDesc: {
-    fontFamily: 'Poppins_400Regular',
-    fontSize: 14,
-    lineHeight: 24,
-    color: theme.onSurfaceVariant,
-  },
-
-  // Mission section
-  missionSection: {
-    backgroundColor: '#0A0F23', // Deep blue/black for both themes
-    paddingVertical: 80,
-    paddingHorizontal: 32,
-    alignItems: 'center',
-  },
-  missionLabel: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 14,
-    letterSpacing: 2,
-    color: theme.primaryContainer,
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  missionHeadline: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: SCREEN_W > 768 ? 36 : 28,
-    lineHeight: SCREEN_W > 768 ? 48 : 38,
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 64,
-    maxWidth: 800,
-  },
-  missionItalic: {
-    fontStyle: 'italic',
-    color: '#CCCCCC',
-    fontWeight: '400',
-  },
-  missionGold: {
-    color: theme.primaryContainer,
-  },
-  missionGrid: {
-    flexDirection: SCREEN_W > 768 ? 'row' : 'column',
-    gap: 32,
-    maxWidth: 1000,
-    width: '100%',
-    justifyContent: 'space-between',
-  },
-  missionValue: {
-    flex: 1,
-    borderLeftWidth: 2,
-    borderLeftColor: theme.primaryContainer,
-    paddingLeft: 20,
-  },
-  missionValueTitle: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 18,
-    color: '#ffffff',
-    marginBottom: 12,
-  },
-  missionValueBody: {
-    fontFamily: 'Poppins_400Regular',
-    fontSize: 14,
-    lineHeight: 22,
-    color: '#CCCCCC',
-  },
-
-  // CTA section
-  ctaSection: {
-    paddingVertical: 80,
-    paddingHorizontal: 24,
-    backgroundColor: theme.footerBg,
-    alignItems: 'center',
-  },
-  ctaHeadline: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 32,
-    lineHeight: 40,
-    color: theme.onSurface,
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  ctaButton: {
-    backgroundColor: theme.primaryContainer,
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  ctaButtonText: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 14,
-    letterSpacing: 0.5,
-    color: '#0A0F23', // Always dark for contrast
-  },
-
-  // Footer
-  footer: {
-    backgroundColor: theme.footerBg,
-    borderTopWidth: 1,
-    borderTopColor: theme.footerBorder,
-    paddingVertical: 32,
-    paddingHorizontal: 40,
-    flexDirection: SCREEN_W > 768 ? 'row' : 'column',
-    justifyContent: 'space-between',
-    alignItems: SCREEN_W > 768 ? 'center' : 'flex-start',
-    gap: 24,
-  },
-  footerLeft: {
-    flexDirection: SCREEN_W > 768 ? 'row' : 'column',
-    alignItems: SCREEN_W > 768 ? 'center' : 'flex-start',
-    gap: 24,
-  },
-  footerBrand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  footerBrandText: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 14,
-    color: theme.onSurface,
-    marginLeft: 6,
-  },
-  footerCopy: {
-    fontFamily: 'Poppins_400Regular',
-    fontSize: 12,
-    color: theme.footerCopy,
-  },
-  footerLinks: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 24,
-  },
-  footerLink: {
-    fontFamily: 'Poppins_400Regular',
-    fontSize: 12,
-    color: theme.footerText,
-    textDecorationLine: 'underline',
-  },
+const styles = StyleSheet.create({
+  page: { flex: 1, backgroundColor: BLACK }, scroll: { flex: 1 }, scrollContent: { flexGrow: 1 },
+  header: { minHeight: 82, paddingHorizontal: 28, paddingVertical: 14, backgroundColor: NAVY, borderBottomWidth: 1, borderBottomColor: '#30333F', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 14 }, brandText: { color: '#FFFFFF', fontFamily: FONT, fontSize: 20, fontWeight: '700' }, goldText: { color: GOLD },
+  navActions: { flexDirection: 'row', alignItems: 'center', gap: 10 }, signInButton: { paddingHorizontal: 13, paddingVertical: 11 }, signInText: { color: '#FFFFFF', fontFamily: FONT, fontSize: 15, fontWeight: '600' }, joinButton: { backgroundColor: GOLD, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 13 }, joinText: { color: '#090909', fontFamily: FONT, fontSize: 15, fontWeight: '700' },
+  hero: { minHeight: 645, paddingHorizontal: 24, paddingVertical: 65, alignItems: 'center', justifyContent: 'center', backgroundColor: '#111111' }, heroTitle: { marginTop: 36, color: '#FFFFFF', fontFamily: FONT, fontSize: 42, lineHeight: 50, fontWeight: '700', textAlign: 'center' }, heroTitleNarrow: { fontSize: 32, lineHeight: 39 }, heroCopy: { maxWidth: 830, marginTop: 23, color: '#C4C4C8', fontFamily: FONT, fontSize: 20, lineHeight: 34, textAlign: 'center' }, heroCopyNarrow: { fontSize: 16, lineHeight: 27 },
+  primaryButton: { marginTop: 36, minWidth: 212, paddingHorizontal: 28, paddingVertical: 18, borderRadius: 11, backgroundColor: GOLD, alignItems: 'center' }, primaryButtonText: { color: '#090909', fontFamily: FONT, fontSize: 16, fontWeight: '700' }, pressed: { opacity: 0.78, transform: [{ scale: 0.99 }] },
+  coreSection: { backgroundColor: NAVY, paddingHorizontal: 22, paddingVertical: 72, alignItems: 'center' }, sectionTitle: { color: '#FFFFFF', fontFamily: FONT, fontSize: 39, lineHeight: 48, fontWeight: '700', textAlign: 'center' }, sectionTitleNarrow: { fontSize: 30, lineHeight: 38 }, sectionEyebrow: { marginTop: 12, color: GOLD, fontFamily: FONT, fontSize: 11, fontWeight: '700', letterSpacing: 2, textAlign: 'center' },
+  featureGrid: { width: '100%', maxWidth: 940, marginTop: 43, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 26 }, featureGridNarrow: { gap: 18 }, featureCard: { width: '47%', minHeight: 138, padding: 27, borderWidth: 1, borderColor: BORDER, borderRadius: 14, backgroundColor: PANEL, flexDirection: 'row', alignItems: 'center', gap: 24 }, featureCardNarrow: { width: '100%', maxWidth: 394, minHeight: 129, padding: 26, gap: 25 }, iconBox: { width: 52, height: 52, flexShrink: 0, borderRadius: 14, backgroundColor: '#211B08', alignItems: 'center', justifyContent: 'center' }, featureTextWrap: { flex: 1 }, featureTitle: { color: '#FFFFFF', fontFamily: FONT, fontSize: 20, lineHeight: 26, fontWeight: '700' }, featureDescription: { marginTop: 4, color: MUTED, fontFamily: FONT, fontSize: 15, lineHeight: 22 },
+  ctaSection: { paddingHorizontal: 24, paddingVertical: 75, alignItems: 'center', backgroundColor: '#0D0D0D' }, ctaTitle: { color: '#FFFFFF', fontFamily: FONT, fontSize: 35, lineHeight: 43, fontWeight: '700', textAlign: 'center' }, ctaTitleNarrow: { fontSize: 28, lineHeight: 35 }, ctaCopy: { maxWidth: 600, marginTop: 14, color: MUTED, fontFamily: FONT, fontSize: 16, lineHeight: 25, textAlign: 'center' }, footer: { paddingHorizontal: 20, paddingVertical: 27, color: '#777C8E', backgroundColor: BLACK, fontFamily: FONT, fontSize: 11, letterSpacing: 1, textAlign: 'center' },
 });

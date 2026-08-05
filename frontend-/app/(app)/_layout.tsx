@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions, Image, Platform, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet, useWindowDimensions, Image, Platform, TextInput, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Stack, router, usePathname } from 'expo-router';
+import { Redirect, Slot, router, usePathname } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,7 +25,7 @@ const NAV_ITEMS = [
 export default function AppLayout() {
   const { width } = useWindowDimensions();
   const isWide = width >= MD_BREAKPOINT;
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAuthenticated, isLoading } = useAuth();
   const pathname = usePathname();
   const { theme, isDark, toggleTheme } = useTheme();
 
@@ -63,14 +63,14 @@ export default function AppLayout() {
   }));
 
   const Sidebar = () => (
-    <Animated.View 
+    <Animated.View
       style={[styles.sidebar, animatedSidebarStyle, { backgroundColor: theme.surfaceContainerLowest, borderRightColor: theme.outlineVariant, overflow: 'hidden' }]}
       onPointerEnter={() => setIsSidebarHovered(true)}
       onPointerLeave={() => setIsSidebarHovered(false)}
     >
       <Animated.View style={[StyleSheet.absoluteFill, animatedExpandStyle, { zIndex: -1 }]}>
-        <LinearGradient 
-          colors={isDark ? ['transparent', 'rgba(218, 165, 32, 0.1)'] : ['transparent', 'rgba(218, 165, 32, 0.05)']} 
+        <LinearGradient
+          colors={isDark ? ['transparent', 'rgba(218, 165, 32, 0.1)'] : ['transparent', 'rgba(218, 165, 32, 0.05)']}
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>
@@ -100,7 +100,8 @@ export default function AppLayout() {
       {/* Navigation */}
       <View style={[styles.navContainer, { width: 260 }]}>
         {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.route || pathname === item.route.replace('/(app)', '');
+          const publicRoute = item.route.replace('/(app)', '');
+          const isActive = pathname === item.route || pathname === publicRoute || pathname.startsWith(`${publicRoute}/`);
           return (
             <Pressable
               key={item.id}
@@ -119,10 +120,10 @@ export default function AppLayout() {
                       <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: theme.primary, borderTopRightRadius: 4, borderBottomRightRadius: 4, zIndex: 10 }} />
                     )}
                     <View style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}>
-                      <MaterialIcons 
-                        name={item.icon as any} 
-                        size={24} 
-                        color={color} 
+                      <MaterialIcons
+                        name={item.icon as any}
+                        size={24}
+                        color={color}
                       />
                     </View>
                     <Animated.Text style={[typography.labelMd, { color: color, fontSize: 15, width: 140 }, animatedExpandStyle]} numberOfLines={1}>
@@ -142,9 +143,9 @@ export default function AppLayout() {
         <Animated.View style={[styles.proPlanCard, { backgroundColor: theme.surfaceContainerHigh, borderColor: 'rgba(218, 165, 32, 0.1)', width: 228, marginLeft: spacing.md }, animatedExpandStyle]}>
           <Text style={{ fontSize: 10, fontWeight: '700', color: theme.primary, textTransform: 'uppercase', marginBottom: 2 }} numberOfLines={1}>Pro Plan</Text>
           <Text style={{ fontSize: 12, fontWeight: '600', color: theme.onSurface, marginBottom: spacing.sm }} numberOfLines={1}>Unlock Global Data</Text>
-          <Pressable 
+          <Pressable
             style={({ pressed, hovered }: any) => [
-              styles.upgradeBtn, 
+              styles.upgradeBtn,
               { backgroundColor: theme.primary },
               (pressed || hovered) && { transform: [{ scale: 0.98 }] }
             ]}
@@ -153,9 +154,9 @@ export default function AppLayout() {
           </Pressable>
         </Animated.View>
 
-        <Pressable 
-          style={({ pressed, hovered }: any) => [styles.bottomLink, (pressed || hovered) && { opacity: 0.7 }]} 
-          onPress={() => {}}
+        <Pressable
+          style={({ pressed, hovered }: any) => [styles.bottomLink, (pressed || hovered) && { opacity: 0.7 }]}
+          onPress={() => { }}
         >
           <View style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}>
             <MaterialIcons name="help" size={24} color={theme.onSurfaceVariant} />
@@ -163,8 +164,8 @@ export default function AppLayout() {
           <Animated.Text style={[typography.labelMd, { color: theme.onSurfaceVariant, width: 140 }, animatedExpandStyle]} numberOfLines={1}>Help</Animated.Text>
         </Pressable>
 
-        <Pressable 
-          style={({ pressed, hovered }: any) => [styles.bottomLink, (pressed || hovered) && { opacity: 0.7 }]} 
+        <Pressable
+          style={({ pressed, hovered }: any) => [styles.bottomLink, (pressed || hovered) && { opacity: 0.7 }]}
           onPress={handleLogout}
         >
           <View style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}>
@@ -196,181 +197,194 @@ export default function AppLayout() {
     'New York Zoning Laws 2026'
   ];
 
-  const filteredResults = headerSearchQuery 
+  const filteredResults = headerSearchQuery
     ? DUMMY_RESULTS.filter(r => r.toLowerCase().includes(headerSearchQuery.toLowerCase()))
     : [];
 
   const BottomNav = () => {
     const insets = useSafeAreaInsets();
     return (
-    <View style={[styles.bottomNav, { backgroundColor: theme.surfaceContainerLowest, borderTopColor: theme.outlineVariant, paddingBottom: Math.max(insets.bottom, 10) }]}>
-      {NAV_ITEMS.slice(0, 5).map(item => {
-        const isActive = pathname === item.route || pathname === item.route.replace('/(app)', '');
-        
-        // Map labels for mobile
-        let mobileLabel = item.label;
-        if (item.id === 'dashboard') mobileLabel = 'Home';
-        if (item.id === 'feed') mobileLabel = 'Social';
-        if (item.id === 'insights') mobileLabel = 'Reels';
-        if (item.id === 'predictions') mobileLabel = 'Trends';
-        if (item.id === 'search') mobileLabel = 'Search';
-        if (item.id === 'legal') mobileLabel = 'Legal';
+      <View style={[styles.bottomNav, { backgroundColor: theme.surfaceContainerLowest, borderTopColor: theme.outlineVariant, paddingBottom: Math.max(insets.bottom, 10) }]}>
+        {NAV_ITEMS.slice(0, 5).map(item => {
+          const publicRoute = item.route.replace('/(app)', '');
+          const isActive = pathname === item.route || pathname === publicRoute || pathname.startsWith(`${publicRoute}/`);
 
-        return (
-          <Pressable 
-            key={item.id} 
-            style={styles.bottomNavItem}
-            onPress={() => router.push(item.route as any)}
-          >
-            <MaterialIcons name={item.icon as any} size={24} color={isActive ? theme.primary : theme.onSurfaceVariant} />
-            <Text style={{ fontSize: 10, marginTop: 4, color: isActive ? theme.primary : theme.onSurfaceVariant, fontWeight: isActive ? '700' : '500' }}>
-              {mobileLabel}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
+          // Map labels for mobile
+          let mobileLabel = item.label;
+          if (item.id === 'dashboard') mobileLabel = 'Home';
+          if (item.id === 'feed') mobileLabel = 'Social';
+          if (item.id === 'insights') mobileLabel = 'Reels';
+          if (item.id === 'predictions') mobileLabel = 'Trends';
+          if (item.id === 'search') mobileLabel = 'Search';
+          if (item.id === 'legal') mobileLabel = 'Legal';
+
+          return (
+            <Pressable
+              key={item.id}
+              style={styles.bottomNavItem}
+              onPress={() => router.push(item.route as any)}
+            >
+              <MaterialIcons name={item.icon as any} size={24} color={isActive ? theme.primary : theme.onSurfaceVariant} />
+              <Text style={{ fontSize: 10, marginTop: 4, color: isActive ? theme.primary : theme.onSurfaceVariant, fontWeight: isActive ? '700' : '500' }}>
+                {mobileLabel}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     );
   };
 
   const insets = useSafeAreaInsets();
-  
+
+  if (isLoading) {
+    return (
+      <View style={[styles.root, { backgroundColor: theme.surface, alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={{ color: theme.onSurfaceVariant }}>Loading workspace...</Text>
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href="/(auth)/login" />;
+  }
+
   return (
     <View style={[styles.root, { backgroundColor: theme.surface }]}>
       {isWide && <Sidebar />}
       <View style={styles.mainContent}>
         {/* INLINED HEADER TO PREVENT FOCUS LOSS */}
-        <View style={[styles.header, { 
-          paddingHorizontal: isWide ? spacing.xl : spacing.md, 
-          borderBottomColor: theme.outlineVariant, 
+        <View style={[styles.header, {
+          paddingHorizontal: isWide ? spacing.xl : spacing.md,
+          borderBottomColor: theme.outlineVariant,
           backgroundColor: isDark ? 'rgba(10, 15, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)',
           paddingTop: insets.top,
-          height: 80 + insets.top 
+          height: 80 + insets.top
         }]}>
-      <View style={{ flexShrink: 1, marginRight: 8 }}>
-        <Text style={[typography.headlineSm, { color: theme.onSurface }]} numberOfLines={1}>Welcome back, {user?.fullName?.split(' ')[0] || 'Agent'}</Text>
-        <Text style={{ fontSize: 12, color: theme.onSurfaceVariant, fontWeight: '500' }}>June 27, 2026</Text>
-      </View>
-
-      {isWide && (
-        <View style={{ position: 'relative', flex: 1, maxWidth: 600, marginHorizontal: spacing.xl, zIndex: 50 }}>
-          <View style={[styles.searchBar, { backgroundColor: theme.surfaceContainerLowest, borderColor: theme.outlineVariant }]}>
-            <MaterialIcons name="search" size={20} color={theme.outline} />
-            <TextInput 
-              style={{ color: theme.onSurface, marginLeft: 8, fontSize: 14, flex: 1, height: '100%', outlineStyle: 'none' } as any}
-              placeholder="Global search properties, clients, or laws..."
-              placeholderTextColor={theme.outline}
-              value={headerSearchQuery}
-              onChangeText={setHeaderSearchQuery}
-              onSubmitEditing={handleGlobalSearch}
-            />
+          <View style={{ flexShrink: 1, marginRight: 8 }}>
+            <Text style={[typography.headlineSm, { color: theme.onSurface }]} numberOfLines={1}>Welcome back, {user?.fullName?.split(' ')[0] || 'Agent'}</Text>
+            <Text style={{ fontSize: 12, color: theme.onSurfaceVariant, fontWeight: '500' }}>Your intelligent real-estate workspace</Text>
           </View>
-          
-          {/* Autocomplete Dropdown */}
-          {headerSearchQuery.length > 0 && (
-            <View style={[styles.autocompleteDropdown, { backgroundColor: theme.surface, borderColor: theme.outlineVariant }]}>
-              {filteredResults.length > 0 ? (
-                filteredResults.map((result, idx) => (
-                  <Pressable 
-                    key={idx}
-                    style={({ pressed, hovered }: any) => [
-                      styles.dropdownItem,
-                      (pressed || hovered) && { backgroundColor: theme.surfaceContainerLowest }
-                    ]}
-                    onPress={() => {
-                      setHeaderSearchQuery(result);
-                      if (Platform.OS === 'web') {
-                        window.alert(`Navigating to: ${result}`);
-                      } else {
-                        Alert.alert('Navigating', `Going to: ${result}`);
-                      }
-                      setHeaderSearchQuery('');
-                    }}
-                  >
-                    <MaterialIcons name="search" size={16} color={theme.onSurfaceVariant} style={{ marginRight: 8 }} />
-                    <Text style={{ color: theme.onSurface, fontSize: 14 }}>{result}</Text>
-                  </Pressable>
-                ))
-              ) : (
-                <View style={styles.dropdownItem}>
-                  <Text style={{ color: theme.onSurfaceVariant, fontSize: 14 }}>No results found</Text>
+
+          {isWide && (
+            <View style={{ position: 'relative', flex: 1, maxWidth: 600, marginHorizontal: spacing.xl, zIndex: 50 }}>
+              <View style={[styles.searchBar, { backgroundColor: theme.surfaceContainerLowest, borderColor: theme.outlineVariant }]}>
+                <MaterialIcons name="search" size={20} color={theme.outline} />
+                <TextInput
+                  style={{ color: theme.onSurface, marginLeft: 8, fontSize: 14, flex: 1, height: '100%', outlineStyle: 'none' } as any}
+                  placeholder="Global search properties, clients, or laws..."
+                  placeholderTextColor={theme.outline}
+                  value={headerSearchQuery}
+                  onChangeText={setHeaderSearchQuery}
+                  onSubmitEditing={handleGlobalSearch}
+                />
+              </View>
+
+              {/* Autocomplete Dropdown */}
+              {headerSearchQuery.length > 0 && (
+                <View style={[styles.autocompleteDropdown, { backgroundColor: theme.surface, borderColor: theme.outlineVariant }]}>
+                  {filteredResults.length > 0 ? (
+                    filteredResults.map((result, idx) => (
+                      <Pressable
+                        key={idx}
+                        style={({ pressed, hovered }: any) => [
+                          styles.dropdownItem,
+                          (pressed || hovered) && { backgroundColor: theme.surfaceContainerLowest }
+                        ]}
+                        onPress={() => {
+                          setHeaderSearchQuery(result);
+                          if (Platform.OS === 'web') {
+                            window.alert(`Navigating to: ${result}`);
+                          } else {
+                            Alert.alert('Navigating', `Going to: ${result}`);
+                          }
+                          setHeaderSearchQuery('');
+                        }}
+                      >
+                        <MaterialIcons name="search" size={16} color={theme.onSurfaceVariant} style={{ marginRight: 8 }} />
+                        <Text style={{ color: theme.onSurface, fontSize: 14 }}>{result}</Text>
+                      </Pressable>
+                    ))
+                  ) : (
+                    <View style={styles.dropdownItem}>
+                      <Text style={{ color: theme.onSurfaceVariant, fontSize: 14 }}>No results found</Text>
+                    </View>
+                  )}
                 </View>
               )}
             </View>
           )}
+
+          <View style={styles.headerActions}>
+            <Pressable style={styles.iconBtn}>
+              <MaterialIcons name="notifications" size={24} color={theme.onSurfaceVariant} />
+              <View style={[styles.notificationDot, { backgroundColor: theme.primary, borderColor: theme.surface }]} />
+            </Pressable>
+
+            <Pressable onPress={toggleTheme} style={styles.iconBtn}>
+              <Animated.View style={animatedIconStyle}>
+                <MaterialIcons name={isDark ? "dark-mode" : "light-mode"} size={24} color={theme.onSurfaceVariant} />
+              </Animated.View>
+            </Pressable>
+
+            {isWide && (
+              <Pressable
+                style={({ pressed, hovered }: any) => [
+                  styles.upgradeBtnSmall,
+                  (pressed || hovered) ? { backgroundColor: theme.primary } : { backgroundColor: 'rgba(218, 165, 32, 0.1)', borderColor: 'rgba(218, 165, 32, 0.2)' }
+                ]}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: theme.primary }}>Upgrade Pro</Text>
+              </Pressable>
+            )}
+
+            <Pressable
+              onPress={() => router.push('/(app)/profile')}
+              style={({ pressed, hovered }: any) => [
+                styles.profileSection,
+                { borderLeftColor: theme.outlineVariant },
+                (pressed || hovered) && { backgroundColor: theme.surfaceContainerLowest }
+              ]}
+            >
+              {isWide && (
+                <View style={{ alignItems: 'flex-end', marginRight: spacing.sm }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: theme.onSurface }}>{user?.fullName?.split(' ')[0] || 'Agent'}</Text>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: theme.primary, textTransform: 'uppercase' }}>Elite Agent</Text>
+                </View>
+              )}
+
+              {user?.profilePicture ? (
+                <Image
+                  source={{ uri: user.profilePicture }}
+                  style={styles.profileImage}
+                />
+              ) : (
+                <View style={[styles.profileImage, { backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center', flexShrink: 0 }]}>
+                  <Text style={{ color: theme.onPrimary, fontSize: 18, fontWeight: 'bold' }}>
+                    {(user?.fullName || 'Agent').charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <Pressable
+                onPress={() => router.push('/(app)/settings')}
+                style={({ pressed, hovered }: any) => [
+                  { marginLeft: spacing.sm, padding: 4, borderRadius: 20, flexShrink: 0 },
+                  (pressed || hovered) && { backgroundColor: theme.surfaceContainer }
+                ]}
+              >
+                <MaterialIcons name="settings" size={24} color={theme.onSurfaceVariant} />
+              </Pressable>
+            </Pressable>
+          </View>
         </View>
-      )}
 
-      <View style={styles.headerActions}>
-        <Pressable style={styles.iconBtn}>
-          <MaterialIcons name="notifications" size={24} color={theme.onSurfaceVariant} />
-          <View style={[styles.notificationDot, { backgroundColor: theme.primary, borderColor: theme.surface }]} />
-        </Pressable>
-        
-        <Pressable onPress={toggleTheme} style={styles.iconBtn}>
-          <Animated.View style={animatedIconStyle}>
-            <MaterialIcons name={isDark ? "dark-mode" : "light-mode"} size={24} color={theme.onSurfaceVariant} />
-          </Animated.View>
-        </Pressable>
-        
-        {isWide && (
-          <Pressable 
-            style={({ pressed, hovered }: any) => [
-              styles.upgradeBtnSmall, 
-              (pressed || hovered) ? { backgroundColor: theme.primary } : { backgroundColor: 'rgba(218, 165, 32, 0.1)', borderColor: 'rgba(218, 165, 32, 0.2)' }
-            ]}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '700', color: theme.primary }}>Upgrade Pro</Text>
-          </Pressable>
-        )}
+        <View style={[styles.slotContainer, { backgroundColor: theme.surface }]}>
+          <Slot />
+        </View>
 
-        <Pressable 
-          onPress={() => router.push('/(app)/profile')}
-          style={({ pressed, hovered }: any) => [
-            styles.profileSection, 
-            { borderLeftColor: theme.outlineVariant },
-            (pressed || hovered) && { backgroundColor: theme.surfaceContainerLowest }
-          ]}
-        >
-          {isWide && (
-            <View style={{ alignItems: 'flex-end', marginRight: spacing.sm }}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: theme.onSurface }}>{user?.fullName?.split(' ')[0] || 'Agent'}</Text>
-              <Text style={{ fontSize: 10, fontWeight: '700', color: theme.primary, textTransform: 'uppercase' }}>Elite Agent</Text>
-            </View>
-          )}
-          
-          {user?.profilePicture ? (
-            <Image 
-              source={{ uri: user.profilePicture }} 
-              style={styles.profileImage} 
-            />
-          ) : (
-            <View style={[styles.profileImage, { backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center', flexShrink: 0 }]}>
-              <Text style={{ color: theme.onPrimary, fontSize: 18, fontWeight: 'bold' }}>
-                {(user?.fullName || 'Agent').charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          )}
-          <Pressable 
-            onPress={() => router.push('/(app)/settings')}
-            style={({ pressed, hovered }: any) => [
-              { marginLeft: spacing.sm, padding: 4, borderRadius: 20, flexShrink: 0 },
-              (pressed || hovered) && { backgroundColor: theme.surfaceContainer }
-            ]}
-          >
-            <MaterialIcons name="settings" size={24} color={theme.onSurfaceVariant} />
-          </Pressable>
-        </Pressable>
+        {!isWide && <BottomNav />}
       </View>
     </View>
-    
-    <View style={[styles.slotContainer, { backgroundColor: theme.surface }]}>
-      <Stack screenOptions={{ headerShown: false, animation: 'fade' }} />
-    </View>
-    
-    {!isWide && <BottomNav />}
-  </View>
-</View>
   );
 }
 

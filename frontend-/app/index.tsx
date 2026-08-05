@@ -33,7 +33,7 @@ const DOT_OFFSETS = [
 const VALUES = ['INTELLIGENT', 'TRUSTED', 'INNOVATIVE', 'GLOBAL', 'FUTURE-READY'];
 
 export default function LoadingScreen() {
-  useAuth(); // ensures AuthContext is available before navigation
+  const { isAuthenticated, loading } = useAuth();
   // Per-dot animated values: scale (pop in) + color progress (black -> gold)
   const dotScales = useRef(DOT_OFFSETS.map(() => new Animated.Value(0))).current;
   const dotColor = useRef(new Animated.Value(0)).current; // 0 = navy, 1 = gold
@@ -58,6 +58,10 @@ export default function LoadingScreen() {
   const statusOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    if (loading) return;
+
+    let cancelled = false;
+
     // --- Phase 1: dots pop in, staggered (mirrors particle convergence) ---
     Animated.stagger(
       60,
@@ -136,10 +140,18 @@ export default function LoadingScreen() {
         Animated.timing(stageScale, { toValue: 1.15, duration: 1200, useNativeDriver: false }),
         Animated.timing(valuesOpacity, { toValue: 0, duration: 1200, useNativeDriver: false }),
       ]).start(() => {
-        router.replace('/brand-vision');
+        if (!cancelled) {
+          router.replace(
+            isAuthenticated ? '/(app)/dashboard' : '/brand-vision'
+          );
+        }
       });
     };
     runProgress();
+
+    return () => {
+      cancelled = true;
+    };
 
     function animateProgress(target: number) {
       Animated.timing(progressWidth, {
@@ -156,7 +168,7 @@ export default function LoadingScreen() {
         Animated.timing(statusOpacity, { toValue: 1, duration: 400, useNativeDriver: false }).start();
       });
     }
-  }, []);
+  }, [isAuthenticated, loading]);
 
   const dotBg = dotColor.interpolate({ inputRange: [0, 1], outputRange: [NAVY, GOLD] });
   const rootBg = bgColor.interpolate({ inputRange: [0, 1], outputRange: ['#000000', '#ffffff'] });

@@ -70,10 +70,15 @@ export default function RegisterScreen() {
       try {
         console.log('Sending Google ID token from register to:', `${API_BASE_URL}/api/auth/google`);
         const response = await axios.post(`${API_BASE_URL}/api/auth/google`, { idToken });
-        if (response.data.token) {
-          await signIn(response.data.token, response.data.user);
-          router.push('/(auth)/personalize');
+        const { token, user } = response.data ?? {};
+
+        if (!token || !user) {
+          throw new Error('The backend response is missing token or user data.');
         }
+
+        await signIn(token, user);
+        setSubmitState('success');
+        router.replace('/(app)/dashboard');
       } catch (error: any) {
         console.error('Registration Google Error:', error.response?.data || error.message);
         showMessage('Google Sign-Up Failed', error.response?.data?.message || 'Google sign-up failed. Please try again.');
@@ -103,19 +108,28 @@ export default function RegisterScreen() {
     setSubmitState('loading');
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/register`, {
-        fullName,
-        email,
-        password
-      });
+      const response = await axios.post(
+        `${API_BASE_URL}/api/auth/register`,
+        {
+          fullName: fullName.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        },
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 30000,
+        }
+      );
 
-      if (response.data.token) {
-        await signIn(response.data.token, response.data.user);
-        setSubmitState('success');
-        setTimeout(() => {
-          router.push('/(auth)/personalize');
-        }, 1000);
+      const { token, user } = response.data ?? {};
+
+      if (!token || !user) {
+        throw new Error('The backend response is missing token or user data.');
       }
+
+      await signIn(token, user);
+      setSubmitState('success');
+      router.replace('/(app)/dashboard');
     } catch (error: any) {
       console.error('Registration failed:', error.response?.data?.message || error.message);
       setSubmitState('idle');
@@ -141,177 +155,177 @@ export default function RegisterScreen() {
           style={styles.keyboardAvoid}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-        <View style={[styles.mainLayout, isWide && styles.mainLayoutRow]}>
-          {/* ---------- LEFT BRAND PANEL (web/wide screens only) ---------- */}
-          {isWide && (
-            <Animated.View style={styles.brandPanel} entering={FadeIn.duration(800)}>
-              {/* decorative glow, mirrors the absolute blurred circle in the HTML */}
-              <View style={styles.glow} />
+          <View style={[styles.mainLayout, isWide && styles.mainLayoutRow]}>
+            {/* ---------- LEFT BRAND PANEL (web/wide screens only) ---------- */}
+            {isWide && (
+              <Animated.View style={styles.brandPanel} entering={FadeIn.duration(800)}>
+                {/* decorative glow, mirrors the absolute blurred circle in the HTML */}
+                <View style={styles.glow} />
 
-              <Pressable
-                style={styles.brandLogoRow}
-                onPress={() => router.push('/brand-vision')}
-              >
-                <BoolokLogo size={48} color="#fff" />
-                <Text style={[typography.headlineMd, { color: '#fff', marginLeft: spacing.base }]}>
-                  BOOLOK <Text style={{ color: colors.primary }}>GPT</Text>
-                </Text>
-              </Pressable>
-
-              <Text style={[typography.headlineXl, styles.brandHeadline]}>
-                AI AGENT FOR{'\n'}
-                <Text style={{ color: colors.primary }}>REAL ESTATE</Text>{'\n'}
-                SERVICES
-              </Text>
-              <Text style={[typography.bodyLg, styles.brandSubtext]}>
-                Empowering your property journey with precision data and intelligent automation.
-              </Text>
-
-              <View style={{ marginTop: spacing.xl, gap: spacing.md }}>
-                {FEATURES.map((f) => (
-                  <View key={f.title} style={styles.featureCard}>
-                    <View style={styles.featureIconWrap}>
-                      <MaterialIcons name={f.icon as any} size={22} color={colors.primary} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[typography.headlineSm, { color: '#fff', marginBottom: 2 }]}>
-                        {f.title}
-                      </Text>
-                      <Text style={[typography.bodySm, styles.brandSubtext]}>{f.desc}</Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-
-              <Text style={[typography.labelMd, styles.copyright]}>
-                © 2026 BOOLOK GPT. INTELLIGENT PRECISION.
-              </Text>
-            </Animated.View>
-          )}
-
-          {/* ---------- RIGHT / FORM PANEL (always shown) ---------- */}
-          <Animated.View
-            style={[styles.formPanel, isWide && styles.formPanelWide]}
-            entering={FadeInDown.duration(600).delay(100).springify()}
-          >
-            <View style={[styles.formContent, isWide && styles.formContentWide]}>
-              {/* Small logo header — only on mobile, matches md:hidden block */}
-              {!isWide && (
                 <Pressable
-                  style={styles.mobileLogoBlock}
+                  style={styles.brandLogoRow}
                   onPress={() => router.push('/brand-vision')}
                 >
-                  <BoolokLogo size={56} />
-                  <Text style={[typography.headlineMd, { color: colors.onBackground, marginTop: spacing.base }]}>
-                    BOOLOK GPT
+                  <BoolokLogo size={48} color="#fff" />
+                  <Text style={[typography.headlineMd, { color: '#fff', marginLeft: spacing.base }]}>
+                    BOOLOK <Text style={{ color: colors.primary }}>GPT</Text>
                   </Text>
                 </Pressable>
-              )}
 
-              <View style={{ marginBottom: spacing.lg }}>
-                <Text style={[typography.headlineLg, { color: colors.onBackground, marginBottom: spacing.xs }]}>
-                  Create Your Account
+                <Text style={[typography.headlineXl, styles.brandHeadline]}>
+                  AI AGENT FOR{'\n'}
+                  <Text style={{ color: colors.primary }}>REAL ESTATE</Text>{'\n'}
+                  SERVICES
                 </Text>
-                <Text style={[typography.bodyMd, { color: colors.onSurfaceVariant }]}>
-                  Join the next generation of real estate intelligence.
+                <Text style={[typography.bodyLg, styles.brandSubtext]}>
+                  Empowering your property journey with precision data and intelligent automation.
                 </Text>
-              </View>
 
-              <Field label="Full Name">
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your full name"
-                  placeholderTextColor={colors.outline}
-                  value={fullName}
-                  onChangeText={setFullName}
-                  autoCapitalize="words"
-                />
-              </Field>
+                <View style={{ marginTop: spacing.xl, gap: spacing.md }}>
+                  {FEATURES.map((f) => (
+                    <View key={f.title} style={styles.featureCard}>
+                      <View style={styles.featureIconWrap}>
+                        <MaterialIcons name={f.icon as any} size={22} color={colors.primary} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[typography.headlineSm, { color: '#fff', marginBottom: 2 }]}>
+                          {f.title}
+                        </Text>
+                        <Text style={[typography.bodySm, styles.brandSubtext]}>{f.desc}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
 
-              <Field label="Email Address">
-                <TextInput
-                  style={styles.input}
-                  placeholder="name@company.com"
-                  placeholderTextColor={colors.outline}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </Field>
+                <Text style={[typography.labelMd, styles.copyright]}>
+                  © 2026 BOOLOK GPT. INTELLIGENT PRECISION.
+                </Text>
+              </Animated.View>
+            )}
 
-              <Field label="Password">
-                <View style={styles.passwordRow}>
-                  <TextInput
-                    style={[styles.input, { flex: 1 }]}
-                    placeholder="Min. 8 characters"
-                    placeholderTextColor={colors.outline}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                  />
-                  <Pressable style={styles.eyeButton} onPress={() => setShowPassword((v) => !v)}>
-                    <MaterialIcons
-                      name={showPassword ? 'visibility-off' : 'visibility'}
-                      size={22}
-                      color={colors.outline}
-                    />
+            {/* ---------- RIGHT / FORM PANEL (always shown) ---------- */}
+            <Animated.View
+              style={[styles.formPanel, isWide && styles.formPanelWide]}
+              entering={FadeInDown.duration(600).delay(100).springify()}
+            >
+              <View style={[styles.formContent, isWide && styles.formContentWide]}>
+                {/* Small logo header — only on mobile, matches md:hidden block */}
+                {!isWide && (
+                  <Pressable
+                    style={styles.mobileLogoBlock}
+                    onPress={() => router.push('/brand-vision')}
+                  >
+                    <BoolokLogo size={56} />
+                    <Text style={[typography.headlineMd, { color: colors.onBackground, marginTop: spacing.base }]}>
+                      BOOLOK GPT
+                    </Text>
                   </Pressable>
+                )}
+
+                <View style={{ marginBottom: spacing.lg }}>
+                  <Text style={[typography.headlineLg, { color: colors.onBackground, marginBottom: spacing.xs }]}>
+                    Create Your Account
+                  </Text>
+                  <Text style={[typography.bodyMd, { color: colors.onSurfaceVariant }]}>
+                    Join the next generation of real estate intelligence.
+                  </Text>
                 </View>
-              </Field>
 
-              <Pressable style={styles.termsRow} onPress={() => setAgreed((v) => !v)}>
-                <View style={[styles.checkbox, agreed && styles.checkboxChecked]}>
-                  {agreed && <MaterialIcons name="check" size={14} color={colors.onPrimary} />}
+                <Field label="Full Name">
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your full name"
+                    placeholderTextColor={colors.outline}
+                    value={fullName}
+                    onChangeText={setFullName}
+                    autoCapitalize="words"
+                  />
+                </Field>
+
+                <Field label="Email Address">
+                  <TextInput
+                    style={styles.input}
+                    placeholder="name@company.com"
+                    placeholderTextColor={colors.outline}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </Field>
+
+                <Field label="Password">
+                  <View style={styles.passwordRow}>
+                    <TextInput
+                      style={[styles.input, { flex: 1 }]}
+                      placeholder="Min. 8 characters"
+                      placeholderTextColor={colors.outline}
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                    />
+                    <Pressable style={styles.eyeButton} onPress={() => setShowPassword((v) => !v)}>
+                      <MaterialIcons
+                        name={showPassword ? 'visibility-off' : 'visibility'}
+                        size={22}
+                        color={colors.outline}
+                      />
+                    </Pressable>
+                  </View>
+                </Field>
+
+                <Pressable style={styles.termsRow} onPress={() => setAgreed((v) => !v)}>
+                  <View style={[styles.checkbox, agreed && styles.checkboxChecked]}>
+                    {agreed && <MaterialIcons name="check" size={14} color={colors.onPrimary} />}
+                  </View>
+                  <Text style={[typography.bodySm, { color: colors.onSurfaceVariant, flex: 1 }]}>
+                    I agree to the <Text style={styles.link}>Terms of Service</Text> and{' '}
+                    <Text style={styles.link}>Privacy Policy</Text>.
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.submitButton,
+                    submitState === 'success' && { backgroundColor: colors.success },
+                    !canSubmit && submitState === 'idle' && { opacity: 0.5 },
+                  ]}
+                  onPress={handleSubmit}
+                  disabled={submitState !== 'idle'}
+                >
+                  <Text style={[typography.headlineSm, { color: colors.onPrimary }]}>{buttonLabel}</Text>
+                </Pressable>
+
+                <View style={styles.dividerRow}>
+                  <View style={styles.dividerLine} />
+                  <Text style={[typography.labelMd, { color: colors.outline }]}>OR</Text>
+                  <View style={styles.dividerLine} />
                 </View>
-                <Text style={[typography.bodySm, { color: colors.onSurfaceVariant, flex: 1 }]}>
-                  I agree to the <Text style={styles.link}>Terms of Service</Text> and{' '}
-                  <Text style={styles.link}>Privacy Policy</Text>.
-                </Text>
-              </Pressable>
 
-              <Pressable
-                style={[
-                  styles.submitButton,
-                  submitState === 'success' && { backgroundColor: colors.success },
-                  !canSubmit && submitState === 'idle' && { opacity: 0.5 },
-                ]}
-                onPress={handleSubmit}
-                disabled={submitState !== 'idle'}
-              >
-                <Text style={[typography.headlineSm, { color: colors.onPrimary }]}>{buttonLabel}</Text>
-              </Pressable>
+                <Pressable
+                  style={[styles.googleButton, (isGoogleLoading || isGoogleSigningIn) && { opacity: 0.6 }]}
+                  onPress={promptGoogleSignIn}
+                  disabled={isGoogleLoading || isGoogleSigningIn}
+                >
+                  <GoogleIcon />
+                  <Text style={[typography.bodyMd, { color: colors.onSurface, marginLeft: spacing.base }]}>
+                    {isGoogleSigningIn ? 'Signing up...' : 'Sign up with Google'}
+                  </Text>
+                </Pressable>
 
-              <View style={styles.dividerRow}>
-                <View style={styles.dividerLine} />
-                <Text style={[typography.labelMd, { color: colors.outline }]}>OR</Text>
-                <View style={styles.dividerLine} />
+                <View style={styles.footer}>
+                  <Text style={[typography.bodyMd, { color: colors.onSurfaceVariant }]}>
+                    Already have an account?{' '}
+                  </Text>
+                  <Link href="/(auth)/login" style={[typography.bodyMd, styles.link, { fontFamily: 'Poppins_700Bold' }]}>
+                    Sign In
+                  </Link>
+                </View>
               </View>
-
-              <Pressable
-                style={[styles.googleButton, (isGoogleLoading || isGoogleSigningIn) && { opacity: 0.6 }]}
-                onPress={promptGoogleSignIn}
-                disabled={isGoogleLoading || isGoogleSigningIn}
-              >
-                <GoogleIcon />
-                <Text style={[typography.bodyMd, { color: colors.onSurface, marginLeft: spacing.base }]}>
-                  {isGoogleSigningIn ? 'Signing up...' : 'Sign up with Google'}
-                </Text>
-              </Pressable>
-
-              <View style={styles.footer}>
-                <Text style={[typography.bodyMd, { color: colors.onSurfaceVariant }]}>
-                  Already have an account?{' '}
-                </Text>
-                <Link href="/(auth)/login" style={[typography.bodyMd, styles.link, { fontFamily: 'Poppins_700Bold' }]}>
-                  Sign In
-                </Link>
-              </View>
-            </View>
-          </Animated.View>
-        </View>
-      </KeyboardAvoidingView>
-    </ScrollView>
+            </Animated.View>
+          </View>
+        </KeyboardAvoidingView>
+      </ScrollView>
     </SafeAreaView>
   );
 }

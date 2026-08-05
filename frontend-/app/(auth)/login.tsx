@@ -113,9 +113,7 @@ export default function LoginScreen() {
     }
     await signIn(serverToken, serverUser);
     setSubmitState('success');
-    setTimeout(() => {
-      router.replace('/(app)/feed');
-    }, 500);
+    router.replace('/(app)/dashboard');
   };
 
   // ── Google Sign-In ──────────────────────────────────────────────────────
@@ -126,7 +124,7 @@ export default function LoginScreen() {
         const response = await axios.post(
           `${API_BASE_URL}/api/auth/google`,
           { idToken },
-          { headers: { 'Content-Type': 'application/json' }, timeout: 15000 }
+          { headers: { 'Content-Type': 'application/json' }, timeout: 30000 }
         );
         const { token: serverToken, user: serverUser } = response.data ?? {};
         await completeSignIn(serverToken, serverUser);
@@ -180,7 +178,7 @@ export default function LoginScreen() {
                 'application/json',
             },
 
-            timeout: 15000,
+            timeout: 30000,
           }
         );
 
@@ -256,315 +254,235 @@ export default function LoginScreen() {
           style={styles.keyboardAvoid}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-        <View
-          style={[
-            styles.mainLayout,
-            isWide &&
-            styles.mainLayoutRow,
-          ]}
-        >
-          {isWide && (
-            <Animated.View
-              style={styles.brandPanel}
-              entering={FadeIn.duration(
-                800
-              )}
-            >
-              <View
-                style={styles.brandInner}
+          <View
+            style={[
+              styles.mainLayout,
+              isWide &&
+              styles.mainLayoutRow,
+            ]}
+          >
+            {isWide && (
+              <Animated.View
+                style={styles.brandPanel}
+                entering={FadeIn.duration(
+                  800
+                )}
               >
-                <Pressable
-                  style={
-                    styles.brandLogoRow
-                  }
-                  onPress={() =>
-                    router.push(
-                      '/brand-vision'
-                    )
-                  }
+                <View
+                  style={styles.brandInner}
                 >
-                  <BoolokLogo
-                    size={56}
-                    color="#ffffff"
-                  />
+                  <Pressable
+                    style={
+                      styles.brandLogoRow
+                    }
+                    onPress={() =>
+                      router.push(
+                        '/brand-vision'
+                      )
+                    }
+                  >
+                    <BoolokLogo
+                      size={56}
+                      color="#ffffff"
+                    />
+
+                    <Text
+                      style={[
+                        typography.headlineMd,
+                        styles.brandName,
+                      ]}
+                    >
+                      BOOLOK{' '}
+                      <Text
+                        style={{
+                          color:
+                            colors.primary,
+                        }}
+                      >
+                        GPT
+                      </Text>
+                    </Text>
+                  </Pressable>
 
                   <Text
                     style={[
-                      typography.headlineMd,
-                      styles.brandName,
+                      typography.headlineSm,
+                      styles.brandTagline,
                     ]}
                   >
-                    BOOLOK{' '}
-                    <Text
-                      style={{
-                        color:
-                          colors.primary,
-                      }}
-                    >
-                      GPT
-                    </Text>
+                    AI AGENT FOR REAL
+                    ESTATE SERVICES
                   </Text>
-                </Pressable>
 
-                <Text
-                  style={[
-                    typography.headlineSm,
-                    styles.brandTagline,
-                  ]}
-                >
-                  AI AGENT FOR REAL
-                  ESTATE SERVICES
-                </Text>
-
-                <View
-                  style={
-                    styles.featuresList
-                  }
-                >
-                  {FEATURES.map(
-                    (feature) => (
-                      <View
-                        key={
-                          feature.title
-                        }
-                        style={
-                          styles.featureRow
-                        }
-                      >
+                  <View
+                    style={
+                      styles.featuresList
+                    }
+                  >
+                    {FEATURES.map(
+                      (feature) => (
                         <View
+                          key={
+                            feature.title
+                          }
                           style={
-                            styles.featureIconWrap
+                            styles.featureRow
                           }
                         >
-                          <MaterialIcons
-                            name={
-                              feature.icon as any
+                          <View
+                            style={
+                              styles.featureIconWrap
                             }
-                            size={22}
-                            color={
-                              colors.primary
-                            }
-                          />
-                        </View>
-
-                        <View
-                          style={{
-                            flex: 1,
-                          }}
-                        >
-                          <Text
-                            style={[
-                              typography.labelMd,
-                              styles.featureTitle,
-                            ]}
                           >
-                            {
-                              feature.title
-                            }
-                          </Text>
+                            <MaterialIcons
+                              name={
+                                feature.icon as any
+                              }
+                              size={22}
+                              color={
+                                colors.primary
+                              }
+                            />
+                          </View>
 
-                          <Text
-                            style={[
-                              typography.bodySm,
-                              styles.brandSubtext,
-                            ]}
+                          <View
+                            style={{
+                              flex: 1,
+                            }}
                           >
-                            {
-                              feature.desc
-                            }
-                          </Text>
+                            <Text
+                              style={[
+                                typography.labelMd,
+                                styles.featureTitle,
+                              ]}
+                            >
+                              {
+                                feature.title
+                              }
+                            </Text>
+
+                            <Text
+                              style={[
+                                typography.bodySm,
+                                styles.brandSubtext,
+                              ]}
+                            >
+                              {
+                                feature.desc
+                              }
+                            </Text>
+                          </View>
                         </View>
-                      </View>
-                    )
-                  )}
+                      )
+                    )}
+                  </View>
                 </View>
-              </View>
-            </Animated.View>
-          )}
+              </Animated.View>
+            )}
 
-          <Animated.View
-            style={[
-              styles.formPanel,
-              isWide &&
-              styles.formPanelWide,
-            ]}
-            entering={FadeInDown
-              .duration(600)
-              .delay(100)
-              .springify()}
-          >
-            <View
+            <Animated.View
               style={[
-                styles.formContent,
+                styles.formPanel,
                 isWide &&
-                styles.formContentWide,
+                styles.formPanelWide,
               ]}
+              entering={FadeInDown
+                .duration(600)
+                .delay(100)
+                .springify()}
             >
-              {!isWide && (
-                <Pressable
-                  style={
-                    styles.mobileLogoBlock
-                  }
-                  onPress={() =>
-                    router.push(
-                      '/brand-vision'
-                    )
-                  }
-                >
-                  <BoolokLogo
-                    size={56}
-                  />
-                </Pressable>
-              )}
-
               <View
                 style={[
-                  styles.formCard,
-                  focused &&
-                  styles.formCardFocused,
+                  styles.formContent,
+                  isWide &&
+                  styles.formContentWide,
                 ]}
               >
-                <View
-                  style={
-                    styles.formHeader
-                  }
-                >
-                  <Text
-                    style={[
-                      typography.headlineMd,
-                      {
-                        color:
-                          colors.onSurface,
-                        marginBottom:
-                          spacing.xs,
-                      },
-                    ]}
+                {!isWide && (
+                  <Pressable
+                    style={
+                      styles.mobileLogoBlock
+                    }
+                    onPress={() =>
+                      router.push(
+                        '/brand-vision'
+                      )
+                    }
                   >
-                    Welcome Back
-                  </Text>
-
-                  <Text
-                    style={[
-                      typography.bodyMd,
-                      {
-                        color:
-                          colors
-                            .onSurfaceVariant,
-                      },
-                    ]}
-                  >
-                    Sign in to your Boolok
-                    GPT account
-                  </Text>
-                </View>
+                    <BoolokLogo
+                      size={56}
+                    />
+                  </Pressable>
+                )}
 
                 <View
-                  style={
-                    styles.fieldContainer
-                  }
-                >
-                  <Text
-                    style={[
-                      typography.labelMd,
-                      styles.fieldLabel,
-                    ]}
-                  >
-                    Email Address
-                  </Text>
-
-                  <TextInput
-                    style={styles.input}
-                    placeholder="name@example.com"
-                    placeholderTextColor={
-                      colors.outline
-                    }
-                    value={email}
-                    onChangeText={
-                      setEmail
-                    }
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    editable={
-                      submitState ===
-                      'idle'
-                    }
-                    onFocus={() =>
-                      setFocused(true)
-                    }
-                    onBlur={() =>
-                      setFocused(false)
-                    }
-                    onSubmitEditing={
-                      handleSubmit
-                    }
-                  />
-                </View>
-
-                <View
-                  style={
-                    styles.fieldContainer
-                  }
+                  style={[
+                    styles.formCard,
+                    focused &&
+                    styles.formCardFocused,
+                  ]}
                 >
                   <View
                     style={
-                      styles.passwordLabelRow
+                      styles.formHeader
+                    }
+                  >
+                    <Text
+                      style={[
+                        typography.headlineMd,
+                        {
+                          color:
+                            colors.onSurface,
+                          marginBottom:
+                            spacing.xs,
+                        },
+                      ]}
+                    >
+                      Welcome Back
+                    </Text>
+
+                    <Text
+                      style={[
+                        typography.bodyMd,
+                        {
+                          color:
+                            colors
+                              .onSurfaceVariant,
+                        },
+                      ]}
+                    >
+                      Sign in to your Boolok
+                      GPT account
+                    </Text>
+                  </View>
+
+                  <View
+                    style={
+                      styles.fieldContainer
                     }
                   >
                     <Text
                       style={[
                         typography.labelMd,
-                        {
-                          color:
-                            colors.onSurface,
-                        },
+                        styles.fieldLabel,
                       ]}
                     >
-                      Password
+                      Email Address
                     </Text>
 
-                    <Pressable
-                      onPress={() =>
-                        router.push(
-                          '/(auth)/forgot-password'
-                        )
-                      }
-                    >
-                      <Text
-                        style={[
-                          typography.labelMd,
-                          styles.link,
-                        ]}
-                      >
-                        Forgot Password?
-                      </Text>
-                    </Pressable>
-                  </View>
-
-                  <View
-                    style={
-                      styles.passwordRow
-                    }
-                  >
                     <TextInput
-                      style={[
-                        styles.input,
-                        {
-                          flex: 1,
-                          paddingRight: 48,
-                        },
-                      ]}
-                      placeholder="••••••••"
+                      style={styles.input}
+                      placeholder="name@example.com"
                       placeholderTextColor={
                         colors.outline
                       }
-                      value={password}
+                      value={email}
                       onChangeText={
-                        setPassword
+                        setEmail
                       }
-                      secureTextEntry={
-                        !showPassword
-                      }
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
                       editable={
                         submitState ===
                         'idle'
@@ -579,70 +497,160 @@ export default function LoginScreen() {
                         handleSubmit
                       }
                     />
-
-                    <Pressable
-                      style={
-                        styles.eyeButton
-                      }
-                      onPress={() =>
-                        setShowPassword(
-                          (previous) =>
-                            !previous
-                        )
-                      }
-                    >
-                      <MaterialIcons
-                        name={
-                          showPassword
-                            ? 'visibility-off'
-                            : 'visibility'
-                        }
-                        size={22}
-                        color={
-                          colors
-                            .onSurfaceVariant
-                        }
-                      />
-                    </Pressable>
                   </View>
-                </View>
 
-                <Pressable
-                  style={[
-                    styles.submitButton,
-
-                    submitState ===
-                    'success' && {
-                      backgroundColor:
-                        colors.success,
-                    },
-
-                    !canSubmit &&
-                    submitState ===
-                    'idle' && {
-                      opacity: 0.5,
-                    },
-                  ]}
-                  onPress={
-                    handleSubmit
-                  }
-                  disabled={
-                    submitState !==
-                    'idle'
-                  }
-                >
-                  {submitState ===
-                    'loading' ? (
+                  <View
+                    style={
+                      styles.fieldContainer
+                    }
+                  >
                     <View
                       style={
-                        styles.loadingRow
+                        styles.passwordLabelRow
                       }
                     >
-                      <ActivityIndicator
-                        size="small"
-                        color="#ffffff"
+                      <Text
+                        style={[
+                          typography.labelMd,
+                          {
+                            color:
+                              colors.onSurface,
+                          },
+                        ]}
+                      >
+                        Password
+                      </Text>
+
+                      <Pressable
+                        onPress={() =>
+                          router.push(
+                            '/(auth)/forgot-password'
+                          )
+                        }
+                      >
+                        <Text
+                          style={[
+                            typography.labelMd,
+                            styles.link,
+                          ]}
+                        >
+                          Forgot Password?
+                        </Text>
+                      </Pressable>
+                    </View>
+
+                    <View
+                      style={
+                        styles.passwordRow
+                      }
+                    >
+                      <TextInput
+                        style={[
+                          styles.input,
+                          {
+                            flex: 1,
+                            paddingRight: 48,
+                          },
+                        ]}
+                        placeholder="••••••••"
+                        placeholderTextColor={
+                          colors.outline
+                        }
+                        value={password}
+                        onChangeText={
+                          setPassword
+                        }
+                        secureTextEntry={
+                          !showPassword
+                        }
+                        editable={
+                          submitState ===
+                          'idle'
+                        }
+                        onFocus={() =>
+                          setFocused(true)
+                        }
+                        onBlur={() =>
+                          setFocused(false)
+                        }
+                        onSubmitEditing={
+                          handleSubmit
+                        }
                       />
 
+                      <Pressable
+                        style={
+                          styles.eyeButton
+                        }
+                        onPress={() =>
+                          setShowPassword(
+                            (previous) =>
+                              !previous
+                          )
+                        }
+                      >
+                        <MaterialIcons
+                          name={
+                            showPassword
+                              ? 'visibility-off'
+                              : 'visibility'
+                          }
+                          size={22}
+                          color={
+                            colors
+                              .onSurfaceVariant
+                          }
+                        />
+                      </Pressable>
+                    </View>
+                  </View>
+
+                  <Pressable
+                    style={[
+                      styles.submitButton,
+
+                      submitState ===
+                      'success' && {
+                        backgroundColor:
+                          colors.success,
+                      },
+
+                      !canSubmit &&
+                      submitState ===
+                      'idle' && {
+                        opacity: 0.5,
+                      },
+                    ]}
+                    onPress={
+                      handleSubmit
+                    }
+                    disabled={
+                      submitState !==
+                      'idle'
+                    }
+                  >
+                    {submitState ===
+                      'loading' ? (
+                      <View
+                        style={
+                          styles.loadingRow
+                        }
+                      >
+                        <ActivityIndicator
+                          size="small"
+                          color="#ffffff"
+                        />
+
+                        <Text
+                          style={[
+                            typography.labelMd,
+                            styles.submitText,
+                          ]}
+                        >
+                          {buttonLabel}
+                        </Text>
+                      </View>
+                    ) : (
                       <Text
                         style={[
                           typography.labelMd,
@@ -651,78 +659,68 @@ export default function LoginScreen() {
                       >
                         {buttonLabel}
                       </Text>
-                    </View>
-                  ) : (
+                    )}
+                  </Pressable>
+
+                  <View style={styles.dividerRow}>
+                    <View style={styles.dividerLine} />
+                    <Text style={[typography.bodySm, styles.dividerText]}>OR</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+
+                  <Pressable
+                    style={[
+                      styles.googleButton,
+                      isGoogleLoading && { opacity: 0.6 },
+                    ]}
+                    onPress={promptGoogleSignIn}
+                    disabled={isGoogleLoading}
+                  >
+                    {isGoogleLoading ? (
+                      <ActivityIndicator size="small" color={colors.onSurface} />
+                    ) : (
+                      <>
+                        <GoogleIcon size={20} />
+                        <Text style={[typography.labelMd, styles.googleButtonText]}>
+                          Sign in with Google
+                        </Text>
+                      </>
+                    )}
+                  </Pressable>
+
+                  <View
+                    style={styles.footer}
+                  >
                     <Text
                       style={[
-                        typography.labelMd,
-                        styles.submitText,
+                        typography.bodySm,
+                        {
+                          color:
+                            colors
+                              .onSurfaceVariant,
+                        },
                       ]}
                     >
-                      {buttonLabel}
+                      Don't have an
+                      account?{' '}
                     </Text>
-                  )}
-                </Pressable>
 
-                <View style={styles.dividerRow}>
-                  <View style={styles.dividerLine} />
-                  <Text style={[typography.bodySm, styles.dividerText]}>OR</Text>
-                  <View style={styles.dividerLine} />
-                </View>
-
-                <Pressable
-                  style={[
-                    styles.googleButton,
-                    isGoogleLoading && { opacity: 0.6 },
-                  ]}
-                  onPress={promptGoogleSignIn}
-                  disabled={isGoogleLoading}
-                >
-                  {isGoogleLoading ? (
-                    <ActivityIndicator size="small" color={colors.onSurface} />
-                  ) : (
-                    <>
-                      <GoogleIcon size={20} />
-                      <Text style={[typography.labelMd, styles.googleButtonText]}>
-                        Sign in with Google
-                      </Text>
-                    </>
-                  )}
-                </Pressable>
-
-                <View
-                  style={styles.footer}
-                >
-                  <Text
-                    style={[
-                      typography.bodySm,
-                      {
-                        color:
-                          colors
-                            .onSurfaceVariant,
-                      },
-                    ]}
-                  >
-                    Don't have an
-                    account?{' '}
-                  </Text>
-
-                  <Link
-                    href="/(auth)/register"
-                    style={[
-                      typography.labelMd,
-                      styles.link,
-                    ]}
-                  >
-                    Get Started
-                  </Link>
+                    <Link
+                      href="/(auth)/register"
+                      style={[
+                        typography.labelMd,
+                        styles.link,
+                      ]}
+                    >
+                      Get Started
+                    </Link>
+                  </View>
                 </View>
               </View>
-            </View>
-          </Animated.View>
-        </View>
-      </KeyboardAvoidingView>
-    </ScrollView>
+            </Animated.View>
+          </View>
+        </KeyboardAvoidingView>
+      </ScrollView>
     </SafeAreaView>
   );
 }

@@ -1,65 +1,104 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence } from 'react-native-reanimated';
-import BoolokLogo from './BoolokLogo';
-import { useTheme } from '../context/ThemeContext';
+// components/LoadingScreen.tsx
+// Full-screen branded loader. Use this while checking auth state on app
+// boot (e.g. in AuthContext) or during the brief transition after
+// login/register succeeds and before the app shell (Dashboard/Feed/etc.)
+// mounts.
 
-export default function LoadingScreen() {
-  const { theme } = useTheme();
-  
-  const pulse = useSharedValue(1);
-  const opacity = useSharedValue(0.5);
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import BoolokLogo from './BoolokLogo';
+import { colors, spacing, typography } from '../constants/theme';
+
+type LoadingScreenProps = {
+  /** Optional status text under the logo, e.g. "Signing you in..." */
+  message?: string;
+  /** Use the dark brand background (matches auth brand panel) instead of light. */
+  dark?: boolean;
+};
+
+export default function LoadingScreen({
+  message = 'Loading BOOLOK GPT...',
+  dark = true,
+}: LoadingScreenProps) {
+  const spin = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    pulse.value = withRepeat(
-      withSequence(
-        withTiming(1.1, { duration: 1000 }),
-        withTiming(1, { duration: 1000 })
-      ),
-      -1,
-      true
-    );
-    opacity.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1000 }),
-        withTiming(0.5, { duration: 1000 })
-      ),
-      -1,
-      true
-    );
-  }, []);
+    Animated.loop(
+      Animated.timing(spin, {
+        toValue: 1,
+        duration: 1400,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: pulse.value }],
-      opacity: opacity.value,
-    };
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1.08,
+          duration: 700,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 700,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [spin, pulse]);
+
+  const rotate = spin.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
   });
 
+  const bg = dark ? '#000000' : colors.background;
+  const textColor = dark ? 'rgba(255,255,255,0.7)' : colors.onSurfaceVariant;
+
   return (
-    <View style={[styles.container, { backgroundColor: theme.surfaceContainerLowest }]}>
-      <Animated.View style={[styles.glow, { backgroundColor: theme.primary }, animatedStyle]} />
-      <Animated.View style={animatedStyle}>
-        <BoolokLogo size={80} color={theme.primary} />
-      </Animated.View>
-    </View>
+    <SafeAreaView style={[styles.root, { backgroundColor: bg }]}>
+      <View style={styles.center}>
+        <Animated.View style={{ transform: [{ scale: pulse }] }}>
+          <BoolokLogo size={64} filled color={dark ? '#ffffff' : colors.primary} />
+        </Animated.View>
+
+        <Animated.View style={[styles.ring, { transform: [{ rotate }] }]} />
+
+        <Text style={[typography.labelMd, styles.message, { color: textColor }]}>
+          {message}
+        </Text>
+      </View>
+    </SafeAreaView>
   );
 }
 
+const RING_SIZE = 88;
+
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  glow: {
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ring: {
     position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    ...Platform.select({
-      web: { filter: 'blur(40px)' } as any,
-      default: {},
-    }),
-  }
+    width: RING_SIZE,
+    height: RING_SIZE,
+    borderRadius: RING_SIZE / 2,
+    borderWidth: 3,
+    borderColor: 'rgba(218,165,32,0.25)',
+    borderTopColor: colors.primary,
+  },
+  message: {
+    marginTop: spacing.xl,
+    letterSpacing: 1,
+  },
 });
