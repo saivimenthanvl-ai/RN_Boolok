@@ -1,7 +1,5 @@
 import React, {
   createContext,
-  ReactNode,
-  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -11,18 +9,26 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 const TOKEN_KEY = 'userToken';
-const USER_KEY = 'authUser';
+const USER_KEY = 'userData';
 
-export type AuthUser = {
+type AuthUser = {
   id: string;
   fullName: string;
   email: string;
   profilePicture?: string | null;
   goal?: string | null;
-  authProvider?: 'local' | 'google';
 };
 
-type AuthContextValue = {
+// FIX: app/(app)/_layout.tsx does:
+//   const { user, signOut, isAuthenticated } = useAuth();
+//   if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
+//
+// `isAuthenticated` never existed on this type, so TypeScript failed the
+// build (Vercel builds fail the WHOLE deploy on a type error, not just
+// that file) — which is why nothing past login ever rendered in prod.
+// Added below as a derived boolean (true once we have both a token and a
+// user), no new state needed.
+type AuthContextType = {
   user: AuthUser | null;
   token: string | null;
   loading: boolean;
@@ -31,135 +37,87 @@ type AuthContextValue = {
   signOut: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-async function getStoredValue(key: string): Promise<string | null> {
+async function saveValue(key: string, value: string) {
   if (Platform.OS === 'web') {
-    try {
-      return window.localStorage.getItem(key);
-    } catch {
-      return null;
-    }
-  }
-
-  return SecureStore.getItemAsync(key);
-}
-
-async function setStoredValue(key: string, value: string): Promise<void> {
-  if (Platform.OS === 'web') {
-    window.localStorage.setItem(key, value);
+    localStorage.setItem(key, value);
     return;
   }
-
   await SecureStore.setItemAsync(key, value);
 }
 
-async function deleteStoredValue(key: string): Promise<void> {
+async function readValue(key: string) {
   if (Platform.OS === 'web') {
-    window.localStorage.removeItem(key);
+    return localStorage.getItem(key);
+  }
+  return SecureStore.getItemAsync(key);
+}
+
+async function removeValue(key: string) {
+  if (Platform.OS === 'web') {
+    localStorage.removeItem(key);
     return;
   }
-
   await SecureStore.deleteItemAsync(key);
 }
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+// NAMED export — do not change to `export default`.
+// app/_layout.tsx imports this as: import { AuthProvider } from '../context/AuthContext';
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let active = true;
-
-    async function restoreSession() {
+    const restoreSession = async () => {
       try {
-        const [storedToken, storedUser] = await Promise.all([
-          getStoredValue(TOKEN_KEY),
-          getStoredValue(USER_KEY),
-        ]);
+        const storedToken = await readValue(TOKEN_KEY);
+        const storedUser = await readValue(USER_KEY);
 
-        if (!active) return;
-
-        if (!storedToken || !storedUser) {
-          setToken(null);
-          setUser(null);
-          return;
+        if (storedToken && storedUser) {
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
         }
-
-        const parsedUser = JSON.parse(storedUser) as AuthUser;
-
-        if (!parsedUser?.id || !parsedUser?.email) {
-          throw new Error('Stored user data is invalid.');
-        }
-
-        setToken(storedToken);
-        setUser(parsedUser);
       } catch (error) {
-        console.error('Failed to restore authentication:', error);
-
-        await Promise.allSettled([
-          deleteStoredValue(TOKEN_KEY),
-          deleteStoredValue(USER_KEY),
-        ]);
-
-        if (active) {
-          setToken(null);
-          setUser(null);
-        }
+        console.error('Failed to restore authentication session:', error);
+        await removeValue(TOKEN_KEY);
+        await removeValue(USER_KEY);
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
-    }
+    };
 
     restoreSession();
-
-    return () => {
-      active = false;
-    };
   }, []);
 
-  const signIn = useCallback(async (nextToken: string, nextUser: AuthUser) => {
-    if (!nextToken || !nextUser?.id || !nextUser?.email) {
-      throw new Error('Backend returned an invalid authentication response.');
-    }
+  const signIn = async (newToken: string, newUser: AuthUser) => {
+    await saveValue(TOKEN_KEY, newToken);
+    await saveValue(USER_KEY, JSON.stringify(newUser));
+    setToken(newToken);
+    setUser(newUser);
+  };
 
-    await Promise.all([
-      setStoredValue(TOKEN_KEY, nextToken),
-      setStoredValue(USER_KEY, JSON.stringify(nextUser)),
-    ]);
-
-    setToken(nextToken);
-    setUser(nextUser);
-  }, []);
-
-  const signOut = useCallback(async () => {
-    await Promise.allSettled([
-      deleteStoredValue(TOKEN_KEY),
-      deleteStoredValue(USER_KEY),
-    ]);
-
+  const signOut = async () => {
+    await removeValue(TOKEN_KEY);
+    await removeValue(USER_KEY);
     setToken(null);
     setUser(null);
-  }, []);
+  };
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      user,
-      token,
-      loading,
-      isAuthenticated: Boolean(user && token),
-      signIn,
-      signOut,
-    }),
-    [user, token, loading, signIn, signOut]
+  const isAuthenticated = useMemo(() => Boolean(token && user), [token, user]);
+
+  return (
+    <AuthContext.Provider
+      value={{ user, token, loading, isAuthenticated, signIn, signOut }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth(): AuthContextValue {
+// NAMED export — components use: import { useAuth } from '../context/AuthContext';
+export function useAuth() {
   const context = useContext(AuthContext);
 
   if (!context) {

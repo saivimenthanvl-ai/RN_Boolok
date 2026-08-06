@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { spacing, typography, radius } from '../../constants/theme';
 import BoolokLogo from '../../components/BoolokLogo';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const MD_BREAKPOINT = 768;
 
@@ -25,7 +26,14 @@ const NAV_ITEMS = [
 export default function AppLayout() {
   const { width } = useWindowDimensions();
   const isWide = width >= MD_BREAKPOINT;
-  const { user, signOut, isAuthenticated, isLoading } = useAuth();
+  // FIX: isAuthenticated now exists on AuthContextType (added in
+  // context/AuthContext.tsx). `loading` is used below so we don't redirect
+  // to /login while the session is still being restored from
+  // SecureStore/localStorage on first load — without this guard, every
+  // page refresh on web would flash straight to the login screen even for
+  // an already-logged-in user, because token/user start out null before
+  // the async restore finishes.
+  const { user, signOut, isAuthenticated, loading } = useAuth();
   const pathname = usePathname();
   const { theme, isDark, toggleTheme } = useTheme();
 
@@ -209,7 +217,6 @@ export default function AppLayout() {
           const publicRoute = item.route.replace('/(app)', '');
           const isActive = pathname === item.route || pathname === publicRoute || pathname.startsWith(`${publicRoute}/`);
 
-          // Map labels for mobile
           let mobileLabel = item.label;
           if (item.id === 'dashboard') mobileLabel = 'Home';
           if (item.id === 'feed') mobileLabel = 'Social';
@@ -237,12 +244,13 @@ export default function AppLayout() {
 
   const insets = useSafeAreaInsets();
 
-  if (isLoading) {
-    return (
-      <View style={[styles.root, { backgroundColor: theme.surface, alignItems: 'center', justifyContent: 'center' }]}>
-        <Text style={{ color: theme.onSurfaceVariant }}>Loading workspace...</Text>
-      </View>
-    );
+  // FIX: wait for the session-restore check to finish before deciding to
+  // redirect. Previously this only checked `isAuthenticated`, which is
+  // false during the brief window where AuthProvider is still reading
+  // SecureStore/localStorage — causing an immediate bounce to /login on
+  // every refresh even for a valid session.
+  if (loading) {
+    return <LoadingScreen message="Checking your session..." />;
   }
 
   if (!isAuthenticated) {

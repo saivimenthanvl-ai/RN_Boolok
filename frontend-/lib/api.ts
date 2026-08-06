@@ -64,6 +64,12 @@ function resolveApiBaseUrl(): string {
 
 export const API_BASE_URL = resolveApiBaseUrl();
 
+// Dedicated route the OAuth popup redirects back to. This route must exist
+// in app/ (e.g. app/auth-callback.tsx) and must call
+// WebBrowser.maybeCompleteAuthSession() itself on mount, otherwise the
+// popup will load that page but never close / hand the token back.
+const WEB_AUTH_CALLBACK_PATH = '/auth-callback';
+
 type GoogleAuthOptions = {
   onSuccess: (idToken: string) => Promise<void>;
   onError?: (message: string) => void;
@@ -151,15 +157,22 @@ function useWebGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
   const AuthSession = require('expo-auth-session');
   const Google = require('expo-auth-session/providers/google');
 
+  // If this page IS the callback page (popup landed back here), this closes
+  // the popup and posts the result back to the window that opened it.
   WebBrowser.maybeCompleteAuthSession();
 
+  // FIX: point Google at a dedicated callback route instead of the bare
+  // origin. Redirecting to "/" sends the popup to the app's root/splash
+  // screen, which never calls maybeCompleteAuthSession() and never closes —
+  // that's why the popup got stuck on "OPTIMIZING WORKSPACE...".
   const redirectUri = useMemo(() => {
     if (typeof window !== 'undefined' && window.location?.origin) {
-      return window.location.origin;
+      return `${window.location.origin}${WEB_AUTH_CALLBACK_PATH}`;
     }
 
     return AuthSession.makeRedirectUri({
       preferLocalhost: true,
+      path: WEB_AUTH_CALLBACK_PATH,
     });
   }, []);
 
@@ -192,6 +205,11 @@ function useWebGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
           response.error?.message ||
           'Google authentication returned an error.'
         );
+        return;
+      }
+
+      if (response.type === 'dismiss' || response.type === 'cancel') {
+        // User closed the popup manually — not an error, just stop loading.
         return;
       }
 

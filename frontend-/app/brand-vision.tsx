@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import {
   Platform,
   Pressable,
@@ -10,7 +10,6 @@ import {
   View,
 } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { useAuth } from '../context/AuthContext';
 
 const GOLD = '#E7AD17';
 const NAVY = '#070C21';
@@ -55,37 +54,48 @@ function NeuralNode({ compact = false }: { compact?: boolean }) {
   return (
     <View style={{ width: size, height: size }}>
       {positions.map(([x, y]) => <View key={`${x}-${y}`} style={{ position: 'absolute', left: x * (size - dot) / 2, top: y * (size - dot) / 2, width: dot, height: dot, borderRadius: dot / 2, backgroundColor: GOLD }} />)}
-      <Svg width={compact ? 17 : 46} height={compact ? 17 : 46} viewBox="0 0 26 26" style={{ position: 'absolute', left: '50%', top: '50%', transform: [{ translateX: compact ? -8.5 : -23 }, { translateY: compact ? -8.5 : -23 }] }}>
-        <Path d="M13 0c1.1 7.2 2.8 8.9 10 10-7.2 1.1-8.9 2.8-10 10-1.1-7.2-2.8-8.9-10-10 7.2-1.1 8.9-2.8 10-10Z" fill="#FFFFFF" />
+      <Svg width={compact ? 20 : 60} height={compact ? 20 : 60} viewBox="0 0 24 24" style={{ position: 'absolute', left: '50%', top: '50%', transform: [{ translateX: compact ? -10 : -30 }, { translateY: compact ? -10 : -30 }] }}>
+        <Path d="M12 1.8 14.9 9.1 22.7 9.6 16.6 14.5 18.7 22.1 12 17.8 5.3 22.1 7.4 14.5 1.3 9.6 9.1 9.1Z" fill="#FFFFFF" />
       </Svg>
     </View>
   );
 }
 
+const NAV_LINKS: Array<{ label: string; route: string }> = [
+  { label: 'Vision', route: '/brand-vision' },
+  { label: 'Listings', route: '/listings' },
+  { label: 'Market Data', route: '/market-data' },
+  { label: 'Agents', route: '/agents' },
+];
+
 function Header() {
+  const { width } = useWindowDimensions();
+  const showNav = width >= 860;
   return (
     <View style={styles.header}>
       <Pressable accessibilityRole="link" onPress={() => router.replace('/brand-vision' as never)} style={styles.brandRow}>
         <NeuralNode compact />
         <Text style={styles.brandText}>BOOLOK <Text style={styles.goldText}>GPT</Text></Text>
       </Pressable>
+      {showNav && (
+        <View style={styles.navLinks}>
+          {NAV_LINKS.map((link) => (
+            <Pressable key={link.route} accessibilityRole="link" onPress={() => router.push(link.route as never)} style={styles.navLinkItem}>
+              <Text style={styles.navLinkText}>{link.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
       <View style={styles.navActions}>
-        <Pressable accessibilityRole="link" onPress={() => router.push('/(auth)/login')} style={styles.signInButton}><Text style={styles.signInText}>Sign In</Text></Pressable>
-        <Pressable accessibilityRole="link" onPress={() => router.push('/(auth)/register')} style={styles.joinButton}><Text style={styles.joinText}>Join Now</Text></Pressable>
+        <Pressable accessibilityRole="link" onPress={() => router.push('/login' as never)} style={styles.signInButton}><Text style={styles.signInText}>Sign In</Text></Pressable>
+        <Pressable accessibilityRole="link" onPress={() => router.push('/register' as never)} style={styles.joinButton}><Text style={styles.joinText}>Join Now</Text></Pressable>
       </View>
     </View>
   );
 }
 
 export default function BrandVisionScreen() {
-  const { isAuthenticated, loading } = useAuth();
   const { width } = useWindowDimensions();
-
-  useEffect(() => {
-    if (!loading && isAuthenticated) {
-      router.replace('/(app)/dashboard');
-    }
-  }, [isAuthenticated, loading]);
   const narrow = width < 720;
   const scrollRef = useRef<ScrollView>(null);
   return (
@@ -113,7 +123,7 @@ export default function BrandVisionScreen() {
         <View style={styles.ctaSection}>
           <Text style={[styles.ctaTitle, narrow && styles.ctaTitleNarrow]}>Ready to find your next opportunity?</Text>
           <Text style={styles.ctaCopy}>Create your account and put intelligent property discovery to work.</Text>
-          <Pressable accessibilityRole="button" onPress={() => router.push('/(auth)/register')} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryButtonText}>Get Started</Text></Pressable>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/register' as never)} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}><Text style={styles.primaryButtonText}>Get Started</Text></Pressable>
         </View>
         <Text style={styles.footer}>© 2026 BOOLOK GPT. INTELLIGENT PRECISION.</Text>
       </ScrollView>
@@ -125,6 +135,7 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: BLACK }, scroll: { flex: 1 }, scrollContent: { flexGrow: 1 },
   header: { minHeight: 82, paddingHorizontal: 28, paddingVertical: 14, backgroundColor: NAVY, borderBottomWidth: 1, borderBottomColor: '#30333F', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 14 }, brandText: { color: '#FFFFFF', fontFamily: FONT, fontSize: 20, fontWeight: '700' }, goldText: { color: GOLD },
+  navLinks: { flexDirection: 'row', alignItems: 'center', gap: 28 }, navLinkItem: { paddingVertical: 8 }, navLinkText: { color: '#D7D9E4', fontFamily: FONT, fontSize: 15, fontWeight: '600' },
   navActions: { flexDirection: 'row', alignItems: 'center', gap: 10 }, signInButton: { paddingHorizontal: 13, paddingVertical: 11 }, signInText: { color: '#FFFFFF', fontFamily: FONT, fontSize: 15, fontWeight: '600' }, joinButton: { backgroundColor: GOLD, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 13 }, joinText: { color: '#090909', fontFamily: FONT, fontSize: 15, fontWeight: '700' },
   hero: { minHeight: 645, paddingHorizontal: 24, paddingVertical: 65, alignItems: 'center', justifyContent: 'center', backgroundColor: '#111111' }, heroTitle: { marginTop: 36, color: '#FFFFFF', fontFamily: FONT, fontSize: 42, lineHeight: 50, fontWeight: '700', textAlign: 'center' }, heroTitleNarrow: { fontSize: 32, lineHeight: 39 }, heroCopy: { maxWidth: 830, marginTop: 23, color: '#C4C4C8', fontFamily: FONT, fontSize: 20, lineHeight: 34, textAlign: 'center' }, heroCopyNarrow: { fontSize: 16, lineHeight: 27 },
   primaryButton: { marginTop: 36, minWidth: 212, paddingHorizontal: 28, paddingVertical: 18, borderRadius: 11, backgroundColor: GOLD, alignItems: 'center' }, primaryButtonText: { color: '#090909', fontFamily: FONT, fontSize: 16, fontWeight: '700' }, pressed: { opacity: 0.78, transform: [{ scale: 0.99 }] },

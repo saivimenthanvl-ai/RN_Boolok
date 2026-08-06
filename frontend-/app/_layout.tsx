@@ -5,89 +5,16 @@ import {
   Poppins_700Bold,
   useFonts,
 } from '@expo-google-fonts/poppins';
-import { MaterialIcons } from '@expo/vector-icons';
-import {
-  Stack,
-  router,
-  useRootNavigationState,
-  useSegments,
-} from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { Stack } from 'expo-router';
 import { useEffect } from 'react';
-import { ActivityIndicator, Platform, View } from 'react-native';
+import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { AuthProvider, useAuth } from '../context/AuthContext';
+import { AuthProvider } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
-
-function RouteGuard() {
-  const { isAuthenticated, loading } = useAuth();
-  const segments = useSegments();
-  const navigationState = useRootNavigationState();
-
-  useEffect(() => {
-    if (loading || !navigationState?.key) return;
-
-    const rootSegment = segments[0];
-    const insideAuth = rootSegment === '(auth)';
-    const insideApp = rootSegment === '(app)';
-    const onPublicEntry =
-      !rootSegment ||
-      rootSegment === 'index' ||
-      rootSegment === 'brand-vision';
-
-    if (isAuthenticated && (insideAuth || onPublicEntry)) {
-      router.replace('/(app)/dashboard');
-      return;
-    }
-
-    if (!isAuthenticated && insideApp) {
-      router.replace('/(auth)/login');
-    }
-  }, [isAuthenticated, loading, navigationState?.key, segments]);
-
-  return null;
-}
-
-function RootNavigator() {
-  const { loading } = useAuth();
-
-  if (loading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#050914',
-        }}
-      >
-        <ActivityIndicator size="large" color="#E7AD17" />
-      </View>
-    );
-  }
-
-  return (
-    <>
-      <RouteGuard />
-
-      <Stack
-        initialRouteName="index"
-        screenOptions={{
-          headerShown: false,
-          animation: 'fade',
-        }}
-      >
-        <Stack.Screen name="index" />
-        <Stack.Screen name="brand-vision" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(app)" />
-      </Stack>
-    </>
-  );
-}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -95,7 +22,6 @@ export default function RootLayout() {
     Poppins_500Medium,
     Poppins_600SemiBold,
     Poppins_700Bold,
-    ...MaterialIcons.font,
   });
 
   useEffect(() => {
@@ -112,7 +38,31 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <RootNavigator />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: 'fade',
+              contentStyle: { backgroundColor: '#050505' },
+            }}
+          >
+            {/* Public routes: never wrapped by the authenticated app layout */}
+            <Stack.Screen name="index" />
+            <Stack.Screen name="brand-vision" />
+
+            {/*
+              FIX: explicitly registered. This Stack declares its children
+              manually, which stops expo-router from auto-registering any
+              file not listed here — auth-callback.tsx existed on disk but
+              was invisible to the router without this line, producing
+              "Unmatched Route" every time Google's OAuth popup redirected
+              back to it.
+            */}
+            <Stack.Screen name="auth-callback" />
+
+            {/* Route groups */}
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(app)" />
+          </Stack>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
