@@ -73,7 +73,7 @@ export default function LoginScreen() {
     await signIn(serverToken, serverUser);
     setSubmitState('success');
     setTimeout(() => {
-      router.replace('/(app)/feed');
+      router.replace('/(app)/dashboard');
     }, 500);
   };
 
