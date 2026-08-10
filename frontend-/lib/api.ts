@@ -5,11 +5,7 @@ import * as SecureStore from 'expo-secure-store';
 
 const TOKEN_KEY = 'userToken';
 
-// ⚠️ FALLBACK ONLY — used if EXPO_PUBLIC_API_URL_NATIVE / EXPO_PUBLIC_API_URL
-// are somehow missing from a production build. Replace with your real
-// deployed backend URL (Render / Railway / your VPS, etc). This is a safety
-// net, not the primary config path — see eas.json for the real fix.
-const PRODUCTION_FALLBACK_API_URL = 'https://YOUR-BACKEND-DOMAIN.example.com';
+const PRODUCTION_FALLBACK_API_URL = 'https://rn-boolok.onrender.com';
 
 function stripTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '');
@@ -24,21 +20,13 @@ function getMetroHost(): string | null {
     (Constants as any).manifest?.hostUri ??
     null;
 
-  if (!hostUri || typeof hostUri !== 'string') {
-    return null;
-  }
+  if (!hostUri || typeof hostUri !== 'string') return null;
 
   const withoutProtocol = hostUri.replace(/^https?:\/\//, '');
   const host = withoutProtocol.split(':')[0];
-
   return host || null;
 }
 
-/**
- * True when running inside Expo Go / a dev client connected to Metro.
- * A standalone production/preview build (installed .apk/.aab/.ipa) will
- * NOT have a Metro host, which is how we tell "am I really in the field".
- */
 function isRunningUnderMetro(): boolean {
   return getMetroHost() !== null;
 }
@@ -59,28 +47,15 @@ function resolveApiBaseUrl(): string {
     return resolved;
   }
 
-  // Native (Android / iOS)
   const explicitNative = process.env.EXPO_PUBLIC_API_URL_NATIVE;
+  if (explicitNative) return stripTrailingSlash(explicitNative);
 
-  if (explicitNative) {
-    return stripTrailingSlash(explicitNative);
-  }
-
-  // Dev client / Expo Go — reuse the Metro bundler's host so a device on
-  // the same Wi-Fi can reach your laptop's dev backend.
   if (isRunningUnderMetro()) {
     const metroHost = getMetroHost();
-    if (metroHost) {
-      return `http://${metroHost}:5000`;
-    }
+    if (metroHost) return `http://${metroHost}:5000`;
   }
 
-  // Standalone production/preview build with no env var set — DO NOT fall
-  // back to localhost (the device has no such server). This is what was
-  // causing the "Network Error" on the built APK.
-  if (webUrl) {
-    return stripTrailingSlash(webUrl);
-  }
+  if (webUrl) return stripTrailingSlash(webUrl);
 
   console.error(
     '[api] No EXPO_PUBLIC_API_URL_NATIVE / EXPO_PUBLIC_API_URL set for this native build. ' +
@@ -102,21 +77,51 @@ async function getStoredToken(): Promise<string | null> {
   }
 }
 
+export async function setStoredToken(token: string): Promise<void> {
+  try {
+    if (Platform.OS === 'web') {
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      await SecureStore.setItemAsync(TOKEN_KEY, token);
+    }
+  } catch (error) {
+    console.error('[api] Failed to persist auth token:', error);
+  }
+}
+
+export async function clearStoredToken(): Promise<void> {
+  try {
+    if (Platform.OS === 'web') {
+      localStorage.removeItem(TOKEN_KEY);
+    } else {
+      await SecureStore.deleteItemAsync(TOKEN_KEY);
+    }
+  } catch (error) {
+    console.error('[api] Failed to clear auth token:', error);
+  }
+}
+
 /**
  * Central API fetch helper that automatically attaches the Authorization JWT token header.
+ * Use this for EVERY authenticated request (feed posts, reels, uploads, etc.)
+ * so no screen accidentally forgets to attach the token.
  */
 export async function apiFetch<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = await getStoredToken();
   const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${path}`;
 
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string>),
   };
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+  } else {
+    console.warn(`[apiFetch] No auth token found for request to ${path} — this will likely 401.`);
   }
 
   const response = await fetch(url, { ...options, headers });
@@ -139,22 +144,28 @@ type GoogleAuthOptions = {
   onError?: (message: string) => void;
 };
 
+// ── Native (Android / iOS) ──────────────────────────────────────────────
 function useNativeGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [configurationError, setConfigurationError] = useState<string | null>(null);
 
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS;
 
   useEffect(() => {
     try {
       if (!webClientId) {
         throw new Error('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is missing in your .env or EAS environment variables.');
       }
+      if (Platform.OS === 'ios' && !iosClientId) {
+        throw new Error('EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS is missing in your .env or EAS environment variables.');
+      }
 
       const { GoogleSignin } = require('@react-native-google-signin/google-signin');
 
       GoogleSignin.configure({
         webClientId,
+        iosClientId: Platform.OS === 'ios' ? iosClientId : undefined,
         offlineAccess: false,
       });
       setConfigurationError(null);
@@ -163,7 +174,7 @@ function useNativeGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
       console.error('[GoogleSignin Config Error]:', message);
       setConfigurationError(message);
     }
-  }, [webClientId]);
+  }, [webClientId, iosClientId]);
 
   const promptGoogleSignIn = useCallback(async () => {
     if (configurationError) {
@@ -173,9 +184,9 @@ function useNativeGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
 
     setIsGoogleLoading(true);
 
-    try {
-      const { GoogleSignin, statusCodes } = require('@react-native-google-signin/google-signin');
+    const { GoogleSignin, statusCodes } = require('@react-native-google-signin/google-signin');
 
+    try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
       const result = await GoogleSignin.signIn();
@@ -187,12 +198,10 @@ function useNativeGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
 
       await onSuccess(idToken);
     } catch (error: any) {
-      const { statusCodes } = require('@react-native-google-signin/google-signin');
-
       if (error?.code === statusCodes.SIGN_IN_CANCELLED) {
-        // User cancelled the sign-in flow intentionally
+        // User cancelled — not an error
       } else if (error?.code === statusCodes.IN_PROGRESS) {
-        // Operation (e.g. sign in) is in progress already
+        // Already in progress
       } else if (error?.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         onError?.('Play services not available or outdated.');
       } else if (error?.code === statusCodes.DEVELOPER_ERROR) {
@@ -211,6 +220,7 @@ function useNativeGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
   return { promptGoogleSignIn, isGoogleLoading };
 }
 
+// ── Web (browser-based OAuth via expo-auth-session) ─────────────────────
 function useWebGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
   const WebBrowser = require('expo-web-browser');
   const AuthSession = require('expo-auth-session');
@@ -222,7 +232,6 @@ function useWebGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
     if (typeof window !== 'undefined' && window.location?.origin) {
       return `${window.location.origin}${WEB_AUTH_CALLBACK_PATH}`;
     }
-
     return AuthSession.makeRedirectUri({
       preferLocalhost: true,
       path: WEB_AUTH_CALLBACK_PATH,
