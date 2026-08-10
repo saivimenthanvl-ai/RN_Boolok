@@ -46,6 +46,26 @@ const FEATURES: FeatureData[] = [
   { icon: 'globe', title: 'Global Reach', description: 'Connect with opportunities across borders instantly.' },
 ];
 
+// ---------------------------------------------------------------------------
+// Top nav links (Vision / Listings / Market Data / Agents)
+// ---------------------------------------------------------------------------
+
+type NavLinkItem = {
+  label: string;
+  route: string;
+};
+
+// NOTE: 'Vision' points at this same screen. The other three routes
+// (/listings, /market-data, /agents) need to exist in your app for
+// navigation to work — create stub screens for any that don't exist yet,
+// or swap the route strings below to wherever those pages actually live.
+const NAV_LINKS: NavLinkItem[] = [
+  { label: 'Vision', route: '/(auth)/brand-vision' },
+  { label: 'Listings', route: '/(app)/listings' },
+  { label: 'Market Data', route: '/(app)/market-data' },
+  { label: 'Agents', route: '/(app)/agents' },
+];
+
 function FeatureIcon({ name, size = 27 }: { name: FeatureIconName; size?: number }) {
   if (name === 'search') {
     return (
@@ -142,6 +162,22 @@ function NeuralNode({ compact = false, narrowCompact = false }: { compact?: bool
 // Header
 // ---------------------------------------------------------------------------
 
+function NavLink({ label, route, active }: { label: string; route: string; active: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="link"
+      onPress={() => router.push(route as any)}
+      style={styles.navLink}
+      hitSlop={8}
+    >
+      <Text style={[styles.navLinkText, active && styles.navLinkTextActive]} numberOfLines={1}>
+        {label}
+      </Text>
+      {active && <View style={styles.navLinkUnderline} />}
+    </Pressable>
+  );
+}
+
 function Header({ narrow }: { narrow: boolean }) {
   return (
     <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
@@ -153,6 +189,20 @@ function Header({ narrow }: { narrow: boolean }) {
             BOOLOK <Text style={styles.goldText}>GPT</Text>
           </Text>
         </View>
+
+        {!narrow && (
+          <View style={styles.navLinksRow}>
+            {NAV_LINKS.map((link) => (
+              <NavLink
+                key={link.label}
+                label={link.label}
+                route={link.route}
+                active={link.label === 'Vision'}
+              />
+            ))}
+          </View>
+        )}
+
         <View style={[styles.navActions, narrow && styles.navActionsNarrow]}>
           <Pressable
             accessibilityRole="link"
@@ -276,6 +326,32 @@ const styles = StyleSheet.create({
   brandText: { color: '#FFFFFF', fontFamily: FONT, fontSize: 20, fontWeight: '700' },
   brandTextNarrow: { fontSize: 15, flexShrink: 1 },
   goldText: { color: GOLD },
+  navLinksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 32,
+    flexShrink: 0,
+  },
+  navLink: {
+    paddingVertical: 6,
+    alignItems: 'center',
+  },
+  navLinkText: {
+    color: '#C4C4C8',
+    fontFamily: FONT,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  navLinkTextActive: {
+    color: GOLD,
+  },
+  navLinkUnderline: {
+    marginTop: 4,
+    height: 2,
+    width: '100%',
+    backgroundColor: GOLD,
+    borderRadius: 1,
+  },
   navActions: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 0 },
   navActionsNarrow: { gap: 6 },
   signInButton: { paddingHorizontal: 13, paddingVertical: 11 },

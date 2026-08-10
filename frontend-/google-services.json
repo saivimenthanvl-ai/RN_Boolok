@@ -1,8 +1,8 @@
 {
   "project_info": {
     "project_number": "1065742321871",
-    "project_id": "bolookgpt",
-    "storage_bucket": "bolookgpt.firebasestorage.app"
+    "project_id": "boolokgpt",
+    "storage_bucket": "boolokgpt.firebasestorage.app"
   },
   "client": [
     {
