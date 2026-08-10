@@ -11,7 +11,7 @@ import * as SecureStore from 'expo-secure-store';
 const TOKEN_KEY = 'userToken';
 const USER_KEY = 'userData';
 
-type AuthUser = {
+export type AuthUser = {
   id: string;
   fullName: string;
   email: string;
@@ -19,15 +19,6 @@ type AuthUser = {
   goal?: string | null;
 };
 
-// FIX: app/(app)/_layout.tsx does:
-//   const { user, signOut, isAuthenticated } = useAuth();
-//   if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
-//
-// `isAuthenticated` never existed on this type, so TypeScript failed the
-// build (Vercel builds fail the WHOLE deploy on a type error, not just
-// that file) — which is why nothing past login ever rendered in prod.
-// Added below as a derived boolean (true once we have both a token and a
-// user), no new state needed.
 type AuthContextType = {
   user: AuthUser | null;
   token: string | null;
@@ -35,6 +26,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
   signIn: (token: string, user: AuthUser) => Promise<void>;
   signOut: () => Promise<void>;
+  updateUser: (updatedFields: Partial<AuthUser>) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -62,8 +54,6 @@ async function removeValue(key: string) {
   await SecureStore.deleteItemAsync(key);
 }
 
-// NAMED export — do not change to `export default`.
-// app/_layout.tsx imports this as: import { AuthProvider } from '../context/AuthContext';
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -105,18 +95,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
+  const updateUser = async (updatedFields: Partial<AuthUser>) => {
+    if (!user) return;
+    const updatedUser = { ...user, ...updatedFields };
+    await saveValue(USER_KEY, JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
   const isAuthenticated = useMemo(() => Boolean(token && user), [token, user]);
 
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, isAuthenticated, signIn, signOut }}
+      value={{
+        user,
+        token,
+        loading,
+        isAuthenticated,
+        signIn,
+        signOut,
+        updateUser,
+      }}
     >
       {children}
     </AuthContext.Provider>
   );
 }
 
-// NAMED export — components use: import { useAuth } from '../context/AuthContext';
 export function useAuth() {
   const context = useContext(AuthContext);
 

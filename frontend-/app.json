@@ -11,11 +11,15 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.saivimenthanvl.boolokgpt",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       }
     },
     "android": {
       "package": "com.boolokgpt",
+      "googleServicesFile": "./google-services.json",
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -35,17 +39,10 @@
       "expo-splash-screen",
       "expo-secure-store",
       "expo-video",
-      "@react-native-google-signin/google-signin",
       [
-        "./plugins/withNetworkSecurityConfig",
+        "@react-native-google-signin/google-signin",
         {
-          "domains": [
-            "192.168.1.9",
-            "192.168.1.11",
-            "192.168.1.5",
-            "10.0.2.2",
-            "localhost"
-          ]
+          "iosUrlScheme": "com.googleusercontent.apps.REPLACE_WITH_YOUR_IOS_CLIENT_ID"
         }
       ]
     ],

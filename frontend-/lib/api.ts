@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import * as SecureStore from 'expo-secure-store';
+
+const TOKEN_KEY = 'userToken';
+
+// ⚠️ FALLBACK ONLY — used if EXPO_PUBLIC_API_URL_NATIVE / EXPO_PUBLIC_API_URL
+// are somehow missing from a production build. Replace with your real
+// deployed backend URL (Render / Railway / your VPS, etc). This is a safety
+// net, not the primary config path — see eas.json for the real fix.
+const PRODUCTION_FALLBACK_API_URL = 'https://YOUR-BACKEND-DOMAIN.example.com';
 
 function stripTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '');
@@ -25,19 +34,22 @@ function getMetroHost(): string | null {
   return host || null;
 }
 
+/**
+ * True when running inside Expo Go / a dev client connected to Metro.
+ * A standalone production/preview build (installed .apk/.aab/.ipa) will
+ * NOT have a Metro host, which is how we tell "am I really in the field".
+ */
+function isRunningUnderMetro(): boolean {
+  return getMetroHost() !== null;
+}
+
 function resolveApiBaseUrl(): string {
-  const webUrl =
-    process.env.EXPO_PUBLIC_API_URL ||
-    process.env.EXPO_PUBLIC_API_BASE_URL;
+  const webUrl = process.env.EXPO_PUBLIC_API_URL || process.env.EXPO_PUBLIC_API_BASE_URL;
 
   if (Platform.OS === 'web') {
     const resolved = stripTrailingSlash(webUrl || 'http://localhost:5000');
 
-    if (
-      typeof window !== 'undefined' &&
-      window.location.protocol === 'https:' &&
-      resolved.startsWith('http://')
-    ) {
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && resolved.startsWith('http://')) {
       console.error(
         `Production site cannot call insecure/local API URL: ${resolved}. ` +
         'Set EXPO_PUBLIC_API_URL in Vercel to your public HTTPS backend URL.'
@@ -47,27 +59,79 @@ function resolveApiBaseUrl(): string {
     return resolved;
   }
 
+  // Native (Android / iOS)
   const explicitNative = process.env.EXPO_PUBLIC_API_URL_NATIVE;
 
   if (explicitNative) {
     return stripTrailingSlash(explicitNative);
   }
 
-  const metroHost = getMetroHost();
-
-  if (metroHost) {
-    return `http://${metroHost}:5000`;
+  // Dev client / Expo Go — reuse the Metro bundler's host so a device on
+  // the same Wi-Fi can reach your laptop's dev backend.
+  if (isRunningUnderMetro()) {
+    const metroHost = getMetroHost();
+    if (metroHost) {
+      return `http://${metroHost}:5000`;
+    }
   }
 
-  return stripTrailingSlash(webUrl || 'http://localhost:5000');
+  // Standalone production/preview build with no env var set — DO NOT fall
+  // back to localhost (the device has no such server). This is what was
+  // causing the "Network Error" on the built APK.
+  if (webUrl) {
+    return stripTrailingSlash(webUrl);
+  }
+
+  console.error(
+    '[api] No EXPO_PUBLIC_API_URL_NATIVE / EXPO_PUBLIC_API_URL set for this native build. ' +
+    `Falling back to ${PRODUCTION_FALLBACK_API_URL} — set the real env var in eas.json instead.`
+  );
+  return PRODUCTION_FALLBACK_API_URL;
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
 
-// Dedicated route the OAuth popup redirects back to. This route must exist
-// in app/ (e.g. app/auth-callback.tsx) and must call
-// WebBrowser.maybeCompleteAuthSession() itself on mount, otherwise the
-// popup will load that page but never close / hand the token back.
+async function getStoredToken(): Promise<string | null> {
+  try {
+    if (Platform.OS === 'web') {
+      return localStorage.getItem(TOKEN_KEY);
+    }
+    return await SecureStore.getItemAsync(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Central API fetch helper that automatically attaches the Authorization JWT token header.
+ */
+export async function apiFetch<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const token = await getStoredToken();
+  const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${path}`;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, { ...options, headers });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const error = new Error(data.message || `Request failed with status ${response.status}`);
+    (error as any).status = response.status;
+    (error as any).data = data;
+    throw error;
+  }
+
+  return data as T;
+}
+
 const WEB_AUTH_CALLBACK_PATH = '/auth-callback';
 
 type GoogleAuthOptions = {
@@ -77,38 +141,29 @@ type GoogleAuthOptions = {
 
 function useNativeGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [configurationError, setConfigurationError] = useState<string | null>(
-    null
-  );
+  const [configurationError, setConfigurationError] = useState<string | null>(null);
+
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
   useEffect(() => {
     try {
-      const { GoogleSignin } = require(
-        '@react-native-google-signin/google-signin'
-      );
-
-      const webClientId =
-        process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-
       if (!webClientId) {
-        throw new Error(
-          'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is missing.'
-        );
+        throw new Error('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is missing in your .env or EAS environment variables.');
       }
+
+      const { GoogleSignin } = require('@react-native-google-signin/google-signin');
 
       GoogleSignin.configure({
         webClientId,
         offlineAccess: false,
       });
+      setConfigurationError(null);
     } catch (error: any) {
-      const message =
-        error?.message ||
-        'Google Sign-In could not be configured. Rebuild the native app after installing the Google Sign-In package.';
-
-      console.error(message);
+      const message = error?.message || 'Google Sign-In configuration failed.';
+      console.error('[GoogleSignin Config Error]:', message);
       setConfigurationError(message);
     }
-  }, []);
+  }, [webClientId]);
 
   const promptGoogleSignIn = useCallback(async () => {
     if (configurationError) {
@@ -119,11 +174,9 @@ function useNativeGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
     setIsGoogleLoading(true);
 
     try {
-      const { GoogleSignin, statusCodes } = require(
-        '@react-native-google-signin/google-signin'
-      );
+      const { GoogleSignin, statusCodes } = require('@react-native-google-signin/google-signin');
 
-      await GoogleSignin.hasPlayServices();
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
       const result = await GoogleSignin.signIn();
       const idToken = result?.data?.idToken ?? result?.idToken;
@@ -134,11 +187,20 @@ function useNativeGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
 
       await onSuccess(idToken);
     } catch (error: any) {
-      const { statusCodes } = require(
-        '@react-native-google-signin/google-signin'
-      );
+      const { statusCodes } = require('@react-native-google-signin/google-signin');
 
-      if (error?.code !== statusCodes?.SIGN_IN_CANCELLED) {
+      if (error?.code === statusCodes.SIGN_IN_CANCELLED) {
+        // User cancelled the sign-in flow intentionally
+      } else if (error?.code === statusCodes.IN_PROGRESS) {
+        // Operation (e.g. sign in) is in progress already
+      } else if (error?.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        onError?.('Play services not available or outdated.');
+      } else if (error?.code === statusCodes.DEVELOPER_ERROR) {
+        onError?.(
+          'Google Sign-In is misconfigured for this build (DEVELOPER_ERROR). ' +
+          'The SHA-1 fingerprint of this build does not match the one registered in Google Cloud Console for this package name.'
+        );
+      } else {
         onError?.(error?.message || 'Google sign-in failed.');
       }
     } finally {
@@ -146,10 +208,7 @@ function useNativeGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
     }
   }, [configurationError, onError, onSuccess]);
 
-  return {
-    promptGoogleSignIn,
-    isGoogleLoading,
-  };
+  return { promptGoogleSignIn, isGoogleLoading };
 }
 
 function useWebGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
@@ -157,14 +216,8 @@ function useWebGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
   const AuthSession = require('expo-auth-session');
   const Google = require('expo-auth-session/providers/google');
 
-  // If this page IS the callback page (popup landed back here), this closes
-  // the popup and posts the result back to the window that opened it.
   WebBrowser.maybeCompleteAuthSession();
 
-  // FIX: point Google at a dedicated callback route instead of the bare
-  // origin. Redirecting to "/" sends the popup to the app's root/splash
-  // screen, which never calls maybeCompleteAuthSession() and never closes —
-  // that's why the popup got stuck on "OPTIMIZING WORKSPACE...".
   const redirectUri = useMemo(() => {
     if (typeof window !== 'undefined' && window.location?.origin) {
       return `${window.location.origin}${WEB_AUTH_CALLBACK_PATH}`;
@@ -176,13 +229,10 @@ function useWebGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
     });
   }, []);
 
-  const webClientId =
-    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
   const [isExchanging, setIsExchanging] = useState(false);
-  const [nonce] = useState(() =>
-    `${Date.now()}-${Math.random().toString(36).slice(2)}`
-  );
+  const [nonce] = useState(() => `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId,
@@ -201,23 +251,17 @@ function useWebGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
       if (!response) return;
 
       if (response.type === 'error') {
-        onError?.(
-          response.error?.message ||
-          'Google authentication returned an error.'
-        );
+        onError?.(response.error?.message || 'Google authentication returned an error.');
         return;
       }
 
       if (response.type === 'dismiss' || response.type === 'cancel') {
-        // User closed the popup manually — not an error, just stop loading.
         return;
       }
 
       if (response.type !== 'success') return;
 
-      const idToken =
-        response.authentication?.idToken ||
-        response.params?.id_token;
+      const idToken = response.authentication?.idToken || response.params?.id_token;
 
       if (!idToken) {
         onError?.('Google did not return an ID token.');
@@ -240,9 +284,7 @@ function useWebGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
 
   const promptGoogleSignIn = useCallback(async () => {
     if (!webClientId) {
-      onError?.(
-        'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is missing.'
-      );
+      onError?.('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is missing.');
       return;
     }
 
@@ -253,10 +295,7 @@ function useWebGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
 
     await promptAsync({
       useProxy: false,
-      windowFeatures: {
-        width: 500,
-        height: 650,
-      },
+      windowFeatures: { width: 500, height: 650 },
     });
   }, [onError, promptAsync, request, webClientId]);
 
@@ -267,7 +306,5 @@ function useWebGoogleAuth({ onSuccess, onError }: GoogleAuthOptions) {
 }
 
 export function useGoogleAuth(options: GoogleAuthOptions) {
-  return Platform.OS === 'web'
-    ? useWebGoogleAuth(options)
-    : useNativeGoogleAuth(options);
+  return Platform.OS === 'web' ? useWebGoogleAuth(options) : useNativeGoogleAuth(options);
 }

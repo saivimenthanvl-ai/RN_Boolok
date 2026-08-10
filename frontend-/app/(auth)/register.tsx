@@ -19,7 +19,6 @@ import {
   StyleSheet,
   useWindowDimensions,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { router, Link } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,18 +26,12 @@ import { MaterialIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import BoolokLogo from '../../components/BoolokLogo';
 import GoogleIcon from '../../components/GoogleIcon';
+import { FEATURES, FeatureIconBox } from '../../components/FeatureIcon';
 import { colors, spacing, radius, typography } from '../../constants/theme';
 
 const MD_BREAKPOINT = 768;
 
 type SubmitState = 'idle' | 'loading' | 'success';
-
-const FEATURES = [
-  { icon: 'search', title: 'Smart Search', desc: 'Find exactly what you need with semantic property discovery.' },
-  { icon: 'auto-awesome', title: 'AI Advisor', desc: 'Get professional guidance on valuations and legalities.' },
-  { icon: 'trending-up', title: 'Market Insights', desc: 'Real-time data visualization of global market trends.' },
-  { icon: 'public', title: 'Global Reach', desc: 'Connect with opportunities across borders instantly.' },
-] as const;
 
 export default function RegisterScreen() {
   const { width } = useWindowDimensions();
@@ -70,18 +63,19 @@ export default function RegisterScreen() {
       try {
         console.log('Sending Google ID token from register to:', `${API_BASE_URL}/api/auth/google`);
         const response = await axios.post(`${API_BASE_URL}/api/auth/google`, { idToken });
-        const { token, user } = response.data ?? {};
-
-        if (!token || !user) {
-          throw new Error('The backend response is missing token or user data.');
+        if (response.data.token) {
+          await signIn(response.data.token, response.data.user);
+          router.push('/(auth)/personalize');
         }
-
-        await signIn(token, user);
-        setSubmitState('success');
-        router.replace('/(app)/dashboard');
       } catch (error: any) {
         console.error('Registration Google Error:', error.response?.data || error.message);
-        showMessage('Google Sign-Up Failed', error.response?.data?.message || 'Google sign-up failed. Please try again.');
+        showMessage(
+          'Google Sign-Up Failed',
+          error.response?.data?.message ||
+          (error.message === 'Network Error'
+            ? `Couldn't reach the server at ${API_BASE_URL}. Check your internet connection or try again shortly.`
+            : 'Google sign-up failed. Please try again.')
+        );
       } finally {
         setIsGoogleSigningIn(false);
       }
@@ -108,53 +102,39 @@ export default function RegisterScreen() {
     setSubmitState('loading');
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/auth/register`,
-        {
-          fullName: fullName.trim(),
-          email: email.trim().toLowerCase(),
-          password,
-        },
-        {
-          headers: { 'Content-Type': 'application/json' },
-          timeout: 30000,
-        }
-      );
+      const response = await axios.post(`${API_BASE_URL}/api/auth/register`, {
+        fullName,
+        email,
+        password,
+      });
 
-      const { token, user } = response.data ?? {};
-
-      if (!token || !user) {
-        throw new Error('The backend response is missing token or user data.');
+      if (response.data.token) {
+        await signIn(response.data.token, response.data.user);
+        setSubmitState('success');
+        setTimeout(() => {
+          router.push('/(auth)/personalize');
+        }, 1000);
       }
-
-      await signIn(token, user);
-      setSubmitState('success');
-      router.replace('/(app)/dashboard');
     } catch (error: any) {
       console.error('Registration failed:', error.response?.data?.message || error.message);
       setSubmitState('idle');
-      showMessage('Registration Failed', error.response?.data?.message || 'Registration failed. Please check network connection and try again.');
+      showMessage(
+        'Registration Failed',
+        error.response?.data?.message ||
+        (error.message === 'Network Error'
+          ? `Couldn't reach the server at ${API_BASE_URL}. Check your internet connection or try again shortly.`
+          : 'Registration failed. Please check network connection and try again.')
+      );
     }
   };
 
   const buttonLabel =
-    submitState === 'loading'
-      ? 'Creating Account...'
-      : submitState === 'success'
-        ? 'Account Created!'
-        : 'Create Account';
+    submitState === 'loading' ? 'Creating Account...' : submitState === 'success' ? 'Account Created!' : 'Create Account';
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#F4F4F6' }}>
-      <ScrollView
-        style={styles.rootScroll}
-        contentContainerStyle={styles.rootScrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <KeyboardAvoidingView
-          style={styles.keyboardAvoid}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+      <ScrollView style={styles.rootScroll} contentContainerStyle={styles.rootScrollContent} keyboardShouldPersistTaps="handled">
+        <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={[styles.mainLayout, isWide && styles.mainLayoutRow]}>
             {/* ---------- LEFT BRAND PANEL (web/wide screens only) ---------- */}
             {isWide && (
@@ -162,10 +142,7 @@ export default function RegisterScreen() {
                 {/* decorative glow, mirrors the absolute blurred circle in the HTML */}
                 <View style={styles.glow} />
 
-                <Pressable
-                  style={styles.brandLogoRow}
-                  onPress={() => router.push('/brand-vision')}
-                >
+                <Pressable style={styles.brandLogoRow} onPress={() => router.push('/(auth)/brand-vision')}>
                   <BoolokLogo size={48} color="#fff" />
                   <Text style={[typography.headlineMd, { color: '#fff', marginLeft: spacing.base }]}>
                     BOOLOK <Text style={{ color: colors.primary }}>GPT</Text>
@@ -174,7 +151,8 @@ export default function RegisterScreen() {
 
                 <Text style={[typography.headlineXl, styles.brandHeadline]}>
                   AI AGENT FOR{'\n'}
-                  <Text style={{ color: colors.primary }}>REAL ESTATE</Text>{'\n'}
+                  <Text style={{ color: colors.primary }}>REAL ESTATE</Text>
+                  {'\n'}
                   SERVICES
                 </Text>
                 <Text style={[typography.bodyLg, styles.brandSubtext]}>
@@ -184,22 +162,16 @@ export default function RegisterScreen() {
                 <View style={{ marginTop: spacing.xl, gap: spacing.md }}>
                   {FEATURES.map((f) => (
                     <View key={f.title} style={styles.featureCard}>
-                      <View style={styles.featureIconWrap}>
-                        <MaterialIcons name={f.icon as any} size={22} color={colors.primary} />
-                      </View>
+                      <FeatureIconBox name={f.icon} boxSize={44} iconSize={22} />
                       <View style={{ flex: 1 }}>
-                        <Text style={[typography.headlineSm, { color: '#fff', marginBottom: 2 }]}>
-                          {f.title}
-                        </Text>
-                        <Text style={[typography.bodySm, styles.brandSubtext]}>{f.desc}</Text>
+                        <Text style={[typography.headlineSm, { color: '#fff', marginBottom: 2 }]}>{f.title}</Text>
+                        <Text style={[typography.bodySm, styles.brandSubtext]}>{f.description}</Text>
                       </View>
                     </View>
                   ))}
                 </View>
 
-                <Text style={[typography.labelMd, styles.copyright]}>
-                  © 2026 BOOLOK GPT. INTELLIGENT PRECISION.
-                </Text>
+                <Text style={[typography.labelMd, styles.copyright]}>© 2026 BOOLOK GPT. INTELLIGENT PRECISION.</Text>
               </Animated.View>
             )}
 
@@ -211,10 +183,7 @@ export default function RegisterScreen() {
               <View style={[styles.formContent, isWide && styles.formContentWide]}>
                 {/* Small logo header — only on mobile, matches md:hidden block */}
                 {!isWide && (
-                  <Pressable
-                    style={styles.mobileLogoBlock}
-                    onPress={() => router.push('/brand-vision')}
-                  >
+                  <Pressable style={styles.mobileLogoBlock} onPress={() => router.push('/(auth)/brand-vision')}>
                     <BoolokLogo size={56} />
                     <Text style={[typography.headlineMd, { color: colors.onBackground, marginTop: spacing.base }]}>
                       BOOLOK GPT
@@ -265,11 +234,7 @@ export default function RegisterScreen() {
                       secureTextEntry={!showPassword}
                     />
                     <Pressable style={styles.eyeButton} onPress={() => setShowPassword((v) => !v)}>
-                      <MaterialIcons
-                        name={showPassword ? 'visibility-off' : 'visibility'}
-                        size={22}
-                        color={colors.outline}
-                      />
+                      <MaterialIcons name={showPassword ? 'visibility-off' : 'visibility'} size={22} color={colors.outline} />
                     </Pressable>
                   </View>
                 </Field>
@@ -279,8 +244,7 @@ export default function RegisterScreen() {
                     {agreed && <MaterialIcons name="check" size={14} color={colors.onPrimary} />}
                   </View>
                   <Text style={[typography.bodySm, { color: colors.onSurfaceVariant, flex: 1 }]}>
-                    I agree to the <Text style={styles.link}>Terms of Service</Text> and{' '}
-                    <Text style={styles.link}>Privacy Policy</Text>.
+                    I agree to the <Text style={styles.link}>Terms of Service</Text> and <Text style={styles.link}>Privacy Policy</Text>.
                   </Text>
                 </Pressable>
 
@@ -314,9 +278,7 @@ export default function RegisterScreen() {
                 </Pressable>
 
                 <View style={styles.footer}>
-                  <Text style={[typography.bodyMd, { color: colors.onSurfaceVariant }]}>
-                    Already have an account?{' '}
-                  </Text>
+                  <Text style={[typography.bodyMd, { color: colors.onSurfaceVariant }]}>Already have an account? </Text>
                   <Link href="/(auth)/login" style={[typography.bodyMd, styles.link, { fontFamily: 'Poppins_700Bold' }]}>
                     Sign In
                   </Link>
@@ -333,9 +295,7 @@ export default function RegisterScreen() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <View style={{ marginBottom: spacing.md }}>
-      <Text style={[typography.labelMd, { color: colors.onSurface, marginBottom: spacing.xs }]}>
-        {label}
-      </Text>
+      <Text style={[typography.labelMd, { color: colors.onSurface, marginBottom: spacing.xs }]}>{label}</Text>
       {children}
     </View>
   );
@@ -348,11 +308,10 @@ const styles = StyleSheet.create({
   mainLayout: { flex: 1 },
   mainLayoutRow: { flexDirection: 'row' },
 
-  // ---- Brand panel (web only) ----
   brandPanel: {
     width: '38%',
     maxWidth: 480,
-    backgroundColor: colors.onBackground, // #0A0F23
+    backgroundColor: colors.onBackground,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xl,
     overflow: 'hidden',
@@ -368,18 +327,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     opacity: 0.1,
   },
-  brandLogoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  brandHeadline: {
-    color: '#fff',
-    marginBottom: spacing.md,
-  },
-  brandSubtext: {
-    color: 'rgba(255,255,255,0.6)',
-  },
+  brandLogoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xl },
+  brandHeadline: { color: '#fff', marginBottom: spacing.md },
+  brandSubtext: { color: 'rgba(255,255,255,0.6)' },
   featureCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -390,38 +340,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     padding: spacing.md,
   },
-  featureIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.xl,
-    backgroundColor: 'rgba(218,165,32,0.1)', // primary @ 10%
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  copyright: {
-    color: 'rgba(255,255,255,0.4)',
-    marginTop: spacing.xl,
-  },
+  copyright: { color: 'rgba(255,255,255,0.4)', marginTop: spacing.xl },
 
-  // ---- Form panel (always) ----
-  formPanel: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    paddingVertical: spacing.xl,
-  },
-  formPanelWide: {
-    paddingHorizontal: spacing.xl,
-  },
-  formContent: {
-    width: '100%',
-    paddingHorizontal: spacing.gutter,
-  },
-  formContentWide: {
-    maxWidth: 480,
-    alignSelf: 'center',
-    paddingHorizontal: 0,
-  },
+  formPanel: { flex: 1, backgroundColor: colors.background, justifyContent: 'center', paddingVertical: spacing.xl },
+  formPanelWide: { paddingHorizontal: spacing.xl },
+  formContent: { width: '100%', paddingHorizontal: spacing.gutter },
+  formContentWide: { maxWidth: 480, alignSelf: 'center', paddingHorizontal: 0 },
   mobileLogoBlock: { width: '100%', alignItems: 'center', marginBottom: spacing.xl },
 
   input: {
