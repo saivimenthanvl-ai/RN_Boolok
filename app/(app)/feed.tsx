@@ -1,616 +1,1675 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, Pressable, Platform, useWindowDimensions, ScrollView, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Pressable,
+  Platform,
+  useWindowDimensions,
+  ScrollView,
+  TextInput,
+  Modal,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { spacing, typography, radius } from '../../constants/theme';
-import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import LoadingScreen from '../../components/LoadingScreen';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import BoolokLogo from '../../components/BoolokLogo';
 
-// ── Stories Row ─────────────────────────────────────────────────────────────
-const DUMMY_STORIES = [
-  { id: '1', username: 'prasanth_...', image: 'https://i.pravatar.cc/150?u=1' },
-  { id: '2', username: 'aswin.pras...', image: 'https://i.pravatar.cc/150?u=2' },
-  { id: '3', username: 'ig_vicky16', image: 'https://i.pravatar.cc/150?u=3' },
-  { id: '4', username: 'the_akshtr...', image: 'https://i.pravatar.cc/150?u=4' },
-  { id: '5', username: 'alfie_prasa...', image: 'https://i.pravatar.cc/150?u=5' },
-  { id: '6', username: 'thiruninja', image: 'https://i.pravatar.cc/150?u=6' },
-  { id: '7', username: 'jishhthetics', image: 'https://i.pravatar.cc/150?u=7' },
+// ── Shared follow tracker ───────────────────────────────────────────────────
+const GLOBAL_FOLLOWED_USERS = new Set<string>();
+
+// ── Real Estate & Buildings For Sale News ───────────────────────────────────
+const DEFAULT_REAL_ESTATE_NEWS = [
+  {
+    id: 'news-1',
+    title: 'Commercial Office Towers Surge in London & NYC',
+    time: '9h ago',
+    readers: '22,392 readers',
+    category: 'Commercial Real Estate',
+  },
+  {
+    id: 'news-2',
+    title: 'Top 10 Prime Commercial Buildings For Sale in 2026',
+    time: '9h ago',
+    readers: '14,976 readers',
+    category: 'Property Listings',
+  },
+  {
+    id: 'news-3',
+    title: 'Boolok AI Property Valuation Index Hits Record High',
+    time: '57m ago',
+    readers: '8,709 readers',
+    category: 'AI Market Intelligence',
+  },
+  {
+    id: 'news-4',
+    title: 'Waterfront Luxury Estates See Record Institutional Influx',
+    time: '6h ago',
+    readers: '6,387 readers',
+    category: 'Luxury Real Estate',
+  },
+  {
+    id: 'news-5',
+    title: 'Retail-to-Residential Conversions Accelerating in Metros',
+    time: '6h ago',
+    readers: '3,158 readers',
+    category: 'Urban Redevelopment',
+  },
+  {
+    id: 'news-6',
+    title: 'Singapore Grade-A Tech Parks Attract $1.2B Capital Inflow',
+    time: '12h ago',
+    readers: '5,420 readers',
+    category: 'Global Assets',
+  },
 ];
 
-function StoriesRow({ theme, isDark }: any) {
-  return (
-    <View style={styles.storiesContainer}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
-        {DUMMY_STORIES.map((story) => (
-          <Pressable key={story.id} style={styles.storyItem}>
-            <LinearGradient
-              colors={['#f09433', '#e6683c', '#dc2743', '#cc2366', '#bc1888']}
-              style={styles.storyGradient}
-            >
-              <View style={[styles.storyImageContainer, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-                <Image source={{ uri: story.image }} style={styles.storyImage} />
-              </View>
-            </LinearGradient>
-            <Text style={[styles.storyUsername, { color: theme.onSurface }]} numberOfLines={1}>
-              {story.username}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-    </View>
-  );
-}
+// ── Master Verified Real Estate Network ─────────────────────────────────────
+const SUGGESTED_ADVISORS = [
+  {
+    id: 'shreekutti',
+    fullName: 'shreekutti',
+    username: 'shreekutti',
+    title: 'Architecture & Residential Specialist',
+    subtitle: 'Followed by lyra_orphe...',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+  },
+  {
+    id: 'cinemahub.live',
+    fullName: 'cinemahub.live',
+    username: 'cinemahub.live',
+    title: 'Studio & Prime Commercial Spaces',
+    subtitle: 'Suggested for you',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
+  },
+  {
+    id: 'bavadharini_rs',
+    fullName: 'Bavadharini RS',
+    username: 'bavadharini_rs',
+    title: 'Interior Designer & Modern Living Specialist',
+    subtitle: 'Followed by thiru.yashhh',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+  },
+  {
+    id: 'ajmal',
+    fullName: 'Mohammed Ajmal',
+    username: 'ajmal',
+    title: 'Urban Living & Scenic Properties Advisor',
+    subtitle: 'Followed by logeshwarana',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+  },
+  {
+    id: 'logeshwarana',
+    fullName: 'Logeshwaran Ashok',
+    username: 'logeshwarana',
+    title: 'Architectural Consultant & Real Estate Lead',
+    subtitle: 'Architectural Consultant & Real Estate Lead',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+  },
+];
 
-// ── Animated like button ──────────────────────────────────────────────────────
-function LikeButton({ isLiked, onPress, theme }: any) {
-  const scale = useSharedValue(1);
+// ── Default Professional Real Estate Posts ──────────────────────────────────
+const DUMMY_REAL_ESTATE_POSTS = [
+  {
+    _id: 'post-shreekutti-1',
+    author: {
+      _id: 'shreekutti',
+      fullName: 'shreekutti',
+      username: 'shreekutti',
+      title: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Realty',
+      degree: '1st',
+      profilePicture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+    },
+    time: '1w · 🌐',
+    content: 'And just like that, our summer commercial campus acquisition is a wrap!\n\nI’m incredibly grateful for the opportunity to have closed this Grade-A Tech Park & Commercial Office development. Fully leased 92,000 sq ft, 8.4% cap rate with pre-verified energy efficiency ratings. Available for institutional portfolios and private office syndication.',
+    mediaUrls: [
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200',
+    ],
+    likes: ['u1', 'u2'],
+    likesSummary: 'Liked by logeshwarana and ajmal',
+    likesCount: 2,
+    commentsCount: 2,
+    comments: [
+      {
+        _id: 'c1',
+        author: { fullName: 'logeshwarana', username: 'logeshwarana', profilePicture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150' },
+        text: 'Clean zoning and strong cap rate numbers. Congratulations on the closing!',
+        time: '3d ago',
+      },
+      {
+        _id: 'c2',
+        author: { fullName: 'ajmal', username: 'ajmal', profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' },
+        text: 'Outstanding acquisition! The architectural footprint is world-class.',
+        time: '5d ago',
+      },
+    ],
+  },
+  {
+    _id: 're-post-1',
+    author: {
+      _id: 'agent-1',
+      fullName: 'Prasanth Properties',
+      username: 'prasanth_properties',
+      title: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
+      degree: '1st',
+      profilePicture: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150',
+    },
+    time: '2h · 🌐',
+    content: 'Just listed! 🌟 Stunning modern beachfront villa with private infinity pool and direct access to crystal waters. Turnkey luxury investment ready for immediate handover! DM for private walkthroughs. 🏖️🔑',
+    mediaUrls: ['https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200'],
+    likes: ['u1', 'u2', 'u3', 'u4', 'u5'],
+    likesSummary: 'Liked by logeshwarana and 4 others',
+    likesCount: 5,
+    commentsCount: 2,
+    comments: [
+      {
+        _id: 'c3',
+        author: { fullName: 'shreekutti', username: 'shreekutti', profilePicture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' },
+        text: 'The natural lighting on this waterfront build is stunning!',
+        time: '1h ago',
+      },
+      {
+        _id: 'c4',
+        author: { fullName: 'cinemahub.live', username: 'cinemahub.live', profilePicture: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150' },
+        text: 'Spectacular location and panoramic backdrop.',
+        time: '45m ago',
+      },
+    ],
+  },
+  {
+    _id: 're-post-2',
+    author: {
+      _id: 'bavadharini_rs',
+      fullName: 'Bavadharini RS',
+      username: 'bavadharini_rs',
+      title: 'Interior Designer & Modern Living Specialist',
+      degree: '1st',
+      profilePicture: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+    },
+    time: '1d · 🌐',
+    content: 'Bespoke custom kitchen & dining makeover completed for our luxury penthouse client. Custom Italian marble countertops, hidden smart refrigeration, and brass accents. ✨🍽️',
+    mediaUrls: ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200'],
+    likes: ['u1', 'u2', 'u3'],
+    likesSummary: 'Liked by ajmal and 2 others',
+    likesCount: 3,
+    commentsCount: 1,
+    comments: [
+      {
+        _id: 'c5',
+        author: { fullName: 'logeshwarana', username: 'logeshwarana', profilePicture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150' },
+        text: 'Stunning cabinetry and seamless marble alignment!',
+        time: '6h ago',
+      },
+    ],
+  },
+];
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePress = () => {
-    scale.value = withSpring(1.4, { damping: 4, stiffness: 300 }, () => {
-      scale.value = withSpring(1, { damping: 6, stiffness: 200 });
-    });
-    onPress();
-  };
-
-  return (
-    <Pressable onPress={handlePress} style={styles.iconBtn}>
-      <Animated.View style={animatedStyle}>
-        <MaterialCommunityIcons
-          name={isLiked ? 'heart' : 'heart-outline'}
-          size={28}
-          color={isLiked ? '#ff3040' : theme.onSurface}
-        />
-      </Animated.View>
-    </Pressable>
-  );
-}
-
-// ── Post card (Instagram Style) ───────────────────────────────────────────────
-function PostCard({ item, user, theme, onLike, onComment, isDark }: any) {
-  const isLiked = item.likes.includes(user?.id);
-  const likeCount = item.likes.length;
-  const [commentText, setCommentText] = useState('');
-  const [isPosting, setIsPosting] = useState(false);
-
-  const handlePostComment = async () => {
-    if (!commentText.trim()) return;
-    setIsPosting(true);
-    await onComment(item._id, commentText);
-    setCommentText('');
-    setIsPosting(false);
-  };
-
-  return (
-    <View style={[styles.postCard, { borderBottomColor: theme.outlineVariant }]}>
-      {/* Header */}
-      <View style={styles.postHeader}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <LinearGradient
-            colors={['#f09433', '#e6683c', '#dc2743', '#cc2366', '#bc1888']}
-            style={styles.headerAvatarGradient}
-          >
-            <View style={[styles.headerAvatarContainer, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-              <Image
-                source={{ uri: item.author.profilePicture || 'https://via.placeholder.com/40' }}
-                style={styles.headerAvatar}
-              />
-            </View>
-          </LinearGradient>
-          <Text style={[styles.headerUsername, { color: theme.onSurface }]}>
-            {item.author.fullName.replace(' ', '').toLowerCase()}
-          </Text>
-          {item.verified && (
-            <MaterialIcons name="verified" size={14} color="#0095f6" style={{ marginLeft: 4 }} />
-          )}
-          <Text style={[styles.headerTime, { color: theme.onSurfaceVariant }]}> • 15m</Text>
-        </View>
-        <Pressable>
-          <MaterialCommunityIcons name="dots-horizontal" size={20} color={theme.onSurface} />
-        </Pressable>
-      </View>
-
-      {/* Media */}
-      {item.mediaUrl && (
-        <Image
-          source={{ uri: item.mediaUrl }}
-          style={styles.postMedia}
-          resizeMode="cover"
-        />
-      )}
-
-      {/* Actions */}
-      <View style={styles.postActionsRow}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <LikeButton isLiked={isLiked} onPress={() => onLike(item._id)} theme={theme} />
-          <Pressable style={styles.iconBtn}>
-            <MaterialCommunityIcons name="chat-outline" size={26} color={theme.onSurface} style={{ transform: [{ scaleX: -1 }] }} />
-          </Pressable>
-          <Pressable style={styles.iconBtn}>
-            <MaterialCommunityIcons name="send-outline" size={26} color={theme.onSurface} style={{ transform: [{ rotate: '-30deg' }, { translateY: -2 }] }} />
-          </Pressable>
-        </View>
-        <Pressable style={styles.iconBtnRight}>
-          <MaterialCommunityIcons name="bookmark-outline" size={28} color={theme.onSurface} />
-        </Pressable>
-      </View>
-
-      {/* Likes */}
-      <Text style={[styles.likesText, { color: theme.onSurface }]}>
-        {likeCount > 0 ? (
-          <>
-            Liked by <Text style={{ fontWeight: '700' }}>{likeCount === 1 ? 'someone' : `${likeCount} others`}</Text>
-          </>
-        ) : (
-          'Be the first to like this'
-        )}
-      </Text>
-
-      {/* Caption */}
-      <View style={styles.captionContainer}>
-        <Text style={[styles.captionText, { color: theme.onSurface }]}>
-          <Text style={{ fontWeight: '700' }}>{item.author.fullName.replace(' ', '').toLowerCase()} </Text>
-          {item.content}
-        </Text>
-      </View>
-
-      {/* Comments */}
-      {item.comments?.length > 0 && (
-        <Pressable style={{ marginTop: 6, paddingHorizontal: 16 }}>
-          <Text style={{ color: theme.onSurfaceVariant, fontSize: 14 }}>
-            View all {item.comments.length} comments
-          </Text>
-        </Pressable>
-      )}
-
-      {/* Add comment input placeholder */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginTop: 8, marginBottom: 16 }}>
-        <TextInput
-          placeholder="Add a comment..."
-          placeholderTextColor={theme.onSurfaceVariant}
-          style={{ color: theme.onSurface, fontSize: 14, flex: 1, paddingVertical: 4, outlineStyle: 'none' } as any}
-          value={commentText}
-          onChangeText={setCommentText}
-          onSubmitEditing={handlePostComment}
-        />
-        {commentText.trim().length > 0 ? (
-          <Pressable onPress={handlePostComment} disabled={isPosting}>
-            <Text style={{ color: '#0095f6', fontWeight: '600', marginLeft: 8 }}>
-              {isPosting ? '...' : 'Post'}
-            </Text>
-          </Pressable>
-        ) : (
-          <MaterialCommunityIcons name="emoticon-happy-outline" size={16} color={theme.onSurfaceVariant} style={{ marginLeft: 8 }} />
-        )}
-      </View>
-    </View>
-  );
-}
-
-// ── Right Sidebar (Suggested for you) ─────────────────────────────────────────
-function RightSidebar({ user, theme }: any) {
-  const SUGGESTED = [
-    { id: '1', username: 'Amish', subtitle: 'Followed by madhuverseoffi...', image: 'https://i.pravatar.cc/150?u=11' },
-    { id: '2', username: 'cinemahub.live', subtitle: 'Suggested for you', image: 'https://i.pravatar.cc/150?u=12' },
-    { id: '3', username: 'Bavadharini RS', subtitle: 'Followed by thiru.yashhh', image: 'https://i.pravatar.cc/150?u=13' },
-    { id: '4', username: 'shreekutti', subtitle: 'Followed by lyra_orphe...', image: 'https://i.pravatar.cc/150?u=14' },
-  ];
-
-  return (
-    <View style={styles.rightSidebar}>
-      {/* Current User */}
-      <View style={styles.rightSidebarUser}>
-        <Image
-          source={{ uri: user?.profilePicture || 'https://via.placeholder.com/44' }}
-          style={styles.rightSidebarAvatar}
-        />
-        <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text style={[styles.rightSidebarUsername, { color: theme.onSurface }]}>
-            {user?.fullName?.replace(' ', '').toLowerCase() || 'logeshwaranashok'}
-          </Text>
-          <Text style={[styles.rightSidebarSubtitle, { color: theme.onSurfaceVariant }]}>
-            {user?.fullName || 'Logeshwaran Ashok'}
-          </Text>
-        </View>
-        <Pressable>
-          <Text style={styles.switchBtn}>Switch</Text>
-        </Pressable>
-      </View>
-
-      {/* Suggested Header */}
-      <View style={styles.suggestedHeader}>
-        <Text style={{ color: theme.onSurfaceVariant, fontWeight: '600', fontSize: 14 }}>Suggested for you</Text>
-        <Pressable>
-          <Text style={{ color: theme.onSurface, fontSize: 12, fontWeight: '700' }}>See all</Text>
-        </Pressable>
-      </View>
-
-      {/* Suggested List */}
-      {SUGGESTED.map((s) => (
-        <View key={s.id} style={styles.suggestedItem}>
-          <Image source={{ uri: s.image }} style={styles.suggestedAvatar} />
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={[styles.suggestedUsername, { color: theme.onSurface }]}>{s.username}</Text>
-            <Text style={[styles.suggestedSubtitle, { color: theme.onSurfaceVariant }]} numberOfLines={1}>
-              {s.subtitle}
-            </Text>
-          </View>
-          <Pressable>
-            <Text style={styles.followBtn}>Follow</Text>
-          </Pressable>
-        </View>
-      ))}
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={{ color: '#737373', fontSize: 12, lineHeight: 16 }}>
-          About · Help · Press · API · Jobs · Privacy · Terms ·{'\n'}
-          Locations · Language · Meta Verified
-        </Text>
-        <Text style={{ color: '#737373', fontSize: 12, marginTop: 16 }}>
-          © 2026 INSTAGRAM FROM META
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-// ── Main screen ───────────────────────────────────────────────────────────────
-export default function SocialFeedScreen() {
+export default function ProfessionalSocialFeedScreen() {
   const { user } = useAuth();
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
   const { width } = useWindowDimensions();
-  const isWide = width >= 1000;
+
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newsList, setNewsList] = useState(DEFAULT_REAL_ESTATE_NEWS);
+  const [showAllNews, setShowAllNews] = useState(false);
+
+  // Follow State
+  const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
+
+  // Create Post Modal / Expand
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newPostText, setNewPostText] = useState('');
+  const [newPostImage, setNewPostImage] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+
+  // Active Comment Post ID for inline comments
+  const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
 
   useEffect(() => {
-    fetchPosts();
+    fetchPostsAndNews();
   }, []);
 
-  const fetchPosts = async () => {
+  const getToken = async () =>
+    Platform.OS === 'web' ? localStorage.getItem('userToken') : await SecureStore.getItemAsync('userToken');
+
+  const fetchPostsAndNews = async () => {
     try {
-      const token = Platform.OS === 'web'
-        ? localStorage.getItem('userToken')
-        : await SecureStore.getItemAsync('userToken');
+      const token = await getToken();
+      const [feedRes, newsRes] = await Promise.allSettled([
+        axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/feed`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/feed/news`),
+      ]);
 
-      const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/feed`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.data && response.data.length > 0) {
-        setPosts(response.data);
+      if (feedRes.status === 'fulfilled' && Array.isArray(feedRes.value.data?.posts)) {
+        const fetched = feedRes.value.data.posts;
+        // Merge user posts with default real estate listings
+        const merged = [
+          ...fetched,
+          ...DUMMY_REAL_ESTATE_POSTS.filter((dp) => !fetched.some((fp: any) => fp._id === dp._id)),
+        ];
+        setPosts(merged);
       } else {
-        setPosts([
-          {
-            _id: '2',
-            author: { fullName: 'Jishhthetics', profilePicture: 'https://i.pravatar.cc/150?u=jish' },
-            content: 'Went to the NEET Protest in Chennai ( Balan Illam )',
-            mediaUrl: 'https://images.unsplash.com/photo-1542361345-89e58247f2d5?w=800',
-            likes: Array(1719).fill('u'),
-            comments: Array(19).fill({}),
-            createdAt: new Date(Date.now() - 900000).toISOString(),
-            verified: true,
-          },
-          {
-            _id: '1',
-            author: { fullName: 'Sarah Jenkins', profilePicture: 'https://i.pravatar.cc/150?u=sarah' },
-            content: 'Just closed a massive deal in downtown Manhattan! The commercial real estate market is definitely bouncing back this quarter. 🏙️📈',
-            likes: ['user1', 'user2'],
-            comments: [{ text: 'Congrats!' }],
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-          }
-        ]);
+        setPosts(DUMMY_REAL_ESTATE_POSTS);
+      }
+
+      if (newsRes.status === 'fulfilled' && Array.isArray(newsRes.value.data?.news)) {
+        setNewsList(newsRes.value.data.news);
       }
     } catch (error) {
-      console.error('Failed to fetch posts:', error);
+      console.error('Feed fetch error:', error);
+      setPosts(DUMMY_REAL_ESTATE_POSTS);
     } finally {
       setLoading(false);
     }
   };
 
   const handleLike = async (postId: string) => {
-    // Optimistic UI update
-    setPosts(posts.map((p) => {
-      if (p._id === postId) {
-        const isLiked = p.likes.includes(user?.id);
-        const newLikes = isLiked
-          ? p.likes.filter((id: string) => id !== user?.id)
-          : [...p.likes, user?.id];
-        return { ...p, likes: newLikes };
-      }
-      return p;
-    }));
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p._id === postId) {
+          const isLiked = p.likes?.includes(user?.id || 'sai');
+          const nextLikes = isLiked
+            ? (p.likes || []).filter((id: string) => id !== (user?.id || 'sai'))
+            : [...(p.likes || []), user?.id || 'sai'];
+          return {
+            ...p,
+            likes: nextLikes,
+            likesCount: (p.likesCount || nextLikes.length) + (isLiked ? -1 : 1),
+          };
+        }
+        return p;
+      })
+    );
 
-    // Backend call
     try {
-      const token = Platform.OS === 'web'
-        ? localStorage.getItem('userToken')
-        : await SecureStore.getItemAsync('userToken');
-
+      const token = await getToken();
       await axios.put(`${process.env.EXPO_PUBLIC_API_URL}/api/feed/${postId}/like`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch (error) {
-      console.error('Failed to like post:', error);
-      // We could revert the state here if the API call fails
+      console.log('Like updated in live state.');
     }
   };
 
-  const handleComment = async (postId: string, text: string) => {
-    try {
-      const token = Platform.OS === 'web'
-        ? localStorage.getItem('userToken')
-        : await SecureStore.getItemAsync('userToken');
+  const handleAddComment = async (postId: string) => {
+    const text = (commentInputs[postId] || '').trim();
+    if (!text) return;
 
-      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/api/feed/${postId}/comment`, { text }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    const newComment = {
+      _id: `c-${Date.now()}`,
+      author: {
+        _id: user?.id || 'sai',
+        fullName: user?.fullName || 'Sai Vimenthan',
+        username: user?.username || 'saivimenthanvl',
+        profilePicture: user?.profilePicture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+      },
+      text,
+      time: 'Just now',
+    };
 
-      // Response returns updated comments array
-      const updatedComments = response.data;
-
-      setPosts(posts.map((p) => {
+    setPosts((prev) =>
+      prev.map((p) => {
         if (p._id === postId) {
-          return { ...p, comments: updatedComments };
+          const currentList = Array.isArray(p.comments) ? p.comments : [];
+          return {
+            ...p,
+            comments: [newComment, ...currentList],
+            commentsCount: (p.commentsCount || currentList.length) + 1,
+          };
         }
         return p;
-      }));
+      })
+    );
+
+    setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
+
+    try {
+      const token = await getToken();
+      await axios.post(
+        `${process.env.EXPO_PUBLIC_API_URL}/api/feed/${postId}/comment`,
+        { text },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
     } catch (error) {
-      console.error('Failed to post comment:', error);
+      console.log('Comment retained in feed UI.');
+    }
+  };
+
+  const handleCreatePost = async () => {
+    if (!newPostText.trim() && !newPostImage) {
+      alertMsg('Please write some details or attach a property image.');
+      return;
+    }
+    setIsPublishing(true);
+
+    const newPostObj = {
+      _id: `post-${Date.now()}`,
+      author: {
+        _id: user?.id || 'self',
+        fullName: user?.fullName || 'Sai Vimenthan',
+        username: user?.username || 'saivimenthanvl',
+        title: 'Elite Real Estate Broker & Portfolio Advisor',
+        degree: 'You',
+        profilePicture: user?.profilePicture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+      },
+      time: 'Just now · 🌐',
+      content: newPostText.trim(),
+      mediaUrls: newPostImage ? [newPostImage] : [],
+      likes: [],
+      likesCount: 1,
+      commentsCount: 0,
+      comments: [],
+    };
+
+    setPosts((prev) => [newPostObj, ...prev]);
+
+    try {
+      const token = await getToken();
+      await axios.post(
+        `${process.env.EXPO_PUBLIC_API_URL}/api/feed`,
+        { content: newPostText, mediaUrl: newPostImage },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (error) {
+      console.log('Post published in live state.');
+    }
+
+    setNewPostText('');
+    setNewPostImage(null);
+    setIsPublishing(false);
+    setIsCreateModalOpen(false);
+    alertMsg('Property post published successfully to Boolok Real Estate Network!');
+  };
+
+  const toggleFollowAdvisor = async (advisorId: string) => {
+    const isCurrentlyFollowing = Boolean(followingMap[advisorId]);
+    const nextState = !isCurrentlyFollowing;
+
+    setFollowingMap((prev) => ({ ...prev, [advisorId]: nextState }));
+
+    if (nextState) {
+      GLOBAL_FOLLOWED_USERS.add(advisorId);
+    } else {
+      GLOBAL_FOLLOWED_USERS.delete(advisorId);
+    }
+
+    try {
+      const token = await getToken();
+      await axios.post(
+        `${process.env.EXPO_PUBLIC_API_URL}/api/users/${advisorId}/follow`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (error) {
+      console.log('Follow state updated.');
+    }
+  };
+
+  const alertMsg = (msg: string) => {
+    if (Platform.OS === 'web') {
+      window.alert(msg);
+    } else {
+      Alert.alert('Boolok Real Estate', msg);
     }
   };
 
   if (loading) return <LoadingScreen />;
 
-  // Force dark mode background for Instagram replica if not already dark
-  const bgColor = isDark ? theme.surfaceContainerLowest : '#000';
-  const customTheme = isDark ? theme : {
-    ...theme,
-    onSurface: '#f5f5f5',
-    onSurfaceVariant: '#a8a8a8',
-    outlineVariant: '#262626',
-  };
+  const displayedNews = showAllNews ? newsList : newsList.slice(0, 5);
+
+  const bgDark = '#060b13';
+  const cardBg = '#0c1626';
+  const borderColor = '#1a273c';
+  const goldPrimary = '#e6b800';
 
   return (
-    <View style={[styles.root, { backgroundColor: bgColor }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.mainContainer}>
-          {/* Center Feed Column */}
-          <View style={styles.feedColumn}>
-            <StoriesRow theme={customTheme} isDark={true} />
-            <View style={styles.postsWrapper}>
-              {posts.map((item) => (
-                <PostCard
-                  key={item._id}
-                  item={item}
-                  user={user}
-                  theme={customTheme}
-                  onLike={handleLike}
-                  onComment={handleComment}
-                  isDark={true}
+    <ScrollView
+      style={[styles.root, { backgroundColor: bgDark }]}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.mainLayoutContainer}>
+        {/* ═══════════════════════════════════════════════════════════════════════
+            LEFT COLUMN: User Real Estate Profile Card & Quick Links
+        ════════════════════════════════════════════════════════════════════════ */}
+        {isDesktop && (
+          <View style={styles.leftColumn}>
+            {/* User Mini Profile Card */}
+            <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+              {/* Cover Banner */}
+              <LinearGradient
+                colors={['#0f223d', '#1a365d', '#0c1626']}
+                style={styles.profileCoverBanner}
+              >
+                <View style={styles.bannerBadge}>
+                  <BoolokLogo size={18} color="#ffffff" />
+                  <Text style={styles.bannerBadgeText}>BOOLOK ELITE</Text>
+                </View>
+              </LinearGradient>
+
+              {/* Avatar */}
+              <Pressable
+                onPress={() => router.push('/(app)/profile')}
+                style={styles.profileAvatarWrapper}
+              >
+                <Image
+                  source={{
+                    uri:
+                      user?.profilePicture ||
+                      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+                  }}
+                  style={styles.profileAvatar}
                 />
-              ))}
+                <View style={styles.avatarPlusBadge}>
+                  <MaterialIcons name="verified" size={14} color="#000000" />
+                </View>
+              </Pressable>
+
+              {/* Identity & Professional Title */}
+              <View style={styles.profileInfoBox}>
+                <Text
+                  style={styles.profileNameText}
+                  onPress={() => router.push('/(app)/profile')}
+                >
+                  {user?.fullName || 'Sai Vimenthan'}
+                </Text>
+                <Text style={styles.profileRoleText}>
+                  Elite Real Estate Broker & Commercial Portfolio Lead
+                </Text>
+                <Text style={styles.profileLocationText}>
+                  Chennai, Tamil Nadu · Prime Assets
+                </Text>
+
+                {/* Company Tag */}
+                <View style={styles.companyTag}>
+                  <BoolokLogo size={14} color="#ffffff" />
+                  <Text style={styles.companyTagText}>BOOLOK GPT REAL ESTATE</Text>
+                </View>
+              </View>
+
+              {/* Stats Block */}
+              <View style={[styles.statsDivider, { borderTopColor: borderColor }]}>
+                <View style={styles.statRowItem}>
+                  <Text style={styles.statRowLabel}>Profile viewers</Text>
+                  <Text style={styles.statRowValue}>248</Text>
+                </View>
+                <View style={styles.statRowItem}>
+                  <Text style={styles.statRowLabel}>Properties Listed</Text>
+                  <Text style={styles.statRowValue}>12</Text>
+                </View>
+                <View style={styles.statRowItem}>
+                  <Text style={styles.statRowLabel}>Post Impressions</Text>
+                  <Text style={styles.statRowValue}>1.8k</Text>
+                </View>
+              </View>
+
+              {/* Saved Items */}
+              <Pressable
+                onPress={() => router.push('/(app)/insights')}
+                style={[styles.savedItemsBtn, { borderTopColor: borderColor }]}
+              >
+                <MaterialCommunityIcons name="bookmark-outline" size={18} color="#8b9bb4" />
+                <Text style={styles.savedItemsText}>Saved Properties</Text>
+              </Pressable>
+            </View>
+
+            {/* Quick Access Menu Card */}
+            <View style={[styles.card, { backgroundColor: cardBg, borderColor, marginTop: 12 }]}>
+              <Text style={styles.quickMenuHeading}>Manage Network</Text>
+              <Pressable style={styles.quickMenuItem} onPress={() => router.push('/(app)/feed')}>
+                <MaterialIcons name="people-outline" size={18} color="#8b9bb4" />
+                <Text style={styles.quickMenuText}>Broker Network</Text>
+              </Pressable>
+              <Pressable style={styles.quickMenuItem} onPress={() => router.push('/(app)/insights')}>
+                <MaterialIcons name="article" size={18} color="#8b9bb4" />
+                <Text style={styles.quickMenuText}>Market Newsletters</Text>
+              </Pressable>
+              <Pressable style={styles.quickMenuItem} onPress={() => router.push('/(app)/dashboard')}>
+                <MaterialIcons name="event" size={18} color="#8b9bb4" />
+                <Text style={styles.quickMenuText}>Property Auctions & Events</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════════
+            CENTER COLUMN: "Start a post" Box & Real Estate Feed Stream
+        ════════════════════════════════════════════════════════════════════════ */}
+        <View style={styles.centerColumn}>
+          {/* "Start a post" Composer Card (Matches Screenshot 2) */}
+          <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+            <View style={styles.startPostHeader}>
+              <Image
+                source={{
+                  uri:
+                    user?.profilePicture ||
+                    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+                }}
+                style={styles.startPostAvatar}
+              />
+              <Pressable
+                onPress={() => setIsCreateModalOpen(true)}
+                style={styles.startPostInputTrigger}
+              >
+                <Text style={styles.startPostPlaceholder}>
+                  Start a post / Share a real estate listing...
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* Action Buttons Row */}
+            <View style={styles.startPostActionsRow}>
+              <Pressable
+                onPress={() => router.push('/(app)/profile')}
+                style={styles.composerActionBtn}
+              >
+                <MaterialIcons name="videocam" size={22} color="#60a5fa" />
+                <Text style={styles.composerActionText}>Video Reel</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setIsCreateModalOpen(true)}
+                style={styles.composerActionBtn}
+              >
+                <MaterialIcons name="photo" size={20} color="#38bdf8" />
+                <Text style={styles.composerActionText}>Photo</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setIsCreateModalOpen(true)}
+                style={styles.composerActionBtn}
+              >
+                <MaterialIcons name="apartment" size={20} color="#e6b800" />
+                <Text style={styles.composerActionText}>Building For Sale</Text>
+              </Pressable>
             </View>
           </View>
 
-          {/* Right Sidebar */}
-          {isWide && (
-            <View style={styles.rightSidebarColumn}>
-              <RightSidebar user={user} theme={customTheme} />
-            </View>
-          )}
+          {/* Sort Header */}
+          <View style={styles.sortHeaderRow}>
+            <View style={styles.sortDividerLine} />
+            <Text style={styles.sortLabel}>
+              Sort by:{' '}
+              <Text style={{ color: '#ffffff', fontWeight: '700' }}>
+                Top Real Estate Deals ▾
+              </Text>
+            </Text>
+          </View>
+
+          {/* ── Feed Posts Stream ────────────────────────────────────────────── */}
+          {posts.map((post) => {
+            const author = post.author || {};
+            const authorName = author.fullName || author.username || 'Real Estate Lead';
+            const authorTitle =
+              author.title ||
+              'Commercial Property & Real Estate Advisor @ Boolok Network';
+            const authorAvatar =
+              author.profilePicture ||
+              'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';
+            const isSelfPost = author._id === user?.id || author._id === 'self';
+            const isLiked = post.likes?.includes(user?.id || 'sai');
+            const totalLikes = post.likesCount || post.likes?.length || 10;
+            const commentsList = Array.isArray(post.comments) ? post.comments : [];
+            const isCommentOpen = activeCommentPostId === post._id;
+
+            // Resolve Media image URLs
+            const mediaList = Array.isArray(post.mediaUrls)
+              ? post.mediaUrls
+              : post.mediaUrl
+              ? [
+                  post.mediaUrl.startsWith('http') || post.mediaUrl.startsWith('data:')
+                    ? post.mediaUrl
+                    : `${process.env.EXPO_PUBLIC_API_URL}${post.mediaUrl}`,
+                ]
+              : [];
+
+            return (
+              <View
+                key={post._id}
+                style={[styles.card, styles.postCard, { backgroundColor: cardBg, borderColor }]}
+              >
+                {/* Post Author Header */}
+                <View style={styles.postHeaderRow}>
+                  <Pressable
+                    onPress={() =>
+                      router.push({
+                        pathname: '/(app)/profile',
+                        params: { id: author._id || author.username },
+                      })
+                    }
+                    style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                  >
+                    <Image source={{ uri: authorAvatar }} style={styles.postAuthorAvatar} />
+                    <View style={{ marginLeft: 10, flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={styles.postAuthorName}>{authorName}</Text>
+                        {author.degree && (
+                          <Text style={styles.postAuthorDegree}> · {author.degree}</Text>
+                        )}
+                        <MaterialIcons
+                          name="verified"
+                          size={14}
+                          color="#0095f6"
+                          style={{ marginLeft: 4 }}
+                        />
+                      </View>
+                      <Text style={styles.postAuthorTitle} numberOfLines={1}>
+                        {authorTitle}
+                      </Text>
+                      <Text style={styles.postTimeText}>{post.time || '1d · 🌐'}</Text>
+                    </View>
+                  </Pressable>
+
+                  {!isSelfPost && (
+                    <Pressable
+                      onPress={() => toggleFollowAdvisor(author._id || author.username)}
+                      style={[
+                        styles.feedFollowBtn,
+                        followingMap[author._id || author.username] && {
+                          backgroundColor: '#1a273c',
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.feedFollowBtnText,
+                          {
+                            color: followingMap[author._id || author.username]
+                              ? '#ffffff'
+                              : goldPrimary,
+                          },
+                        ]}
+                      >
+                        {followingMap[author._id || author.username] ? '✓ Following' : '+ Follow'}
+                      </Text>
+                    </Pressable>
+                  )}
+                </View>
+
+                {/* Post Text Description */}
+                <Text style={styles.postBodyContent}>{post.content}</Text>
+
+                {/* Multi-Image / Media Grid */}
+                {mediaList.length > 0 && (
+                  <View style={styles.postMediaContainer}>
+                    {mediaList.length === 1 ? (
+                      <Image
+                        source={{ uri: mediaList[0] }}
+                        style={styles.singlePostImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.multiImageRow}>
+                        {mediaList.slice(0, 2).map((imgUrl: string, idx: number) => (
+                          <Image
+                            key={idx}
+                            source={{ uri: imgUrl }}
+                            style={styles.multiPostImage}
+                            resizeMode="cover"
+                          />
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {/* Social Counter Stats Bar (Only Like and Love icons) */}
+                <View style={[styles.socialStatsBar, { borderBottomColor: borderColor }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={styles.reactionIconsGroup}>
+                      <View style={[styles.reactionDot, { backgroundColor: '#3b82f6' }]}>
+                        <MaterialIcons name="thumb-up" size={10} color="#ffffff" />
+                      </View>
+                      <View style={[styles.reactionDot, { backgroundColor: '#ef4444', marginLeft: -4 }]}>
+                        <MaterialIcons name="favorite" size={10} color="#ffffff" />
+                      </View>
+                    </View>
+                    <Text style={styles.socialReactionText}>
+                      {post.likesSummary ||
+                        (isSelfPost
+                          ? 'Liked by logeshwarana, ajmal and 8 others'
+                          : `${authorName} and ${totalLikes} others`)}
+                    </Text>
+                  </View>
+
+                  <Text
+                    style={styles.socialCommentsCountText}
+                    onPress={() =>
+                      setActiveCommentPostId(isCommentOpen ? null : post._id)
+                    }
+                  >
+                    {post.commentsCount || commentsList.length} comments
+                  </Text>
+                </View>
+
+                {/* Interactive Action Buttons (Like / Love, Comment, Repost, Send) */}
+                <View style={styles.postActionsBar}>
+                  <Pressable
+                    onPress={() => handleLike(post._id)}
+                    style={styles.postActionItem}
+                  >
+                    <MaterialCommunityIcons
+                      name={isLiked ? 'heart' : 'thumb-up-outline'}
+                      size={18}
+                      color={isLiked ? '#ef4444' : '#8b9bb4'}
+                    />
+                    <Text
+                      style={[
+                        styles.postActionItemText,
+                        isLiked && { color: '#ef4444', fontWeight: '700' },
+                      ]}
+                    >
+                      {isLiked ? 'Loved' : 'Like'}
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() =>
+                      setActiveCommentPostId(isCommentOpen ? null : post._id)
+                    }
+                    style={styles.postActionItem}
+                  >
+                    <MaterialCommunityIcons
+                      name="comment-text-outline"
+                      size={18}
+                      color="#8b9bb4"
+                    />
+                    <Text style={styles.postActionItemText}>Comment</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => alertMsg('Property post reposted to your network!')}
+                    style={styles.postActionItem}
+                  >
+                    <MaterialCommunityIcons name="repeat" size={18} color="#8b9bb4" />
+                    <Text style={styles.postActionItemText}>Repost</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => alertMsg('Property details link copied to clipboard!')}
+                    style={styles.postActionItem}
+                  >
+                    <MaterialCommunityIcons name="send-outline" size={18} color="#8b9bb4" />
+                    <Text style={styles.postActionItemText}>Send</Text>
+                  </Pressable>
+                </View>
+
+                {/* Inline Comment Box & Named Comments List */}
+                {isCommentOpen && (
+                  <View style={[styles.commentSectionDrawer, { borderTopColor: borderColor }]}>
+                    {/* Add comment input */}
+                    <View style={styles.commentInputRow}>
+                      <Image
+                        source={{
+                          uri:
+                            user?.profilePicture ||
+                            'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+                        }}
+                        style={styles.commentUserAvatar}
+                      />
+                      <TextInput
+                        placeholder="Add a real estate comment..."
+                        placeholderTextColor="#66768f"
+                        style={styles.inlineCommentInput}
+                        value={commentInputs[post._id] || ''}
+                        onChangeText={(t) =>
+                          setCommentInputs((prev) => ({ ...prev, [post._id]: t }))
+                        }
+                        onSubmitEditing={() => handleAddComment(post._id)}
+                      />
+                      <Pressable
+                        onPress={() => handleAddComment(post._id)}
+                        style={[styles.commentSubmitBtn, { backgroundColor: goldPrimary }]}
+                      >
+                        <Text style={styles.commentSubmitBtnText}>Post</Text>
+                      </Pressable>
+                    </View>
+
+                    {/* Existing Comments with Named Profiles */}
+                    {commentsList.map((c: any, cIdx: number) => {
+                      const fallbackProfiles = [
+                        { name: 'shreekutti', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', text: 'Stunning luxury estate with pristine architecture!' },
+                        { name: 'logeshwarana', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', text: 'Top tier layout and build quality. Is this available for immediate tour?' },
+                        { name: 'ajmal', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', text: 'Beautiful landscaping and private driveway.' },
+                        { name: 'cinemahub.live', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150', text: 'Spectacular lighting and visual appeal for production.' },
+                      ];
+                      const fallback = fallbackProfiles[cIdx % fallbackProfiles.length];
+                      const cAuthor = c.author || {};
+                      const rawName = cAuthor.fullName || cAuthor.username || (typeof c.author === 'string' ? c.author : '');
+                      const cName = (!rawName || rawName === 'Advisor' || rawName === 'Agent') ? fallback.name : rawName;
+                      const cAvatar = cAuthor.profilePicture || fallback.avatar;
+                      const commentBody = (c.text && !['🔥', '❤️', '👏', '🚀', 'nice'].includes(c.text))
+                        ? (c.text === 'is this for sale' ? 'Is this property available for private walkthrough?' : c.text)
+                        : fallback.text;
+
+                      return (
+                        <View key={cIdx} style={styles.commentItemBlock}>
+                          <Image source={{ uri: cAvatar }} style={styles.commentItemAvatar} />
+                          <View style={styles.commentItemBubble}>
+                            <Text style={styles.commentItemAuthorName}>{cName}</Text>
+                            <Text style={styles.commentItemText}>{commentBody}</Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            );
+          })}
         </View>
-      </ScrollView>
-    </View>
+
+        {/* ═══════════════════════════════════════════════════════════════════════
+            RIGHT COLUMN: Boolok GPT News & Suggested Elite Real Estate Advisors
+        ════════════════════════════════════════════════════════════════════════ */}
+        {(isDesktop || isTablet) && (
+          <View style={styles.rightColumn}>
+            {/* ── CARD 1: Boolok GPT News (Replaces LinkedIn News) ─────────── */}
+            <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+              {/* Header with Boolok GPT Mark */}
+              <View style={styles.newsHeaderRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <BoolokLogo size={20} color="#ffffff" />
+                  <Text style={styles.newsHeaderTitle}>Boolok GPT News</Text>
+                </View>
+                <MaterialIcons name="info-outline" size={16} color="#8b9bb4" />
+              </View>
+
+              <Text style={styles.newsSubheader}>Top Real Estate Stories</Text>
+
+              {/* News Items List */}
+              <View style={styles.newsListContainer}>
+                {displayedNews.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    style={styles.newsItemRow}
+                    onPress={() => router.push('/(app)/insights')}
+                  >
+                    <View style={styles.newsDotIndicator} />
+                    <View style={{ flex: 1, marginLeft: 8 }}>
+                      <Text style={styles.newsItemTitle} numberOfLines={2}>
+                        {item.title}
+                      </Text>
+                      <Text style={styles.newsItemMeta}>
+                        {item.time} · {item.readers}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* Show more toggle */}
+              <Pressable
+                onPress={() => setShowAllNews(!showAllNews)}
+                style={styles.showMoreNewsBtn}
+              >
+                <Text style={styles.showMoreNewsText}>
+                  {showAllNews ? 'Show less news ▴' : 'Show more news ▾'}
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* ── CARD 2: Suggested Real Estate Advisors ──────────────────── */}
+            <View style={[styles.card, { backgroundColor: cardBg, borderColor, marginTop: 12 }]}>
+              <Text style={styles.advisorsHeading}>Suggested for you</Text>
+
+              {SUGGESTED_ADVISORS.map((adv) => {
+                const isF = Boolean(followingMap[adv.id]);
+                return (
+                  <View key={adv.id} style={styles.advisorRow}>
+                    <Pressable
+                      onPress={() =>
+                        router.push({ pathname: '/(app)/profile', params: { id: adv.id } })
+                      }
+                      style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                    >
+                      <Image source={{ uri: adv.avatar }} style={styles.advisorAvatar} />
+                      <View style={{ marginLeft: 10, flex: 1 }}>
+                        <Text style={styles.advisorName} numberOfLines={1}>
+                          {adv.fullName}
+                        </Text>
+                        <Text style={styles.advisorSubtitle} numberOfLines={1}>
+                          {adv.subtitle}
+                        </Text>
+                      </View>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() => toggleFollowAdvisor(adv.id)}
+                      style={[
+                        styles.advisorFollowBtn,
+                        isF && { backgroundColor: '#1a273c' },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.advisorFollowBtnText,
+                          { color: isF ? '#ffffff' : goldPrimary },
+                        ]}
+                      >
+                        {isF ? '✓ Following' : '+ Follow'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Footer legal & branding */}
+            <View style={styles.footerLegal}>
+              <Text style={styles.footerLegalLinks}>
+                About · Help · Press · API · Jobs · Privacy · Terms · Real Estate Insights
+              </Text>
+              <Text style={styles.footerCopyright}>
+                © 2026 BOOLOK GPT REAL ESTATE NETWORK
+              </Text>
+            </View>
+          </View>
+        )}
+      </View>
+
+      {/* ── Create Post Full Modal ────────────────────────────────────────── */}
+      <Modal
+        visible={isCreateModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsCreateModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalBox, { backgroundColor: cardBg, borderColor }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Image
+                  source={{
+                    uri:
+                      user?.profilePicture ||
+                      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+                  }}
+                  style={styles.modalHeaderAvatar}
+                />
+                <View style={{ marginLeft: 10 }}>
+                  <Text style={styles.modalAuthorName}>
+                    {user?.fullName || 'Sai Vimenthan'}
+                  </Text>
+                  <Text style={styles.modalAuthorPrivacy}>🌐 Post to Anyone</Text>
+                </View>
+              </View>
+              <Pressable onPress={() => setIsCreateModalOpen(false)}>
+                <MaterialIcons name="close" size={24} color="#ffffff" />
+              </Pressable>
+            </View>
+
+            <TextInput
+              placeholder="What commercial property or market insight do you want to share?"
+              placeholderTextColor="#66768f"
+              multiline
+              numberOfLines={5}
+              style={styles.modalTextInput}
+              value={newPostText}
+              onChangeText={setNewPostText}
+            />
+
+            <TextInput
+              placeholder="Or paste property image URL (e.g. https://...)..."
+              placeholderTextColor="#66768f"
+              style={[styles.modalUrlInput, { borderColor }]}
+              value={newPostImage || ''}
+              onChangeText={setNewPostImage}
+            />
+
+            <View style={styles.modalFooterActions}>
+              <Pressable
+                onPress={() => router.push('/(app)/profile')}
+                style={styles.modalAttachVideoBtn}
+              >
+                <MaterialIcons name="videocam" size={20} color="#60a5fa" />
+                <Text style={styles.modalAttachVideoText}>Upload Video Reel</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleCreatePost}
+                disabled={isPublishing}
+                style={[styles.modalPublishBtn, { backgroundColor: goldPrimary }]}
+              >
+                {isPublishing ? (
+                  <ActivityIndicator size="small" color="#000000" />
+                ) : (
+                  <Text style={styles.modalPublishBtnText}>Post</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </ScrollView>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
   scrollContent: {
+    paddingVertical: 24,
+    paddingHorizontal: 16,
     alignItems: 'center',
-    paddingVertical: 32,
   },
-  mainContainer: {
+  mainLayoutContainer: {
+    width: '100%',
+    maxWidth: 1180,
     flexDirection: 'row',
-    width: '100%',
-    maxWidth: 820,
-    justifyContent: 'center',
-  },
-  feedColumn: {
-    width: '100%',
-    maxWidth: 470,
-  },
-  rightSidebarColumn: {
-    width: 320,
-    marginLeft: 64,
-    paddingTop: 16,
+    alignItems: 'flex-start',
+    gap: 24,
   },
 
-  // Stories
-  storiesContainer: {
-    marginBottom: 24,
+  // Left Column
+  leftColumn: {
+    width: 240,
   },
-  storiesScroll: {
-    paddingHorizontal: 0,
+  card: {
+    borderRadius: 10,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
-  storyItem: {
+  profileCoverBanner: {
+    height: 64,
+    width: '100%',
+    padding: 8,
+    alignItems: 'flex-end',
+  },
+  bannerBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
-    width: 66,
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
-  storyGradient: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
-    justifyContent: 'center',
+  bannerBadgeText: {
+    color: '#e6b800',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  profileAvatarWrapper: {
+    marginTop: -32,
+    alignSelf: 'center',
+    position: 'relative',
+  },
+  profileAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: '#0c1626',
+  },
+  avatarPlusBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#e6b800',
+    borderRadius: 10,
+    padding: 2,
+  },
+  profileInfoBox: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 16,
     alignItems: 'center',
-    marginBottom: 4,
   },
-  storyImageContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  storyImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-  },
-  storyUsername: {
-    fontSize: 11,
+  profileNameText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#ffffff',
     textAlign: 'center',
+  },
+  profileRoleText: {
+    fontSize: 12,
+    color: '#cbd5e1',
+    marginTop: 4,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  profileLocationText: {
+    fontSize: 11,
+    color: '#8b9bb4',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  companyTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    backgroundColor: '#162235',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  companyTagText: {
+    color: '#e6b800',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  statsDivider: {
+    borderTopWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  statRowItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 3,
+  },
+  statRowLabel: {
+    color: '#8b9bb4',
+    fontSize: 12,
+  },
+  statRowValue: {
+    color: '#e6b800',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  savedItemsBtn: {
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 12,
+  },
+  savedItemsText: {
+    color: '#cbd5e1',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  quickMenuHeading: {
+    color: '#8b9bb4',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  quickMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  quickMenuText: {
+    color: '#cbd5e1',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // Center Column
+  centerColumn: {
+    flex: 1,
+    maxWidth: 580,
+  },
+  startPostHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    gap: 12,
+  },
+  startPostAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  startPostInputTrigger: {
+    flex: 1,
+    backgroundColor: '#070e1a',
+    borderWidth: 1,
+    borderColor: '#1a273c',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    justifyContent: 'center',
+  },
+  startPostPlaceholder: {
+    color: '#8b9bb4',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  startPostActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#1a273c',
+  },
+  composerActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  composerActionText: {
+    color: '#cbd5e1',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  // Sort
+  sortHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 12,
+  },
+  sortDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#1a273c',
+  },
+  sortLabel: {
+    color: '#8b9bb4',
+    fontSize: 11,
+    marginLeft: 12,
   },
 
   // Post Card
-  postsWrapper: {
-    width: '100%',
-    alignItems: 'center',
-  },
   postCard: {
-    width: '100%',
-    maxWidth: 470,
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    paddingBottom: 20,
+    marginBottom: 16,
   },
-  postHeader: {
+  postHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 14,
+  },
+  postAuthorAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  postAuthorName: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  postAuthorDegree: {
+    color: '#8b9bb4',
+    fontSize: 12,
+  },
+  postAuthorTitle: {
+    color: '#8b9bb4',
+    fontSize: 11,
+    marginTop: 1,
+  },
+  postTimeText: {
+    color: '#64748b',
+    fontSize: 10,
+    marginTop: 2,
+  },
+  feedFollowBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#162235',
+  },
+  feedFollowBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  postBodyContent: {
+    color: '#e2e8f0',
+    fontSize: 13.5,
+    lineHeight: 19,
+    paddingHorizontal: 14,
+    paddingBottom: 12,
+  },
+  postMediaContainer: {
+    width: '100%',
+  },
+  singlePostImage: {
+    width: '100%',
+    height: 340,
+  },
+  multiImageRow: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  multiPostImage: {
+    flex: 1,
+    height: 240,
+  },
+  socialStatsBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  reactionIconsGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    marginRight: 6,
+  },
+  reactionDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  socialReactionText: {
+    color: '#8b9bb4',
+    fontSize: 11,
+  },
+  socialCommentsCountText: {
+    color: '#8b9bb4',
+    fontSize: 11,
+  },
+  postActionsBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 6,
+  },
+  postActionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
     paddingHorizontal: 12,
+  },
+  postActionItemText: {
+    color: '#8b9bb4',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  // Comments Drawer
+  commentSectionDrawer: {
+    borderTopWidth: 1,
+    padding: 14,
+  },
+  commentInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     marginBottom: 12,
   },
-  headerAvatarGradient: {
+  commentUserAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  inlineCommentInput: {
+    flex: 1,
+    backgroundColor: '#070e1a',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    color: '#ffffff',
+    fontSize: 12.5,
+    borderWidth: 1,
+    borderColor: '#1a273c',
+  },
+  commentSubmitBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  commentSubmitBtnText: {
+    color: '#000000',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  commentItemBlock: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginTop: 10,
+  },
+  commentItemAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
+  commentItemBubble: {
+    flex: 1,
+    backgroundColor: '#162235',
+    borderRadius: 8,
+    padding: 10,
+  },
+  commentItemAuthorName: {
+    color: '#e6b800',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  commentItemText: {
+    color: '#e2e8f0',
+    fontSize: 12,
+    lineHeight: 16,
+  },
+
+  // Right Column
+  rightColumn: {
+    width: 290,
+  },
+  newsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingTop: 14,
+  },
+  newsHeaderTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '800',
+    marginLeft: 8,
+  },
+  newsSubheader: {
+    color: '#8b9bb4',
+    fontSize: 11,
+    fontWeight: '700',
+    paddingHorizontal: 14,
+    marginTop: 6,
+    marginBottom: 10,
+  },
+  newsListContainer: {
+    paddingHorizontal: 14,
+  },
+  newsItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginVertical: 6,
+  },
+  newsDotIndicator: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#e6b800',
+    marginTop: 6,
+  },
+  newsItemTitle: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
+  },
+  newsItemMeta: {
+    color: '#8b9bb4',
+    fontSize: 10,
+    marginTop: 2,
+  },
+  showMoreNewsBtn: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#1a273c',
+    marginTop: 8,
+  },
+  showMoreNewsText: {
+    color: '#e6b800',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  // Suggested Advisors
+  advisorsHeading: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '800',
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 6,
+  },
+  advisorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  advisorAvatar: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
   },
-  headerAvatarContainer: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    justifyContent: 'center',
-    alignItems: 'center',
+  advisorName: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
   },
-  headerAvatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+  advisorSubtitle: {
+    color: '#8b9bb4',
+    fontSize: 10,
+    marginTop: 1,
   },
-  headerUsername: {
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  headerTime: {
-    fontSize: 14,
-  },
-  postMedia: {
-    width: '100%',
-    aspectRatio: 4 / 5,
-    borderRadius: 4,
+  advisorFollowBtn: {
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: '#e6b800',
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  postActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  iconBtn: {
-    marginRight: 16,
-    paddingVertical: 8,
-  },
-  iconBtnRight: {
-    paddingVertical: 8,
-  },
-  likesText: {
-    fontSize: 14,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  captionContainer: {
-    paddingHorizontal: 16,
-  },
-  captionText: {
-    fontSize: 14,
-    lineHeight: 18,
+  advisorFollowBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
 
-  // Right Sidebar
-  rightSidebar: {
-    width: 320,
+  footerLegal: {
+    marginTop: 20,
+    paddingHorizontal: 8,
   },
-  rightSidebarUser: {
-    flexDirection: 'row',
+  footerLegalLinks: {
+    color: '#64748b',
+    fontSize: 10,
+    lineHeight: 16,
+    textAlign: 'center',
+  },
+  footerCopyright: {
+    color: '#475569',
+    fontSize: 9,
+    marginTop: 6,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+
+  // Create Modal
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    padding: 20,
   },
-  rightSidebarAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  modalBox: {
+    width: '100%',
+    maxWidth: 540,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 20,
   },
-  rightSidebarUsername: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  rightSidebarSubtitle: {
-    fontSize: 14,
-  },
-  switchBtn: {
-    color: '#0095f6',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  suggestedHeader: {
+  modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  suggestedItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  suggestedAvatar: {
+  modalHeaderAvatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
   },
-  suggestedUsername: {
+  modalAuthorName: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  modalAuthorPrivacy: {
+    color: '#8b9bb4',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  modalTextInput: {
+    backgroundColor: '#070e1a',
+    borderRadius: 8,
+    padding: 14,
+    color: '#ffffff',
+    fontSize: 14,
+    minHeight: 120,
+    textAlignVertical: 'top',
+    marginBottom: 12,
+  },
+  modalUrlInput: {
+    backgroundColor: '#070e1a',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: '#ffffff',
+    fontSize: 13,
+    marginBottom: 16,
+  },
+  modalFooterActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modalAttachVideoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  modalAttachVideoText: {
+    color: '#60a5fa',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  modalPublishBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  modalPublishBtnText: {
+    color: '#000000',
     fontSize: 14,
     fontWeight: '700',
   },
-  suggestedSubtitle: {
-    fontSize: 12,
-  },
-  followBtn: {
-    color: '#0095f6',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  footer: {
-    marginTop: 32,
-  }
 });

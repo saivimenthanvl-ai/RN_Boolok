@@ -1,6 +1,21 @@
 import React, { useEffect, useState, useRef } from 'react';
 // Note: useState and useRef kept for MarketIntelligenceSidebar usage
-import { View, Text, StyleSheet, FlatList, Pressable, TouchableOpacity, Platform, useWindowDimensions, TextInput, ScrollView, Modal, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Pressable,
+  TouchableOpacity,
+  Platform,
+  useWindowDimensions,
+  TextInput,
+  ScrollView,
+  Modal,
+  ActivityIndicator,
+  Alert,
+  Image,
+} from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { spacing, typography, radius } from '../../constants/theme';
@@ -19,7 +34,13 @@ const DUMMY_VIDEOS = [
     aiMatch: 98,
     insight: 'Soil analysis indicates 92% suitability for premium Cabernet Sauvignon. Water rights pre-verified for 50 years.',
     likes: 2400,
+    poster: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1200',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    comments: [
+      { _id: 'c1-1', user: { fullName: 'shreekutti' }, text: 'The terroir and climate suitability metrics are exceptional here! 🍇✨', createdAt: new Date() },
+      { _id: 'c1-2', user: { fullName: 'ajmal' }, text: '50-year pre-verified water rights make this a bulletproof acquisition. 🍷', createdAt: new Date() },
+      { _id: 'c1-3', user: { fullName: 'cinemahub.live' }, text: 'Incredible drone framing! Would love to feature this estate portfolio. 🎥', createdAt: new Date() },
+    ],
   },
   {
     _id: '2',
@@ -28,7 +49,13 @@ const DUMMY_VIDEOS = [
     aiMatch: 92,
     insight: 'Tourism growth in this sector is up 14% YoY. Zoning allows for luxury boutique resort development.',
     likes: 1800,
+    poster: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    comments: [
+      { _id: 'c2-1', user: { fullName: 'cinemahub.live' }, text: 'Breathtaking ocean cliff views! Perfect setting for luxury resort hospitality. 🌅🏖️', createdAt: new Date() },
+      { _id: 'c2-2', user: { fullName: 'shreekutti' }, text: '14% YoY tourism surge matches our regional Bali portfolio forecast. 📈', createdAt: new Date() },
+      { _id: 'c2-3', user: { fullName: 'ajmal' }, text: 'Zoning approvals for boutique development add immediate upside. 🔑', createdAt: new Date() },
+    ],
   },
   {
     _id: '3',
@@ -37,8 +64,29 @@ const DUMMY_VIDEOS = [
     aiMatch: 95,
     insight: 'Thermal zoning optimized. High potential for eco-luxury cabins or a private wellness estate.',
     likes: 920,
+    poster: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-  }
+    comments: [
+      { _id: 'c3-1', user: { fullName: 'ajmal' }, text: 'Thermal zoning and serene forested topography are hard to find in Kyoto! ⛩️🍃', createdAt: new Date() },
+      { _id: 'c3-2', user: { fullName: 'shreekutti' }, text: 'Eco-luxury cabins here will command top-tier international ADRs. 🏡✨', createdAt: new Date() },
+      { _id: 'c3-3', user: { fullName: 'cinemahub.live' }, text: 'Stunning cinematography and pagoda vista backdrop. 🎬', createdAt: new Date() },
+    ],
+  },
+  {
+    _id: '4',
+    title: 'Coventry Office',
+    location: 'Coventry, United Kingdom',
+    aiMatch: 97,
+    insight: 'Strong engagement expected based on similar recent listings.',
+    likes: 0,
+    poster: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    comments: [
+      { _id: 'c4-1', user: { fullName: 'Logeshwaran Ashok' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
+      { _id: 'c4-2', user: { fullName: 'shreekutti' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
+      { _id: 'c4-3', user: { fullName: 'cinemahub.live' }, text: 'Clean architectural lines and modern corporate facade. ✨', createdAt: new Date() },
+    ],
+  },
 ];
 
 const MarketIntelligenceSidebar = ({ theme, isDark }: { theme: any, isDark: boolean }) => {
@@ -139,33 +187,138 @@ const MarketIntelligenceSidebar = ({ theme, isDark }: { theme: any, isDark: bool
   );
 };
 
+const SHARE_CONTACTS = [
+  { id: '1', name: 'shreekutti', role: 'Residential Architect · Chennai', avatar: 'S' },
+  { id: '2', name: 'ajmal', role: 'CRE Advisory & Multi-Family', avatar: 'A' },
+  { id: '3', name: 'cinemahub.live', role: 'Studio & Commercial Spaces', avatar: 'C' },
+  { id: '4', name: 'Logeshwaran Ashok', role: 'Architectural Consultant · Tech Parks', avatar: 'L' },
+  { id: '5', name: 'Sai Vimenthan', role: 'Principal Broker · Commercial Assets', avatar: 'S' },
+];
+
 const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }: any) => {
   const { theme } = useTheme();
   const [deleting, setDeleting] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [likesCount, setLikesCount] = useState<number>(item.likes || 920);
+  const [hasLiked, setHasLiked] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [sharedContacts, setSharedContacts] = useState<Record<string, boolean>>({});
+  const [comments, setComments] = useState<any[]>(item.comments || [
+    { _id: 'ic1', user: { fullName: 'Logeshwaran Ashok' }, text: 'High potential zoning for hospitality & luxury retreats! 🏢✨', createdAt: new Date() },
+    { _id: 'ic2', user: { fullName: 'Sai Vimenthan' }, text: 'Water rights & soil pre-certification confirms strong ROI.', createdAt: new Date() },
+  ]);
+  const [showComments, setShowComments] = useState(false);
+  const [commentInput, setCommentInput] = useState('');
+
+  const webVideoRef = useRef<any>(null);
+  const autoPlayTimerRef = useRef<any>(null);
 
   const player = useVideoPlayer(item.videoUrl, (p) => {
     p.loop = true;
-    if (isActive) p.play();
+    p.muted = false;
   });
 
+  // Play reel for 5 to 10 seconds smoothly when active
   useEffect(() => {
+    if (autoPlayTimerRef.current) clearTimeout(autoPlayTimerRef.current);
+
     if (isActive) {
-      player.play();
+      if (Platform.OS === 'web' && webVideoRef.current) {
+        webVideoRef.current.currentTime = 0;
+        webVideoRef.current.play().then(() => {
+          setIsPlaying(true);
+          // Play for 8 seconds (5-10s range), then seamless continuous loop
+          autoPlayTimerRef.current = setTimeout(() => {
+            if (webVideoRef.current) {
+              webVideoRef.current.currentTime = 0;
+              webVideoRef.current.play().catch((e: any) => console.log(e));
+            }
+          }, 8000);
+        }).catch((e: any) => {
+          console.log('Autoplay waiting for user gesture:', e);
+        });
+      } else {
+        player.play();
+        setIsPlaying(true);
+      }
     } else {
-      player.pause();
+      if (Platform.OS === 'web' && webVideoRef.current) {
+        webVideoRef.current.pause();
+      } else {
+        player.pause();
+      }
+      setIsPlaying(false);
     }
+
+    return () => {
+      if (autoPlayTimerRef.current) clearTimeout(autoPlayTimerRef.current);
+    };
   }, [isActive]);
 
-  const togglePlay = () => {
+  const togglePlay = (e?: any) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+
+    if (Platform.OS === 'web' && webVideoRef.current) {
+      if (webVideoRef.current.paused) {
+        webVideoRef.current.muted = false;
+        webVideoRef.current.play().then(() => {
+          setIsPlaying(true);
+        }).catch(() => {
+          // If unmuted playback fails due to autoplay policy, play muted
+          webVideoRef.current.muted = true;
+          webVideoRef.current.play().then(() => setIsPlaying(true));
+        });
+      } else {
+        webVideoRef.current.pause();
+        setIsPlaying(false);
+      }
+      return;
+    }
+
     if (player.playing) {
       player.pause();
+      setIsPlaying(false);
     } else {
       player.play();
+      setIsPlaying(true);
     }
   };
 
+  const handleLike = () => {
+    if (hasLiked) {
+      setHasLiked(false);
+      setLikesCount((prev) => Math.max(0, prev - 1));
+    } else {
+      setHasLiked(true);
+      setLikesCount((prev) => prev + 1);
+    }
+  };
+
+  const handleToggleSave = () => {
+    setIsSaved((prev) => !prev);
+  };
+
+  const handleShareToContact = (contactId: string) => {
+    setSharedContacts((prev) => ({ ...prev, [contactId]: true }));
+    setTimeout(() => {
+      setSharedContacts((prev) => ({ ...prev, [contactId]: false }));
+    }, 2000);
+  };
+
+  const handleAddComment = () => {
+    if (!commentInput.trim()) return;
+    const newC = {
+      _id: Date.now().toString(),
+      user: { fullName: 'You' },
+      text: commentInput.trim(),
+      createdAt: new Date(),
+    };
+    setComments((prev) => [...prev, newC]);
+    setCommentInput('');
+  };
+
   const handleDelete = async () => {
-    // Alert.alert with buttons doesn't work on web — use window.confirm instead
     if (Platform.OS === 'web') {
       if (!window.confirm('Delete this reel? This cannot be undone.')) return;
       setDeleting(true);
@@ -189,10 +342,8 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
     }
   };
 
-  // Only show delete button for real DB reels (dummy IDs are '1','2','3')
-  const isDeletable = onDelete && !['1', '2', '3'].includes(item._id);
+  const isDeletable = onDelete && !['1', '2', '3', '4'].includes(item._id);
 
-  // Outer wrapper is a plain View — play/pause Pressable sits absoluteFill behind overlays
   return (
     <View
       style={[
@@ -205,27 +356,58 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
         }
       ]}
     >
-      {/* ── Play / Pause tap area — sits behind everything ── */}
-      <Pressable onPress={togglePlay} style={StyleSheet.absoluteFill}>
-        <VideoView
-          player={player}
-          style={[
-            { width: cardWidth, height: cardHeight },
-            // On web, explicitly set objectFit so the HTML video element
-            // respects contain mode regardless of expo-video's CSS output
-            Platform.OS === 'web' && ({ objectFit: 'contain' } as any),
-          ]}
-          contentFit="contain"
-          nativeControls={false}
-        />
-        {!player.playing && (
-          <View style={styles.playOverlay}>
+      {/* ── Play / Pause tap area ── */}
+      <TouchableOpacity
+        activeOpacity={0.95}
+        onPress={togglePlay}
+        style={StyleSheet.absoluteFill}
+      >
+        {Platform.OS === 'web' ? (
+          <video
+            ref={webVideoRef}
+            src={item.videoUrl}
+            poster={item.poster}
+            loop
+            muted
+            playsInline
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              pointerEvents: 'none',
+            }}
+          />
+        ) : (
+          <>
+            {item.poster && !player.playing && (
+              <Image
+                source={{ uri: item.poster }}
+                style={[StyleSheet.absoluteFill, { width: cardWidth, height: cardHeight }]}
+                resizeMode="cover"
+              />
+            )}
+            <VideoView
+              player={player}
+              style={{ width: cardWidth, height: cardHeight }}
+              contentFit="cover"
+              nativeControls={false}
+            />
+          </>
+        )}
+
+        {!isPlaying && (
+          <View style={styles.playOverlay} pointerEvents="none">
             <View style={styles.playIconContainer}>
-              <MaterialIcons name="play-arrow" size={48} color={theme.primary} />
+              <MaterialIcons name="play-arrow" size={54} color={theme.primary} />
             </View>
           </View>
         )}
-      </Pressable>
+      </TouchableOpacity>
 
       {/* ── Top Overlay: AI Match Score ── */}
       <View style={styles.topOverlay} pointerEvents="none">
@@ -235,30 +417,69 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
         </View>
       </View>
 
-      {/* ── Right Actions — all independently tappable ── */}
+      {/* ── Right Actions ── */}
       <View style={[styles.rightOverlay, { bottom: isMobile ? 160 : 80 }]} pointerEvents="box-none">
-        <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
-          <View style={styles.actionIconContainer}>
-            <MaterialIcons name="favorite" size={28} color="#fff" />
+        {/* Like */}
+        <TouchableOpacity
+          onPress={handleLike}
+          activeOpacity={0.7}
+          style={[styles.actionBtn, Platform.OS === 'web' && ({ cursor: 'pointer' } as any)]}
+        >
+          <View style={[styles.actionIconContainer, hasLiked && { backgroundColor: 'rgba(239, 68, 68, 0.4)', borderColor: '#ef4444' }]}>
+            <MaterialIcons
+              name={hasLiked ? 'favorite' : 'favorite-border'}
+              size={28}
+              color={hasLiked ? '#ef4444' : '#fff'}
+            />
           </View>
-          <Text style={styles.actionText}>
-            {item.likes > 1000 ? (item.likes / 1000).toFixed(1) + 'k' : item.likes}
+          <Text style={[styles.actionText, hasLiked && { color: '#ef4444', fontWeight: 'bold' }]}>
+            {likesCount > 1000 ? (likesCount / 1000).toFixed(1) + 'k' : likesCount}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
+
+        {/* Comment */}
+        <TouchableOpacity
+          onPress={() => setShowComments(true)}
+          activeOpacity={0.7}
+          style={[styles.actionBtn, Platform.OS === 'web' && ({ cursor: 'pointer' } as any)]}
+        >
           <View style={styles.actionIconContainer}>
-            <MaterialIcons name="bookmark" size={28} color="#fff" />
+            <MaterialCommunityIcons name="comment-text-outline" size={26} color="#fff" />
           </View>
-          <Text style={styles.actionText}>Save</Text>
+          <Text style={styles.actionText}>{comments.length}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7}>
+
+        {/* Save */}
+        <TouchableOpacity
+          onPress={handleToggleSave}
+          activeOpacity={0.7}
+          style={[styles.actionBtn, Platform.OS === 'web' && ({ cursor: 'pointer' } as any)]}
+        >
+          <View style={[styles.actionIconContainer, isSaved && { backgroundColor: 'rgba(230, 184, 0, 0.35)', borderColor: '#e6b800' }]}>
+            <MaterialIcons
+              name={isSaved ? 'bookmark' : 'bookmark-border'}
+              size={28}
+              color={isSaved ? '#e6b800' : '#fff'}
+            />
+          </View>
+          <Text style={[styles.actionText, isSaved && { color: '#e6b800', fontWeight: 'bold' }]}>
+            {isSaved ? 'Saved' : 'Save'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Share */}
+        <TouchableOpacity
+          onPress={() => setShowShareModal(true)}
+          activeOpacity={0.7}
+          style={[styles.actionBtn, Platform.OS === 'web' && ({ cursor: 'pointer' } as any)]}
+        >
           <View style={styles.actionIconContainer}>
             <MaterialIcons name="share" size={28} color="#fff" />
           </View>
           <Text style={styles.actionText}>Share</Text>
         </TouchableOpacity>
 
-        {/* Delete — only for real uploaded reels */}
+        {/* Delete */}
         {isDeletable && (
           <TouchableOpacity
             onPress={handleDelete}
@@ -279,6 +500,97 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
         )}
       </View>
 
+      {/* ── Share Modal ── */}
+      <Modal
+        visible={showShareModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowShareModal(false)}
+      >
+        <Pressable
+          onPress={() => setShowShareModal(false)}
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+          }}
+        >
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 440,
+              backgroundColor: '#0b1322',
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: '#1a273c',
+              padding: 22,
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#1a273c', paddingBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <MaterialIcons name="send" size={20} color={theme.primary} />
+                <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '800' }}>Share Property Reel</Text>
+              </View>
+              <Pressable onPress={() => setShowShareModal(false)}>
+                <MaterialIcons name="close" size={22} color="#8b9bb4" />
+              </Pressable>
+            </View>
+
+            <Text style={{ color: '#8b9bb4', fontSize: 12.5, marginBottom: 14 }}>
+              Select a certified broker or advisor to send this video listing:
+            </Text>
+
+            <ScrollView style={{ maxHeight: 280 }} showsVerticalScrollIndicator={false}>
+              {SHARE_CONTACTS.map((contact) => {
+                const isSent = sharedContacts[contact.id];
+                return (
+                  <View
+                    key={contact.id}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingVertical: 10,
+                      paddingHorizontal: 12,
+                      backgroundColor: '#162235',
+                      borderRadius: 12,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center' }}>
+                        <Text style={{ color: '#000000', fontWeight: '800', fontSize: 14 }}>{contact.avatar}</Text>
+                      </View>
+                      <View>
+                        <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>{contact.name}</Text>
+                        <Text style={{ color: '#8b9bb4', fontSize: 11.5 }}>{contact.role}</Text>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      onPress={() => handleShareToContact(contact.id)}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 6,
+                        borderRadius: 16,
+                        backgroundColor: isSent ? '#10b981' : theme.primary,
+                      }}
+                    >
+                      <Text style={{ color: '#000000', fontWeight: '700', fontSize: 12 }}>
+                        {isSent ? '✓ Sent' : 'Send'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* ── Bottom Info gradient ── */}
       <LinearGradient
         colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
@@ -298,6 +610,97 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
           <Text style={styles.insightText}>{item.insight}</Text>
         </View>
       </LinearGradient>
+
+      {/* ── Comments Modal ── */}
+      <Modal
+        visible={showComments}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowComments(false)}
+      >
+        <Pressable
+          onPress={() => setShowComments(false)}
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+          }}
+        >
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 520,
+              height: '65%',
+              backgroundColor: '#0b1322',
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              borderWidth: 1,
+              borderColor: '#1a273c',
+              padding: 20,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#1a273c' }}>
+              <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '800' }}>Comments ({comments.length})</Text>
+              <Pressable onPress={() => setShowComments(false)} style={{ padding: 4 }}>
+                <MaterialIcons name="close" size={24} color="#ffffff" />
+              </Pressable>
+            </View>
+
+            {/* Comments List */}
+            <ScrollView style={{ flex: 1, marginVertical: 12 }} showsVerticalScrollIndicator={false}>
+              {comments.map((c, idx) => (
+                <View key={c._id || idx} style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
+                  <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ color: '#000000', fontWeight: '800', fontSize: 14 }}>
+                      {(c.user?.fullName || 'U').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1, backgroundColor: '#162235', borderRadius: 12, padding: 10 }}>
+                    <Text style={{ color: theme.primary, fontWeight: '700', fontSize: 12.5, marginBottom: 2 }}>{c.user?.fullName || 'User'}</Text>
+                    <Text style={{ color: '#e2e8f0', fontSize: 13, lineHeight: 18 }}>{c.text}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+
+            {/* Input Row */}
+            <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', paddingTop: 10, borderTopWidth: 1, borderTopColor: '#1a273c' }}>
+              <TextInput
+                value={commentInput}
+                onChangeText={setCommentInput}
+                placeholder="Add an insight or comment..."
+                placeholderTextColor="#64748b"
+                style={{
+                  flex: 1,
+                  backgroundColor: '#162235',
+                  borderWidth: 1,
+                  borderColor: '#1a273c',
+                  borderRadius: 24,
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  color: '#ffffff',
+                  fontSize: 13.5,
+                }}
+              />
+              <Pressable
+                onPress={handleAddComment}
+                style={[
+                  { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center' },
+                  !commentInput.trim() && { opacity: 0.5 },
+                ]}
+                disabled={!commentInput.trim()}
+              >
+                <MaterialIcons name="send" size={20} color="#000000" />
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 };

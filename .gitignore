@@ -3,14 +3,18 @@
 # dependencies
 node_modules/
 
-# Expo
+# Expo & Web Builds
 .expo/
 dist/
 web-build/
 expo-env.d.ts
 .env
-node_modules/
 
+# Mobile App Binaries & Large Build Archives
+*.tar.gz
+*.apk
+debug/
+release/
 
 # Native
 .kotlin/
