@@ -35,16 +35,15 @@ function resolveApiBaseUrl(): string {
   const webUrl = process.env.EXPO_PUBLIC_API_URL || process.env.EXPO_PUBLIC_API_BASE_URL;
 
   if (Platform.OS === 'web') {
-    const resolved = stripTrailingSlash(webUrl || 'http://localhost:5000');
-
-    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && resolved.startsWith('http://')) {
-      console.error(
-        `Production site cannot call insecure/local API URL: ${resolved}. ` +
-        'Set EXPO_PUBLIC_API_URL in Vercel to your public HTTPS backend URL.'
-      );
+    if (webUrl && !webUrl.includes('localhost') && !webUrl.includes('127.0.0.1')) {
+      return stripTrailingSlash(webUrl);
     }
 
-    return resolved;
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      return stripTrailingSlash(webUrl || PRODUCTION_FALLBACK_API_URL);
+    }
+
+    return stripTrailingSlash(webUrl || 'http://localhost:5000');
   }
 
   const explicitNative = process.env.EXPO_PUBLIC_API_URL_NATIVE;
