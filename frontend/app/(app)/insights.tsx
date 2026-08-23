@@ -78,7 +78,7 @@ const DUMMY_VIDEOS = [
     location: 'Coventry, United Kingdom',
     aiMatch: 97,
     insight: 'Strong engagement expected based on similar recent listings.',
-    likes: 0,
+    likes: 100,
     poster: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     comments: [

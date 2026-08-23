@@ -9,6 +9,8 @@ const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 
+const nodemailer = require('nodemailer');
+
 // In-memory OTP storage with timestamp expiry (10 minutes)
 const otpStore = new Map();
 
@@ -28,11 +30,6 @@ function verifyOtpHelper(email, inputOtp) {
   const normalizedEmail = email.trim().toLowerCase();
   const entry = otpStore.get(normalizedEmail);
 
-  // Accept test/universal mock OTP in development if needed, or matched generated OTP
-  if (inputOtp === '123456') {
-    return true;
-  }
-
   if (!entry) return false;
   if (Date.now() > entry.expiresAt) {
     otpStore.delete(normalizedEmail);
@@ -45,6 +42,63 @@ function verifyOtpHelper(email, inputOtp) {
   }
 
   return false;
+}
+
+async function sendOtpEmail(toEmail, otp, purpose = 'Account Access') {
+  const user = (process.env.GMAIL_USER || process.env.EMAIL_USER || 'saivimenthanvl@gmail.com').trim();
+  const rawPass = (process.env.GMAIL_APP_PASSWORD || process.env.EMAIL_PASS || '').trim();
+  const pass = rawPass.replace(/\s+/g, ''); // Remove any spaces from Google App Password
+
+  if (!pass) {
+    console.warn('[nodemailer] GMAIL_APP_PASSWORD is not set in backend/.env. Email cannot be delivered to Gmail until set.');
+    return false;
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user,
+      pass,
+    },
+  });
+
+  const mailOptions = {
+    from: `"Boolok AI" <${user}>`,
+    to: toEmail,
+    subject: `Your Boolok AI Verification Code: ${otp}`,
+    text: `Your Boolok AI verification code is: ${otp}. This code expires in 10 minutes.`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #060b13; color: #ffffff; padding: 24px; margin: 0;">
+        <div style="background-color: #0c1626; border: 1px solid #1a273c; border-radius: 12px; max-width: 480px; margin: 0 auto; padding: 32px; text-align: center;">
+          <div style="font-size: 22px; font-weight: 800; color: #daa520; letter-spacing: 2px; margin-bottom: 6px;">★ BOOLOK AI</div>
+          <div style="font-size: 13px; color: #94a3b8; margin-bottom: 24px;">AI Agent For Real Estate Services</div>
+          <p style="font-size: 15px; color: #cbd5e1; line-height: 1.5; margin-bottom: 20px;">Use the following 6-digit verification code to complete your <strong>${purpose}</strong>:</p>
+          <div style="background: #060b13; border: 1px solid #e6b800; border-radius: 8px; padding: 18px 24px; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #daa520; display: inline-block; margin-bottom: 24px;">
+            ${otp}
+          </div>
+          <p style="font-size: 13px; color: #94a3b8; line-height: 1.5;">This verification code is valid for <strong>10 minutes</strong>. If you did not request this code, please ignore this email.</p>
+          <div style="font-size: 11px; color: #64748b; margin-top: 30px; border-top: 1px solid #1a273c; padding-top: 16px;">
+            © 2026 Boolok GPT Real Estate Intelligence. All rights reserved.
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[nodemailer] Verification email successfully delivered to ${toEmail}: ${info.messageId}`);
+    return true;
+  } catch (err) {
+    console.error('[nodemailer] Gmail SMTP delivery error:', err.message);
+    return false;
+  }
 }
 
 if (!process.env.GOOGLE_CLIENT_ID) {
@@ -101,15 +155,22 @@ router.post('/send-otp', async (req, res) => {
     const otp = generateOtp();
     storeOtp(email, otp);
 
-    console.log(`[auth] Registration OTP generated for ${email}: ${otp}`);
+    console.log(`[auth] Registration 6-digit OTP generated for ${email}: ${otp}`);
+
+    // Send real email via Gmail SMTP
+    const emailSent = await sendOtpEmail(email, otp, 'Account Registration');
+
+    if (!emailSent && !process.env.GMAIL_APP_PASSWORD) {
+      console.warn(`[auth] Note: GMAIL_APP_PASSWORD is missing in backend/.env.`);
+    }
 
     return res.status(200).json({
-      message: 'Verification code sent successfully to your email.',
+      message: `A 6-digit verification code has been sent to ${email}.`,
       success: true,
     });
   } catch (error) {
     console.error('Send OTP error:', error);
-    return res.status(500).json({ message: 'Failed to send OTP.', error: error.message });
+    return res.status(500).json({ message: 'Failed to send verification email.', error: error.message });
   }
 });
 
@@ -125,15 +186,22 @@ router.post('/send-login-otp', async (req, res) => {
     const otp = generateOtp();
     storeOtp(email, otp);
 
-    console.log(`[auth] Login OTP generated for ${email}: ${otp}`);
+    console.log(`[auth] Login 6-digit OTP generated for ${email}: ${otp}`);
+
+    // Send real email via Gmail SMTP
+    const emailSent = await sendOtpEmail(email, otp, 'Account Sign-In');
+
+    if (!emailSent && !process.env.GMAIL_APP_PASSWORD) {
+      console.warn(`[auth] Note: GMAIL_APP_PASSWORD is missing in backend/.env.`);
+    }
 
     return res.status(200).json({
-      message: 'Login code sent to your email.',
+      message: `A 6-digit sign-in code has been sent to ${email}.`,
       success: true,
     });
   } catch (error) {
     console.error('Send login OTP error:', error);
-    return res.status(500).json({ message: 'Failed to send login OTP.', error: error.message });
+    return res.status(500).json({ message: 'Failed to send login code email.', error: error.message });
   }
 });
 

@@ -26,6 +26,7 @@ import LoadingScreen from '../../components/LoadingScreen';
 import { LinearGradient } from 'expo-linear-gradient';
 import BoolokLogo from '../../components/BoolokLogo';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { API_BASE_URL } from '../../lib/api';
 
 // ── Shared follow tracker ───────────────────────────────────────────────────
 const GLOBAL_FOLLOWED_USERS = new Set<string>();
@@ -550,6 +551,19 @@ export default function ProfessionalUserProfileScreen() {
     },
   ]);
 
+  const defaultFallbackUser = {
+    id: viewer?.id || 'self',
+    fullName: viewer?.fullName || 'Sai Vimenthan',
+    username: viewer?.username || 'saivimenthanvl',
+    headline: 'Principal Real Estate Broker & Portfolio Lead | Commercial Office & Luxury Waterfront Assets',
+    location: 'Chennai, Tamil Nadu · Luxury & Commercial Assets',
+    bio: 'Principal Broker overseeing premium residential estates, commercial office syndication, and institutional real estate acquisitions. Specialized in turnkey acquisitions and AI-driven valuation models.',
+    profilePicture: viewer?.profilePicture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=250',
+    coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
+    connections: '500+',
+    mutuals: 'Followed by Logeshwaran Ashok, Bavadharini RS and 24 other certified brokers you know',
+  };
+
   useEffect(() => {
     if (viewer?.username && isSelf) {
       setUsernameInput(viewer.username);
@@ -560,9 +574,33 @@ export default function ProfessionalUserProfileScreen() {
     if (targetId) {
       fetchProfile(targetId);
     } else {
+      setData({
+        user: defaultFallbackUser,
+        postCount: 1,
+        reelCount: 1,
+        followerCount: 88070,
+        followingCount: GLOBAL_FOLLOWED_USERS.size,
+        isFollowing: false,
+        isSelf: true,
+        posts: [
+          {
+            _id: 'sai-main-post',
+            title: 'Luxury Modern French Manor Estate',
+            content: 'Stunning luxury modern estate featuring private driveway, manicured gardens, expansive outdoor terraces, and state-of-the-art smart automation. 🏡✨ Asking: $8.9M.',
+            mediaUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
+            price: '$8,900,000',
+            location: 'Beverly Hills / Coastal Corridor',
+            specs: '6 Beds · 8 Baths · 9,400 sqft',
+            likes: ['u1', 'u2', 'u3'],
+            comments: [{ text: 'Gorgeous estate with prime architectural character!' }],
+          },
+        ],
+        reels: userReels,
+      });
+      setFollowerCountState(88070);
       setLoading(false);
     }
-  }, [targetId]);
+  }, [targetId, viewer?.id]);
 
   const getToken = async () =>
     Platform.OS === 'web' ? localStorage.getItem('userToken') : await SecureStore.getItemAsync('userToken');
@@ -603,7 +641,7 @@ export default function ProfessionalUserProfileScreen() {
 
     try {
       const token = await getToken();
-      const res = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${userId}`, {
+      const res = await axios.get(`${API_BASE_URL}/api/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setData(res.data);
@@ -616,43 +654,30 @@ export default function ProfessionalUserProfileScreen() {
       }
     } catch (error) {
       console.error('Failed to load profile:', error);
-      if (isSelf && viewer) {
-        setData({
-          user: {
-            id: viewer.id,
-            fullName: viewer.fullName || 'Sai Vimenthan',
-            username: viewer.username || 'saivimenthanvl',
-            headline: 'Principal Real Estate Broker & Portfolio Lead | Commercial Office & Luxury Waterfront Assets',
-            location: 'Chennai, Tamil Nadu · Luxury & Commercial Assets',
-            bio: 'Principal Broker overseeing premium residential estates, commercial office syndication, and institutional real estate acquisitions. Specialized in turnkey acquisitions and AI-driven valuation models.',
-            profilePicture: viewer.profilePicture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=250',
-            coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-            connections: '500+',
-            mutuals: 'Followed by Logeshwaran Ashok, Bavadharini RS and 24 other certified brokers you know',
+      setData({
+        user: defaultFallbackUser,
+        postCount: 1,
+        reelCount: 1,
+        followerCount: 88070,
+        followingCount: GLOBAL_FOLLOWED_USERS.size,
+        isFollowing: false,
+        isSelf: true,
+        posts: [
+          {
+            _id: 'sai-main-post',
+            title: 'Luxury Modern French Manor Estate',
+            content: 'Stunning luxury modern estate featuring private driveway, manicured gardens, expansive outdoor terraces, and state-of-the-art smart automation. 🏡✨ Asking: $8.9M.',
+            mediaUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
+            price: '$8,900,000',
+            location: 'Beverly Hills / Coastal Corridor',
+            specs: '6 Beds · 8 Baths · 9,400 sqft',
+            likes: ['u1', 'u2', 'u3'],
+            comments: [{ text: 'Gorgeous estate with prime architectural character!' }],
           },
-          postCount: 1,
-          reelCount: 1,
-          followerCount: 88070,
-          followingCount: GLOBAL_FOLLOWED_USERS.size,
-          isFollowing: false,
-          isSelf: true,
-          posts: [
-            {
-              _id: 'sai-main-post',
-              title: 'Luxury Modern French Manor Estate',
-              content: 'Stunning luxury modern estate featuring private driveway, manicured gardens, expansive outdoor terraces, and state-of-the-art smart automation. 🏡✨ Asking: $8.9M.',
-              mediaUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
-              price: '$8,900,000',
-              location: 'Beverly Hills / Coastal Corridor',
-              specs: '6 Beds · 8 Baths · 9,400 sqft',
-              likes: ['u1', 'u2', 'u3'],
-              comments: [{ text: 'Gorgeous estate with prime architectural character!' }],
-            },
-          ],
-          reels: userReels,
-        });
-        setFollowerCountState(88070);
-      }
+        ],
+        reels: userReels,
+      });
+      setFollowerCountState(88070);
     } finally {
       setLoading(false);
     }
@@ -708,7 +733,7 @@ export default function ProfessionalUserProfileScreen() {
       const token = await getToken();
       const cleanUsername = usernameInput.trim().toLowerCase().replace(/[^a-z0-9_.]/g, '');
       const res = await axios.put(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/auth/profile`,
+        `${API_BASE_URL}/api/auth/profile`,
         { username: cleanUsername },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -738,7 +763,7 @@ export default function ProfessionalUserProfileScreen() {
     try {
       const token = await getToken();
       const res = await axios.post(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/feed`,
+        `${API_BASE_URL}/api/feed`,
         { content: postContent, mediaUrl: attachedImage || undefined },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -802,7 +827,7 @@ export default function ProfessionalUserProfileScreen() {
     try {
       const token = await getToken();
       await axios.post(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/reels`,
+        `${API_BASE_URL}/api/reels`,
         {
           title: reelTitle.trim(),
           location: reelLocation.trim(),
@@ -839,7 +864,7 @@ export default function ProfessionalUserProfileScreen() {
     try {
       const token = await getToken();
       await axios.post(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/users/${targetId}/follow`,
+        `${API_BASE_URL}/api/users/${targetId}/follow`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -861,7 +886,10 @@ export default function ProfessionalUserProfileScreen() {
   if (loading) return <LoadingScreen />;
 
   const profileUser =
-    data?.user || (isSelf ? viewer : { fullName: 'Real Estate Advisor', username: id || 'advisor' });
+    data?.user ||
+    (isSelf
+      ? viewer || defaultFallbackUser
+      : (KNOWN_AGENTS[id || ''] || defaultFallbackUser));
   const postCount = data?.postCount !== undefined ? data.postCount : (data?.posts?.length || 1);
   const reelCount = data?.reelCount !== undefined ? data.reelCount : 1;
   const followerCount = followerCountState;
@@ -875,14 +903,14 @@ export default function ProfessionalUserProfileScreen() {
   const goldPrimary = '#e6b800';
 
   const defaultHeadline =
-    profileUser.headline ||
+    profileUser?.headline ||
     'Principal Real Estate Broker & Portfolio Advisor | Commercial Office & Luxury Waterfront Assets';
-  const defaultLocation = profileUser.location || 'Chennai, Tamil Nadu · Luxury & Commercial Assets';
+  const defaultLocation = profileUser?.location || 'Chennai, Tamil Nadu · Luxury & Commercial Assets';
   const defaultBio =
-    profileUser.bio ||
+    profileUser?.bio ||
     'Principal Broker overseeing premium residential estates, commercial office syndication, and institutional real estate acquisitions. Specialized in turnkey acquisitions and AI-driven valuation models.';
   const mutualsText =
-    profileUser.mutuals ||
+    profileUser?.mutuals ||
     'Followed by Logeshwaran Ashok, Bavadharini RS and 14 other certified brokers you know';
 
   return (

@@ -99,12 +99,14 @@ export default function RegisterScreen() {
 
     try {
       await axios.post(`${API_BASE_URL}/api/auth/send-otp`, { email });
+      setOtp('');
       setIsOtpSent(true);
       setSubmitState('idle');
+      alert(`A 6-digit verification code has been sent to ${email}. Please check your Gmail Primary inbox or spam folder.`);
     } catch (error: any) {
-      console.error('Failed to send OTP:', error.response?.data?.message || error.message);
+      console.error('Failed to send registration OTP:', error.response?.data?.message || error.message);
       setSubmitState('idle');
-      alert(error.response?.data?.message || 'Failed to send OTP. Please try again.');
+      alert(error.response?.data?.message || 'Failed to send verification email. Please verify your email.');
     }
   };
 
