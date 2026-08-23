@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions, Image, Platform, TextInput, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet, useWindowDimensions, Image, Platform, ScrollView, TextInput, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Redirect, Slot, router, usePathname } from 'expo-router';
+import { Stack, router, usePathname } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { spacing, typography, radius } from '../../constants/theme';
 import BoolokLogo from '../../components/BoolokLogo';
-import LoadingScreen from '../../components/LoadingScreen';
 
 const MD_BREAKPOINT = 768;
 
@@ -20,20 +20,13 @@ const NAV_ITEMS = [
   { id: 'insights', icon: 'dynamic-feed', label: 'Insights Feed', route: '/(app)/insights' },
   { id: 'predictions', icon: 'trending-up', label: 'Price Predictions', route: '/(app)/predictions' },
   { id: 'legal', icon: 'gavel', label: 'Legal AI', route: '/(app)/legal' },
-  { id: 'blueprint', icon: 'architecture', label: 'Blueprint Gen', route: '/(app)/blueprint' },
+  { id: 'blueprint', icon: 'home-work', label: 'House Plan', route: '/(app)/blueprint' },
 ];
 
 export default function AppLayout() {
   const { width } = useWindowDimensions();
   const isWide = width >= MD_BREAKPOINT;
-  // FIX: isAuthenticated now exists on AuthContextType (added in
-  // context/AuthContext.tsx). `loading` is used below so we don't redirect
-  // to /login while the session is still being restored from
-  // SecureStore/localStorage on first load — without this guard, every
-  // page refresh on web would flash straight to the login screen even for
-  // an already-logged-in user, because token/user start out null before
-  // the async restore finishes.
-  const { user, signOut, isAuthenticated, loading } = useAuth();
+  const { user, signOut } = useAuth();
   const pathname = usePathname();
   const { theme, isDark, toggleTheme } = useTheme();
 
@@ -54,135 +47,163 @@ export default function AppLayout() {
     router.replace('/(auth)/login');
   };
 
-  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
+  // ── Sidebar hover-expand (overlay — no layout shift) ──────────────────
   const sidebarWidth = useSharedValue(80);
   const expandOpacity = useSharedValue(0);
+  const shadowOpacity = useSharedValue(0);
 
-  useEffect(() => {
-    sidebarWidth.value = withTiming(isSidebarHovered ? 260 : 80, { duration: 300 });
-    expandOpacity.value = withTiming(isSidebarHovered ? 1 : 0, { duration: 300 });
-  }, [isSidebarHovered]);
+  const handleSidebarEnter = () => {
+    sidebarWidth.value = withTiming(264, { duration: 200 });
+    expandOpacity.value = withTiming(1, { duration: 160 });
+    shadowOpacity.value = withTiming(1, { duration: 200 });
+  };
 
+  const handleSidebarLeave = () => {
+    sidebarWidth.value = withTiming(80, { duration: 200 });
+    expandOpacity.value = withTiming(0, { duration: 110 });
+    shadowOpacity.value = withTiming(0, { duration: 150 });
+  };
+
+  // The overlay panel expands; the wrapper View stays 80px → zero layout shift
   const animatedSidebarStyle = useAnimatedStyle(() => ({
     width: sidebarWidth.value,
   }));
+
+  // Labels/text fade in after panel starts opening
   const animatedExpandStyle = useAnimatedStyle(() => ({
     opacity: expandOpacity.value,
   }));
 
+  // Fades out the solid background on hover to reveal the glass gradient
+  const solidOverlayStyle = useAnimatedStyle(() => ({
+    opacity: 1 - expandOpacity.value,
+  }));
+
+  // Seamless gradient that fades out perfectly on the right edge
+  const glassGradient = isDark
+    ? ['rgba(6, 10, 22, 1)', 'rgba(6, 10, 22, 0.98)', 'rgba(6, 10, 22, 0)'] as const
+    : ['rgba(255, 255, 255, 1)', 'rgba(255, 255, 255, 0.98)', 'rgba(255, 255, 255, 0)'] as const;
+
   const Sidebar = () => (
-    <Animated.View
-      style={[styles.sidebar, animatedSidebarStyle, { backgroundColor: theme.surfaceContainerLowest, borderRightColor: theme.outlineVariant, overflow: 'hidden' }]}
-      onPointerEnter={() => setIsSidebarHovered(true)}
-      onPointerLeave={() => setIsSidebarHovered(false)}
-    >
-      <Animated.View style={[StyleSheet.absoluteFill, animatedExpandStyle, { zIndex: -1 }]}>
+    // Fixed 80px placeholder in layout — absolutely positioned overlay expands over content
+    <View style={styles.sidebarWrapper}>
+      <Animated.View
+        {...(Platform.OS === 'web' ? {
+          onMouseEnter: handleSidebarEnter,
+          onMouseLeave: handleSidebarLeave,
+        } : {})}
+        style={[
+          styles.sidebarOverlay,
+          animatedSidebarStyle,
+          { backgroundColor: 'transparent' },
+        ]}
+      >
+        {/* 1. Low-opacity gradient visible during hover (glass effect) */}
         <LinearGradient
-          colors={isDark ? ['transparent', 'rgba(218, 165, 32, 0.1)'] : ['transparent', 'rgba(218, 165, 32, 0.05)']}
-          style={StyleSheet.absoluteFill}
+          colors={glassGradient}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          locations={[0, 0.8, 1]}
+          style={[StyleSheet.absoluteFill, { zIndex: -3 }]}
         />
-      </Animated.View>
 
-      {/* Brand Header */}
-      <View style={[styles.brandRow, { width: 260 }]}>
-        <View style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}>
-          <BoolokLogo size={32} color={theme.primary} />
+        {/* 2. Solid dark background that fades OUT on hover */}
+        <Animated.View style={[StyleSheet.absoluteFill, solidOverlayStyle, { backgroundColor: theme.surfaceContainerLowest, zIndex: -2 }]} />
+
+        {/* Brand Header */}
+        <View style={[styles.brandRow, { width: 260 }]}>
+          <View style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}>
+            <BoolokLogo size={32} color={theme.primary} />
+          </View>
+          <Animated.View style={[{ width: 160 }, animatedExpandStyle]}>
+            <Text style={[typography.headlineSm, { color: theme.primary, lineHeight: 28 }]} numberOfLines={1}>BOOLOK</Text>
+            <Text style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: 2, color: theme.outline, marginTop: -4 }} numberOfLines={1}>Intelligent Precision</Text>
+          </Animated.View>
         </View>
-        <Animated.View style={[{ width: 160 }, animatedExpandStyle]}>
-          <Text style={[typography.headlineSm, { color: theme.primary, lineHeight: 28 }]} numberOfLines={1}>BOOLOK</Text>
-          <Text style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: 2, color: theme.outline, marginTop: -4 }} numberOfLines={1}>Intelligent Precision</Text>
+
+        {/* Agent Active Badge */}
+        <Animated.View style={[styles.agentBadge, { backgroundColor: 'rgba(218, 165, 32, 0.1)', borderColor: 'rgba(218, 165, 32, 0.2)', width: 228 }, animatedExpandStyle]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+            <MaterialIcons name="auto-awesome" size={14} color={theme.primary} />
+            <Text style={{ fontSize: 10, fontWeight: '700', color: theme.primary, textTransform: 'uppercase', letterSpacing: 1, marginLeft: 4 }} numberOfLines={1}>
+              Agent Active
+            </Text>
+          </View>
+          <Text style={{ fontSize: 9, color: theme.onSurfaceVariant, fontWeight: '500' }} numberOfLines={1}>Scanning 16K+ Land Opportunities</Text>
         </Animated.View>
-      </View>
 
-      {/* Agent Active Badge */}
-      <Animated.View style={[styles.agentBadge, { backgroundColor: 'rgba(218, 165, 32, 0.1)', borderColor: 'rgba(218, 165, 32, 0.2)', width: 228 }, animatedExpandStyle]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-          <MaterialIcons name="auto-awesome" size={14} color={theme.primary} />
-          <Text style={{ fontSize: 10, fontWeight: '700', color: theme.primary, textTransform: 'uppercase', letterSpacing: 1, marginLeft: 4 }} numberOfLines={1}>
-            Agent Active
-          </Text>
-        </View>
-        <Text style={{ fontSize: 9, color: theme.onSurfaceVariant, fontWeight: '500' }} numberOfLines={1}>Scanning 16K+ Land Opportunities</Text>
-      </Animated.View>
-
-      {/* Navigation */}
-      <View style={[styles.navContainer, { width: 260 }]}>
-        {NAV_ITEMS.map((item) => {
-          const publicRoute = item.route.replace('/(app)', '');
-          const isActive = pathname === item.route || pathname === publicRoute || pathname.startsWith(`${publicRoute}/`);
-          return (
-            <Pressable
-              key={item.id}
-              style={({ pressed, hovered }: any) => [
-                styles.navItem,
-                isActive && { backgroundColor: 'rgba(218, 165, 32, 0.15)' },
-                (pressed || hovered) && !isActive && { backgroundColor: 'rgba(218, 165, 32, 0.05)' },
-              ]}
-              onPress={() => router.push(item.route as any)}
-            >
-              {({ hovered, pressed }: any) => {
-                const color = isActive || hovered || pressed ? theme.primary : theme.onSurfaceVariant;
-                return (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', width: 260 }}>
-                    {isActive && (
-                      <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: theme.primary, borderTopRightRadius: 4, borderBottomRightRadius: 4, zIndex: 10 }} />
-                    )}
-                    <View style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}>
-                      <MaterialIcons
-                        name={item.icon as any}
-                        size={24}
-                        color={color}
-                      />
+        {/* Navigation */}
+        <View style={[styles.navContainer, { width: 260 }]}>
+          {NAV_ITEMS.map((item) => {
+            const isActive = pathname === item.route || pathname === item.route.replace('/(app)', '');
+            return (
+              <Pressable
+                key={item.id}
+                style={styles.navItem}
+                onPress={() => router.push(item.route as any)}
+              >
+                {({ hovered, pressed }: any) => {
+                  const color = isActive || hovered || pressed ? theme.primary : theme.onSurfaceVariant;
+                  return (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', width: 260 }}>
+                      {/* Strict text-color only state as requested */}
+                      <View style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}>
+                        <MaterialIcons
+                          name={item.icon as any}
+                          size={24}
+                          color={color}
+                        />
+                      </View>
+                      <Animated.Text style={[typography.labelMd, { color: color, fontSize: 15, width: 140 }, animatedExpandStyle]} numberOfLines={1}>
+                        {item.label}
+                      </Animated.Text>
                     </View>
-                    <Animated.Text style={[typography.labelMd, { color: color, fontSize: 15, width: 140 }, animatedExpandStyle]} numberOfLines={1}>
-                      {item.label}
-                    </Animated.Text>
-                  </View>
-                );
-              }}
+                  );
+                }}
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* Bottom Actions */}
+        <View style={[styles.sidebarBottom, { width: 260 }]}>
+
+          <Animated.View style={[styles.proPlanCard, { backgroundColor: theme.surfaceContainerHigh, borderColor: 'rgba(218, 165, 32, 0.1)', width: 228, marginLeft: spacing.md }, animatedExpandStyle]}>
+            <Text style={{ fontSize: 10, fontWeight: '700', color: theme.primary, textTransform: 'uppercase', marginBottom: 2 }} numberOfLines={1}>Pro Plan</Text>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: theme.onSurface, marginBottom: spacing.sm }} numberOfLines={1}>Unlock Global Data</Text>
+            <Pressable
+              style={({ pressed, hovered }: any) => [
+                styles.upgradeBtn,
+                { backgroundColor: theme.primary },
+                (pressed || hovered) && { transform: [{ scale: 0.98 }] }
+              ]}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '700', color: theme.onPrimary }} numberOfLines={1}>Upgrade to Pro</Text>
             </Pressable>
-          );
-        })}
-      </View>
+          </Animated.View>
 
-      {/* Bottom Actions */}
-      <View style={[styles.sidebarBottom, { width: 260 }]}>
-
-        <Animated.View style={[styles.proPlanCard, { backgroundColor: theme.surfaceContainerHigh, borderColor: 'rgba(218, 165, 32, 0.1)', width: 228, marginLeft: spacing.md }, animatedExpandStyle]}>
-          <Text style={{ fontSize: 10, fontWeight: '700', color: theme.primary, textTransform: 'uppercase', marginBottom: 2 }} numberOfLines={1}>Pro Plan</Text>
-          <Text style={{ fontSize: 12, fontWeight: '600', color: theme.onSurface, marginBottom: spacing.sm }} numberOfLines={1}>Unlock Global Data</Text>
           <Pressable
-            style={({ pressed, hovered }: any) => [
-              styles.upgradeBtn,
-              { backgroundColor: theme.primary },
-              (pressed || hovered) && { transform: [{ scale: 0.98 }] }
-            ]}
+            style={({ pressed, hovered }: any) => [styles.bottomLink, (pressed || hovered) && { opacity: 0.7 }]}
+            onPress={() => { }}
           >
-            <Text style={{ fontSize: 12, fontWeight: '700', color: theme.onPrimary }} numberOfLines={1}>Upgrade to Pro</Text>
+            <View style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}>
+              <MaterialIcons name="help" size={24} color={theme.onSurfaceVariant} />
+            </View>
+            <Animated.Text style={[typography.labelMd, { color: theme.onSurfaceVariant, width: 140 }, animatedExpandStyle]} numberOfLines={1}>Help</Animated.Text>
           </Pressable>
-        </Animated.View>
 
-        <Pressable
-          style={({ pressed, hovered }: any) => [styles.bottomLink, (pressed || hovered) && { opacity: 0.7 }]}
-          onPress={() => { }}
-        >
-          <View style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}>
-            <MaterialIcons name="help" size={24} color={theme.onSurfaceVariant} />
-          </View>
-          <Animated.Text style={[typography.labelMd, { color: theme.onSurfaceVariant, width: 140 }, animatedExpandStyle]} numberOfLines={1}>Help</Animated.Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed, hovered }: any) => [styles.bottomLink, (pressed || hovered) && { opacity: 0.7 }]}
-          onPress={handleLogout}
-        >
-          <View style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}>
-            <MaterialIcons name="logout" size={24} color={theme.error} />
-          </View>
-          <Animated.Text style={[typography.labelMd, { color: theme.error, width: 140 }, animatedExpandStyle]} numberOfLines={1}>Logout</Animated.Text>
-        </Pressable>
-      </View>
-    </Animated.View>
+          <Pressable
+            style={({ pressed, hovered }: any) => [styles.bottomLink, (pressed || hovered) && { opacity: 0.7 }]}
+            onPress={handleLogout}
+          >
+            <View style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}>
+              <MaterialIcons name="logout" size={24} color={theme.error} />
+            </View>
+            <Animated.Text style={[typography.labelMd, { color: theme.error, width: 140 }, animatedExpandStyle]} numberOfLines={1}>Logout</Animated.Text>
+          </Pressable>
+        </View>
+      </Animated.View>
+    </View>
   );
 
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
@@ -212,54 +233,50 @@ export default function AppLayout() {
   const BottomNav = () => {
     const insets = useSafeAreaInsets();
     return (
-      <View style={[styles.bottomNav, { backgroundColor: theme.surfaceContainerLowest, borderTopColor: theme.outlineVariant, paddingBottom: Math.max(insets.bottom, 10) }]}>
-        {NAV_ITEMS.slice(0, 5).map(item => {
-          const publicRoute = item.route.replace('/(app)', '');
-          const isActive = pathname === item.route || pathname === publicRoute || pathname.startsWith(`${publicRoute}/`);
+      <View style={[styles.bottomNavContainer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+        <BlurView
+          intensity={isDark ? 50 : 80}
+          tint={isDark ? 'dark' : 'light'}
+          style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(10, 15, 35, 0.6)' : 'rgba(255, 255, 255, 0.6)' }]}
+        />
+        <View style={styles.bottomNavInner}>
+          {NAV_ITEMS.slice(0, 5).map(item => {
+            const isActive = pathname === item.route || pathname === item.route.replace('/(app)', '');
 
-          let mobileLabel = item.label;
-          if (item.id === 'dashboard') mobileLabel = 'Home';
-          if (item.id === 'feed') mobileLabel = 'Social';
-          if (item.id === 'insights') mobileLabel = 'Reels';
-          if (item.id === 'predictions') mobileLabel = 'Trends';
-          if (item.id === 'search') mobileLabel = 'Search';
-          if (item.id === 'legal') mobileLabel = 'Legal';
+            // Map labels for mobile
+            let mobileLabel = item.label;
+            if (item.id === 'dashboard') mobileLabel = 'Home';
+            if (item.id === 'feed') mobileLabel = 'Social';
+            if (item.id === 'insights') mobileLabel = 'Reels';
+            if (item.id === 'predictions') mobileLabel = 'Trends';
+            if (item.id === 'search') mobileLabel = 'Search';
+            if (item.id === 'legal') mobileLabel = 'Legal';
+            if (item.id === 'blueprint') mobileLabel = 'Plan';
 
-          return (
-            <Pressable
-              key={item.id}
-              style={styles.bottomNavItem}
-              onPress={() => router.push(item.route as any)}
-            >
-              <MaterialIcons name={item.icon as any} size={24} color={isActive ? theme.primary : theme.onSurfaceVariant} />
-              <Text style={{ fontSize: 10, marginTop: 4, color: isActive ? theme.primary : theme.onSurfaceVariant, fontWeight: isActive ? '700' : '500' }}>
-                {mobileLabel}
-              </Text>
-            </Pressable>
-          );
-        })}
+            return (
+              <Pressable
+                key={item.id}
+                style={styles.bottomNavItem}
+                onPress={() => router.push(item.route as any)}
+              >
+                <MaterialIcons name={item.icon as any} size={24} color={isActive ? theme.primary : theme.onSurfaceVariant} />
+                <Text style={{ fontSize: 10, marginTop: 4, color: isActive ? theme.primary : theme.onSurfaceVariant, fontWeight: isActive ? '700' : '500' }}>
+                  {mobileLabel}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
     );
   };
 
   const insets = useSafeAreaInsets();
 
-  // FIX: wait for the session-restore check to finish before deciding to
-  // redirect. Previously this only checked `isAuthenticated`, which is
-  // false during the brief window where AuthProvider is still reading
-  // SecureStore/localStorage — causing an immediate bounce to /login on
-  // every refresh even for a valid session.
-  if (loading) {
-    return <LoadingScreen message="Checking your session..." />;
-  }
-
-  if (!isAuthenticated) {
-    return <Redirect href="/(auth)/login" />;
-  }
-
   return (
     <View style={[styles.root, { backgroundColor: theme.surface }]}>
       {isWide && <Sidebar />}
+      {/* mainContent fills all remaining space; sidebar overlay floats above it */}
       <View style={styles.mainContent}>
         {/* INLINED HEADER TO PREVENT FOCUS LOSS */}
         <View style={[styles.header, {
@@ -271,7 +288,7 @@ export default function AppLayout() {
         }]}>
           <View style={{ flexShrink: 1, marginRight: 8 }}>
             <Text style={[typography.headlineSm, { color: theme.onSurface }]} numberOfLines={1}>Welcome back, {user?.fullName?.split(' ')[0] || 'Agent'}</Text>
-            <Text style={{ fontSize: 12, color: theme.onSurfaceVariant, fontWeight: '500' }}>Your intelligent real-estate workspace</Text>
+            <Text style={{ fontSize: 12, color: theme.onSurfaceVariant, fontWeight: '500' }}>June 27, 2026</Text>
           </View>
 
           {isWide && (
@@ -387,7 +404,7 @@ export default function AppLayout() {
         </View>
 
         <View style={[styles.slotContainer, { backgroundColor: theme.surface }]}>
-          <Slot />
+          <Stack screenOptions={{ headerShown: false, animation: 'fade' }} />
         </View>
 
         {!isWide && <BottomNav />}
@@ -401,14 +418,22 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
   },
-  sidebar: {
-    width: 260,
+  // Fixed 80px placeholder — keeps the layout slot but never changes size
+  sidebarWrapper: {
+    width: 80,
     height: '100%',
-    borderRightWidth: 1,
+    position: 'relative',
+    zIndex: 200,
+  },
+  // The actual expanding panel — absolutely positioned, floats over content
+  sidebarOverlay: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    overflow: 'hidden',
     paddingVertical: spacing.md,
-    display: 'flex',
     flexDirection: 'column',
-    ...Platform.select({ web: { transition: 'all 0.3s ease' } as any }),
   },
   brandRow: {
     flexDirection: 'row',
@@ -481,13 +506,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     ...Platform.select({ web: { transition: 'all 0.3s ease' } as any }),
   },
-  bottomNav: {
+  bottomNavContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+    zIndex: 100,
+  },
+  bottomNavInner: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
     paddingVertical: 10,
-    borderTopWidth: 1,
-    elevation: 8,
   },
   bottomNavItem: {
     alignItems: 'center',

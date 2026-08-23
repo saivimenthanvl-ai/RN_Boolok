@@ -51,26 +51,26 @@ export default function PersonalizeScreen() {
   const { width } = useWindowDimensions();
   const isWide = width >= MD_BREAKPOINT;
   const { token, user, signIn } = useAuth();
-  
+
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleContinue = async () => {
     if (!selectedGoal || !token) return;
     setIsSubmitting(true);
-    
+
     try {
       const response = await axios.put(
         `${API_BASE_URL}/api/auth/personalize`,
         { goal: selectedGoal },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       // Update local context with new user data
       if (response.data.user) {
         await signIn(token, response.data.user);
       }
-      
+
       router.push('/(auth)/welcome');
     } catch (error: any) {
       console.error('Personalize failed:', error.response?.data?.message || error.message);
@@ -105,7 +105,7 @@ export default function PersonalizeScreen() {
                 >
                   <BoolokLogo size={48} color="#fff" />
                   <Text style={[typography.headlineMd, { color: '#fff', marginLeft: spacing.base, fontFamily: 'Poppins_700Bold' }]}>
-                    BOOLOK <Text style={{ color: colors.primary }}>GPT</Text>
+                    BOOLOK <Text style={{ color: colors.primary }}>AI</Text>
                   </Text>
                 </Pressable>
 
@@ -152,7 +152,7 @@ export default function PersonalizeScreen() {
               Personalize Your AI Experience
             </Text>
             <Text style={[typography.bodyLg, { color: colors.onSurfaceVariant, marginBottom: spacing.xl }]}>
-              Tell us your primary goal so Boolok GPT can better assist you.
+              Tell us your primary goal so Boolok AI can better assist you.
             </Text>
 
             {/* Selection Grid */}
@@ -171,10 +171,10 @@ export default function PersonalizeScreen() {
                   >
                     <View style={styles.cardHeader}>
                       <View style={[styles.iconWrap, isSelected && styles.iconWrapSelected]}>
-                        <MaterialIcons 
-                          name={goal.icon as any} 
-                          size={24} 
-                          color={isSelected ? colors.onPrimary : colors.primary} 
+                        <MaterialIcons
+                          name={goal.icon as any}
+                          size={24}
+                          color={isSelected ? colors.onPrimary : colors.primary}
                         />
                       </View>
                       {isSelected && (
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     width: 250,
     height: 250,
     borderRadius: 125,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryFixed,
     opacity: 0.1,
   },
   brandInner: {

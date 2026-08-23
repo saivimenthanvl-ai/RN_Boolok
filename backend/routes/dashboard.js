@@ -31,7 +31,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
       complianceAlert: ''
     };
 
-    switch(goal) {
+    switch (goal) {
       case 'investing':
         payload.recentInquiries = ['Commercial Plaza ROI', 'Multifamily Units Texas', 'Industrial Warehouses'];
         payload.marketPredictions = {

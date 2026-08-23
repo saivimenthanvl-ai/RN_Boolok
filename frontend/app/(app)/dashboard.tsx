@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -246,6 +247,7 @@ export default function FeedScreen() {
 
           {/* Legal AI */}
           <Pressable
+            onPress={() => router.push('/(app)/legal')}
             style={({ pressed, hovered }: any) => [
               styles.card,
               { padding: isWide ? spacing.xl : spacing.md },
@@ -254,6 +256,7 @@ export default function FeedScreen() {
                 borderColor: isDark
                   ? theme.outlineVariant
                   : 'rgba(218, 165, 32, 0.35)',
+                cursor: 'pointer',
               },
               isWide ? { width: 'calc(33.333% - 16px)' } : { width: '100%' },
               styles.legalCard,
@@ -354,6 +357,7 @@ export default function FeedScreen() {
           {/* Row 2 */}
           {/* Blueprint Architect */}
           <Pressable
+            onPress={() => router.push('/(app)/blueprint')}
             style={({ pressed, hovered }: any) => [
               styles.card,
               { padding: isWide ? spacing.xl : spacing.md },
@@ -362,6 +366,7 @@ export default function FeedScreen() {
                 borderColor: isDark
                   ? theme.outlineVariant
                   : 'rgba(218, 165, 32, 0.35)',
+                cursor: 'pointer',
               },
               isWide ? { width: 'calc(33.333% - 16px)' } : { width: '100%' },
               styles.blueprintCard,
@@ -416,9 +421,10 @@ export default function FeedScreen() {
                 rough sketches.
               </Text>
               <Pressable
+                onPress={() => router.push('/(app)/blueprint')}
                 style={({ pressed, hovered }: any) => [
                   styles.generateBtn,
-                  { backgroundColor: theme.primary },
+                  { backgroundColor: theme.primary, cursor: 'pointer' },
                   (pressed || hovered) && { transform: [{ scale: 0.98 }] },
                 ]}
               >
@@ -433,6 +439,7 @@ export default function FeedScreen() {
 
           {/* Market Predictions */}
           <Pressable
+            onPress={() => router.push('/(app)/predictions')}
             style={({ pressed, hovered }: any) => [
               styles.card,
               { padding: isWide ? spacing.xl : spacing.md },
@@ -441,6 +448,7 @@ export default function FeedScreen() {
                 borderColor: isDark
                   ? theme.outlineVariant
                   : 'rgba(218, 165, 32, 0.35)',
+                cursor: 'pointer',
               },
               isWide ? { width: 'calc(66.666% - 16px)' } : { width: '100%' },
               styles.predictionsCard,

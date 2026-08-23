@@ -55,7 +55,7 @@ export default function WelcomeScreen() {
                 >
                   <BoolokLogo size={48} color="#fff" />
                   <Text style={[typography.headlineMd, { color: '#fff', marginLeft: spacing.base, fontFamily: 'Poppins_700Bold' }]}>
-                    BOOLOK <Text style={{ color: colors.primary }}>GPT</Text>
+                    BOOLOK <Text style={{ color: colors.primary }}>AI</Text>
                   </Text>
                 </Pressable>
 
@@ -88,7 +88,7 @@ export default function WelcomeScreen() {
         {/* ---------- RIGHT PANEL (Success Content) ---------- */}
         <Animated.View style={styles.contentPanel} entering={FadeIn.duration(600).delay(200)}>
           <View style={styles.contentInner}>
-            
+
             {/* Animated Checkmark */}
             <View style={styles.checkContainer}>
               <Animated.View style={[styles.checkCircle, animatedCheckStyle]}>
@@ -120,7 +120,7 @@ export default function WelcomeScreen() {
                 </Text>
                 <MaterialIcons name="arrow-forward" size={18} color={colors.onPrimary} style={{ marginLeft: spacing.sm }} />
               </Pressable>
-              
+
               <Text style={[typography.bodySm, { color: colors.onSurfaceVariant, marginTop: spacing.xl }]}>
                 Need help getting started? <Text style={{ color: colors.primary, fontWeight: '600' }}>View Onboarding Guide</Text>
               </Text>
@@ -131,7 +131,7 @@ export default function WelcomeScreen() {
           {/* Footer just for looks on desktop */}
           {isWide && (
             <View style={styles.desktopFooter}>
-              <Text style={[typography.bodySm, { color: colors.onSurfaceVariant }]}>© 2024 BOOLOK GPT.</Text>
+              <Text style={[typography.bodySm, { color: colors.onSurfaceVariant }]}>© 2024 BOOLOK AI.</Text>
               <View style={{ flexDirection: 'row', gap: spacing.md }}>
                 <Text style={[typography.bodySm, { color: colors.onSurfaceVariant }]}>Privacy</Text>
                 <Text style={[typography.bodySm, { color: colors.onSurfaceVariant }]}>Terms</Text>

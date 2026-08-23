@@ -51,7 +51,8 @@ function generatePlaceholderAnalysis() {
 router.get('/', auth, async (req, res) => {
   try {
     const reels = await Reel.find()
-      .populate('author', 'fullName profilePicture')
+      .populate('author', 'fullName username profilePicture')
+      .populate('comments.user', 'fullName username profilePicture')
       .sort({ createdAt: -1 })
       .limit(10);
     res.json(reels);
@@ -125,6 +126,49 @@ router.put('/:id/like', auth, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error updating reel like' });
+  }
+});
+
+// POST add comment to a reel
+router.post('/:id/comments', auth, async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: 'Comment text is required.' });
+    }
+
+    const reel = await Reel.findById(req.params.id);
+    if (!reel) {
+      return res.status(404).json({ message: 'Reel not found.' });
+    }
+
+    reel.comments.push({
+      user: req.user.id,
+      text: text.trim(),
+      createdAt: new Date(),
+    });
+
+    await reel.save();
+    await reel.populate('comments.user', 'fullName username profilePicture');
+
+    res.status(201).json(reel.comments);
+  } catch (error) {
+    console.error('[COMMENT] Error:', error);
+    res.status(500).json({ message: 'Server error adding comment.' });
+  }
+});
+
+// GET comments for a reel
+router.get('/:id/comments', auth, async (req, res) => {
+  try {
+    const reel = await Reel.findById(req.params.id).populate('comments.user', 'fullName username profilePicture');
+    if (!reel) {
+      return res.status(404).json({ message: 'Reel not found.' });
+    }
+    res.json(reel.comments || []);
+  } catch (error) {
+    console.error('[GET COMMENTS] Error:', error);
+    res.status(500).json({ message: 'Server error fetching comments.' });
   }
 });
 

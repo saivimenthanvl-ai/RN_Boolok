@@ -14,9 +14,11 @@ const USER_KEY = 'userData';
 export type AuthUser = {
   id: string;
   fullName: string;
+  username?: string | null;
   email: string;
   profilePicture?: string | null;
   goal?: string | null;
+  role?: string | null;
 };
 
 type AuthContextType = {

@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   Animated,
-  Dimensions,
   Pressable,
   Platform,
   useWindowDimensions,
@@ -14,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import BoolokLogo from '../../components/BoolokLogo';
+import { useAuth } from '../../context/AuthContext';
 
 // ─── Theme Configurations ───────────────────────────────────────────────────────
 const lightTheme = {
@@ -204,8 +204,9 @@ export default function BrandVisionScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: SCREEN_W } = useWindowDimensions();
-  
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { user } = useAuth();
+
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const theme = isDarkMode ? darkTheme : lightTheme;
   const styles = useMemo(() => getStyles(theme, insets, SCREEN_W), [theme, insets, SCREEN_W]);
 
@@ -222,7 +223,7 @@ export default function BrandVisionScreen() {
         <View style={styles.navBrand}>
           <BoolokLogo size={32} color={theme.onSurface} />
           <Text style={styles.navBrandText}>
-            BOOLOK <Text style={styles.navBrandGold}>GPT</Text>
+            BOOLOK <Text style={styles.navBrandGold}>AI</Text>
           </Text>
         </View>
 
@@ -235,18 +236,29 @@ export default function BrandVisionScreen() {
 
         <View style={styles.navActions}>
           <ThemeToggle isDark={isDarkMode} onToggle={toggleTheme} theme={theme} />
-          <HoverButton
-            style={styles.navSignIn}
-            onPress={() => router.push('/(auth)/login')}
-          >
-            <Text style={styles.navSignInText}>Sign In</Text>
-          </HoverButton>
-          <HoverButton
-            style={styles.navJoin}
-            onPress={() => router.push('/(auth)/register')}
-          >
-            <Text style={styles.navJoinText}>Join Now</Text>
-          </HoverButton>
+          {user ? (
+            <HoverButton
+              style={styles.navJoin}
+              onPress={() => router.push('/(app)/dashboard')}
+            >
+              <Text style={styles.navJoinText}>Dashboard</Text>
+            </HoverButton>
+          ) : (
+            <>
+              <HoverButton
+                style={styles.navSignIn}
+                onPress={() => router.push('/(auth)/login')}
+              >
+                <Text style={styles.navSignInText}>Sign In</Text>
+              </HoverButton>
+              <HoverButton
+                style={styles.navJoin}
+                onPress={() => router.push('/(auth)/register')}
+              >
+                <Text style={styles.navJoinText}>Join Now</Text>
+              </HoverButton>
+            </>
+          )}
         </View>
       </View>
 
@@ -264,7 +276,7 @@ export default function BrandVisionScreen() {
 
         <FadeIn delay={400}>
           <Text style={styles.heroSubtitle}>
-            At the heart of BOOLOK GPT lies the{' '}
+            At the heart of BOOLOK AI lies the{' '}
             <Text style={styles.heroHighlight}>Neural Node</Text>—a 9-dot
             architecture representing the convergence of local data, global trends,
             and human intent, unified by the central spark of Artificial Intelligence.
@@ -321,7 +333,7 @@ export default function BrandVisionScreen() {
             <PillarCard
               icon="globe"
               title="Global Reach"
-              description="Our network bridges the gap between international capital and local opportunities. From the streets of Tokyo to the skylines of New York, BOOLOK GPT standardizes property data across 45 countries."
+              description="Our network bridges the gap between international capital and local opportunities. From the streets of Tokyo to the skylines of New York, BOOLOK AI standardizes property data across 45 countries."
               theme={theme}
               styles={styles}
             />
@@ -360,8 +372,8 @@ export default function BrandVisionScreen() {
       {/* ── Call to Action ── */}
       <View style={styles.ctaSection}>
         <Text style={styles.ctaHeadline}>Ready to navigate the future?</Text>
-        <HoverButton style={styles.ctaButton} onPress={() => router.back()}>
-          <Text style={styles.ctaButtonText}>← Return to Dashboard</Text>
+        <HoverButton style={styles.ctaButton} onPress={() => router.push(user ? '/(app)/dashboard' : '/(auth)/login')}>
+          <Text style={styles.ctaButtonText}>{user ? 'Go to Dashboard →' : 'Sign In to Start →'}</Text>
         </HoverButton>
       </View>
 
@@ -371,15 +383,15 @@ export default function BrandVisionScreen() {
           <View style={styles.footerBrand}>
             <BoolokLogo size={20} color={theme.onSurface} />
             <Text style={styles.footerBrandText}>
-              BOOLOK <Text style={styles.navBrandGold}>GPT</Text>
+              BOOLOK <Text style={styles.navBrandGold}>AI</Text>
             </Text>
           </View>
-          <Text style={styles.footerCopy}>© 2024 BOOLOK GPT. All rights reserved.</Text>
+          <Text style={styles.footerCopy}>© 2024 BOOLOK AI. All rights reserved.</Text>
         </View>
         <View style={styles.footerLinks}>
           {['Privacy Policy', 'Terms of Service', 'Cookie Policy', 'Contact Support'].map(
             (link) => (
-              <HoverButton key={link} onPress={() => {}}>
+              <HoverButton key={link} onPress={() => { }}>
                 <Text style={styles.footerLink}>{link}</Text>
               </HoverButton>
             )
