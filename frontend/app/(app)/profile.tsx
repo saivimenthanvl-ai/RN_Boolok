@@ -375,16 +375,47 @@ export default function ProfessionalUserProfileScreen() {
   const [editAvatarUrl, setEditAvatarUrl] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
+  // Real-time Followers list modal state
+  const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
+  const [followersList, setFollowersList] = useState<any[]>([]);
+  const [isLoadingFollowers, setIsLoadingFollowers] = useState(false);
+
   useEffect(() => {
     if (viewer?.username && isSelf) {
       setUsernameInput(viewer.username);
     }
   }, [viewer?.username, isSelf]);
 
+  const getToken = async () =>
+    Platform.OS === 'web' ? localStorage.getItem('userToken') : await SecureStore.getItemAsync('userToken');
+
+  const fetchProfileSilent = async (userId: string) => {
+    try {
+      const token = await getToken();
+      const res = await axios.get(`${API_BASE_URL}/api/users/${userId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.data?.user) {
+        setData(res.data);
+        setFollowerCountState(res.data.followerCount || 0);
+        setIsFollowingState(Boolean(res.data.isFollowing));
+      }
+    } catch (e) {
+      // silent background refresh
+    }
+  };
+
   useEffect(() => {
     const activeId = targetId || viewer?.id || viewer?._id;
     if (activeId && activeId !== 'self') {
       fetchProfile(activeId);
+
+      // Real-time live auto-poll every 3.5s so when other users follow, count increases live
+      const interval = setInterval(() => {
+        fetchProfileSilent(activeId);
+      }, 3500);
+
+      return () => clearInterval(interval);
     } else {
       setData({
         user: defaultFallbackUser,
@@ -401,9 +432,6 @@ export default function ProfessionalUserProfileScreen() {
       setLoading(false);
     }
   }, [targetId, viewer?.id, viewer?._id]);
-
-  const getToken = async () =>
-    Platform.OS === 'web' ? localStorage.getItem('userToken') : await SecureStore.getItemAsync('userToken');
 
   const fetchProfile = async (userId: string) => {
     setLoading(true);
@@ -437,6 +465,28 @@ export default function ProfessionalUserProfileScreen() {
       setFollowerCountState(0);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenFollowersModal = async () => {
+    setIsFollowersModalOpen(true);
+    setIsLoadingFollowers(true);
+    const activeId = targetId || profileUser?.id || profileUser?._id || viewer?.id;
+    try {
+      const token = await getToken();
+      const res = await axios.get(`${API_BASE_URL}/api/users/${activeId}/followers`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.data?.followers) {
+        setFollowersList(res.data.followers);
+      }
+    } catch (e) {
+      console.warn('Failed to load followers list:', e);
+      if (profileUser?.followers) {
+        setFollowersList(profileUser.followers);
+      }
+    } finally {
+      setIsLoadingFollowers(false);
     }
   };
 
@@ -650,7 +700,8 @@ export default function ProfessionalUserProfileScreen() {
   };
 
   const toggleFollow = async () => {
-    if (!targetId || followBusy) return;
+    const activeTarget = targetId || profileUser?.id || profileUser?._id;
+    if (!activeTarget || isSelf || followBusy) return;
     setFollowBusy(true);
 
     const nextState = !isFollowingState;
@@ -658,20 +709,29 @@ export default function ProfessionalUserProfileScreen() {
     setFollowerCountState((prev) => (nextState ? prev + 1 : Math.max(0, prev - 1)));
 
     if (nextState) {
-      GLOBAL_FOLLOWED_USERS.add(targetId);
+      GLOBAL_FOLLOWED_USERS.add(activeTarget);
     } else {
-      GLOBAL_FOLLOWED_USERS.delete(targetId);
+      GLOBAL_FOLLOWED_USERS.delete(activeTarget);
     }
 
     try {
       const token = await getToken();
-      await axios.post(
-        `${API_BASE_URL}/api/users/${targetId}/follow`,
+      const res = await axios.post(
+        `${API_BASE_URL}/api/users/${activeTarget}/follow`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
-    } catch (error) {
-      console.log('Follow state updated.');
+      if (res.data) {
+        setIsFollowingState(Boolean(res.data.isFollowing));
+        if (typeof res.data.followerCount === 'number') {
+          setFollowerCountState(res.data.followerCount);
+        }
+      }
+      if (isFollowersModalOpen) {
+        handleOpenFollowersModal();
+      }
+    } catch (error: any) {
+      console.log('Follow state updated:', error.message);
     } finally {
       setFollowBusy(false);
     }
@@ -713,7 +773,7 @@ export default function ProfessionalUserProfileScreen() {
     'Principal Broker overseeing premium residential estates, commercial office syndication, and institutional real estate acquisitions. Specialized in turnkey acquisitions and AI-driven valuation models.';
   const mutualsText =
     profileUser?.mutuals ||
-    'Followed by Logeshwaran Ashok, Bavadharini RS and 14 other certified brokers you know';
+    (followerCount > 0 ? `${followerCount} followers in Boolok Network` : 'New Member in Boolok Network');
 
   return (
     <ScrollView
@@ -854,12 +914,14 @@ export default function ProfessionalUserProfileScreen() {
 
               {/* Real Followers & Transaction Metrics */}
               <View style={styles.metricsRow}>
-                <Text style={styles.followersMetric}>
-                  <Text style={{ fontWeight: '800', color: '#ffffff' }}>
-                    {followerCount.toLocaleString()}
-                  </Text>{' '}
-                  followers
-                </Text>
+                <Pressable onPress={handleOpenFollowersModal} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.followersMetric}>
+                    <Text style={{ fontWeight: '800', color: '#ffffff', textDecorationLine: 'underline' }}>
+                      {followerCount.toLocaleString()}
+                    </Text>{' '}
+                    followers
+                  </Text>
+                </Pressable>
                 <Text style={styles.metricsDot}>·</Text>
                 <Text style={styles.volumeMetric}>
                   <Text style={{ fontWeight: '800', color: goldPrimary }}>{profileUser.closedDeals || '0'}</Text> Closed Deals
@@ -867,12 +929,12 @@ export default function ProfessionalUserProfileScreen() {
               </View>
 
               {/* Social Proof / Mutual Connections */}
-              <View style={styles.mutualsRow}>
-                <MaterialIcons name="people" size={16} color="#8b9bb4" />
+              <Pressable onPress={handleOpenFollowersModal} style={styles.mutualsRow}>
+                <MaterialIcons name="people" size={16} color="#daa520" />
                 <Text style={styles.mutualsText}>
-                  {profileUser.mutuals || (followerCount > 0 ? `${followerCount} followers in Boolok Network` : 'New Member in Boolok Network')}
+                  {profileUser.mutuals || (followerCount > 0 ? `${followerCount} followers in Boolok Network` : '0 followers (Tap to view)')}
                 </Text>
-              </View>
+              </Pressable>
 
               {/* Call-to-Action Executive Buttons */}
               <View style={styles.ctaButtonRow}>
@@ -1350,6 +1412,94 @@ export default function ProfessionalUserProfileScreen() {
                     </Text>
                   </Pressable>
                 </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* REAL-TIME FOLLOWERS LIST MODAL */}
+        <Modal
+          visible={isFollowersModalOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsFollowersModalOpen(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+            <View style={{ width: '100%', maxWidth: 480, backgroundColor: '#0c1626', borderRadius: 16, borderWidth: 1, borderColor: '#1a273c', padding: 20, maxHeight: 520 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#1a273c', paddingBottom: 14 }}>
+                <View>
+                  <Text style={{ fontSize: 17, fontWeight: '800', color: '#ffffff' }}>
+                    {profileUser.fullName}'s Followers
+                  </Text>
+                  <Text style={{ color: '#8b9bb4', fontSize: 12, marginTop: 2 }}>
+                    {followerCount} {followerCount === 1 ? 'person following' : 'persons following'} in real-time
+                  </Text>
+                </View>
+                <Pressable onPress={() => setIsFollowersModalOpen(false)} style={{ padding: 4 }}>
+                  <MaterialIcons name="close" size={24} color="#8b9bb4" />
+                </Pressable>
+              </View>
+
+              <ScrollView style={{ marginTop: 12 }} showsVerticalScrollIndicator={false}>
+                {isLoadingFollowers ? (
+                  <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                    <ActivityIndicator size="small" color="#daa520" />
+                    <Text style={{ color: '#8b9bb4', fontSize: 12, marginTop: 8 }}>Loading real-time followers...</Text>
+                  </View>
+                ) : followersList.length > 0 ? (
+                  followersList.map((follower: any, idx: number) => {
+                    const fInitial = (follower.fullName || follower.username || 'U')[0]?.toUpperCase();
+                    return (
+                      <Pressable
+                        key={follower.id || follower._id || idx}
+                        style={({ pressed, hovered }: any) => [
+                          styles.followerListItem,
+                          { borderBottomWidth: idx < followersList.length - 1 ? 1 : 0, borderBottomColor: '#142033' },
+                          (pressed || hovered) && { backgroundColor: '#162338' },
+                        ]}
+                        onPress={() => {
+                          setIsFollowersModalOpen(false);
+                          router.push({
+                            pathname: '/(app)/profile',
+                            params: { id: follower.id || follower._id || follower.username },
+                          });
+                        }}
+                      >
+                        {follower.profilePicture ? (
+                          <Image source={{ uri: follower.profilePicture }} style={styles.followerItemAvatar} />
+                        ) : (
+                          <View style={[styles.followerItemAvatar, { backgroundColor: '#1a273c', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#daa520' }]}>
+                            <Text style={{ color: '#daa520', fontWeight: '800', fontSize: 14 }}>{fInitial}</Text>
+                          </View>
+                        )}
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                          <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>
+                            {follower.fullName}
+                          </Text>
+                          <Text style={{ color: '#8b9bb4', fontSize: 12 }}>
+                            @{follower.username}
+                          </Text>
+                          {follower.headline && (
+                            <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+                              {follower.headline}
+                            </Text>
+                          )}
+                        </View>
+                        <MaterialIcons name="chevron-right" size={20} color="#8b9bb4" />
+                      </Pressable>
+                    );
+                  })
+                ) : (
+                  <View style={{ paddingVertical: 36, alignItems: 'center' }}>
+                    <MaterialIcons name="people-outline" size={44} color="#64748b" />
+                    <Text style={{ color: '#ffffff', fontSize: 15, fontWeight: '700', marginTop: 12 }}>
+                      No followers yet
+                    </Text>
+                    <Text style={{ color: '#8b9bb4', fontSize: 12.5, textAlign: 'center', marginTop: 4, paddingHorizontal: 20 }}>
+                      Be the first person in the network to follow {profileUser.fullName}!
+                    </Text>
+                  </View>
+                )}
               </ScrollView>
             </View>
           </View>
@@ -2076,5 +2226,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#e6b800',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  followerListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  followerItemAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
 });

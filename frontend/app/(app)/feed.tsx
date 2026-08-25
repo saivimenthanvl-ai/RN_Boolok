@@ -257,6 +257,10 @@ export default function ProfessionalSocialFeedScreen() {
 
   useEffect(() => {
     fetchPostsAndNews();
+    const interval = setInterval(() => {
+      fetchPostsAndNews();
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const getToken = async () =>

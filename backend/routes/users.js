@@ -184,25 +184,166 @@ router.put('/profile', authMiddleware, async (req, res) => {
   }
 });
 
+const COMMUNITY_MEMBERS = [
+  {
+    username: 'the_akshtr_estate',
+    aliases: ['agent-4', 'akshat_commercials', 'akshat', 'the_akshtr_estate'],
+    fullName: 'Akshat Commercials',
+    email: 'akshat.commercials@boolok.ai',
+    headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Network',
+    location: 'Chennai, Tamil Nadu · Prime Assets',
+    bio: 'Specializing in Grade-A IT SEZ parks, commercial lease syndications, and institutional asset acquisitions on OMR Chennai.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'aswin.realty',
+    aliases: ['agent-2', 'aswin_realty', 'aswin'],
+    fullName: 'Aswin Real Estate',
+    email: 'aswin.realty@boolok.ai',
+    headline: 'Principal Real Estate Broker & Multi-Family Asset Advisor',
+    location: 'Chennai, Tamil Nadu · Luxury & Commercial Assets',
+    bio: 'Expert commercial multi-family portfolio manager with deep market analytics on cap rates and returns.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'prasanth_properties',
+    aliases: ['agent-1', 'prasanth', 'prasanth_properties'],
+    fullName: 'Prasanth Properties',
+    email: 'prasanth.properties@boolok.ai',
+    headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
+    location: 'Miami, Florida · Coastal Estates',
+    bio: 'Luxury real estate advisory focused on ultra-prime beachfront residences and waterfront villas.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'ig_vicky16',
+    aliases: ['agent-3', 'vicky_luxury', 'ig_vicky16', 'vicky'],
+    fullName: 'Vicky Luxury Living',
+    email: 'vicky.luxury@boolok.ai',
+    headline: 'Prime Architectural Estates & Beverly Hills Luxury Specialist',
+    location: 'Beverly Hills, California · Ultra Luxury',
+    bio: 'Curating custom luxury properties, penthouses, and architectural landmarks for high net worth clients.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'shreekutti',
+    aliases: ['shreekutti'],
+    fullName: 'shreekutti',
+    email: 'shreekutti@boolok.ai',
+    headline: 'Tech Park Campus Acquisitions Lead @ Boolok Realty',
+    location: 'Bangalore, Karnataka · Tech Parks',
+    bio: 'Specialized in commercial land development and Grade-A tech hub transactions across South India.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'logeshwarana',
+    aliases: ['logeshwarana', 'logeshwaran_ashok'],
+    fullName: 'logeshwarana',
+    email: 'logeshwarana@boolok.ai',
+    headline: 'Real Estate Asset Analyst & Valuation Specialist',
+    location: 'Coimbatore, Tamil Nadu · Industrial & Retail',
+    bio: 'Focused on precision cap-rate calculations, commercial yield optimization, and real estate investment portfolios.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'ajmal',
+    aliases: ['ajmal'],
+    fullName: 'ajmal',
+    email: 'ajmal@boolok.ai',
+    headline: 'Luxury Living & High-End Residential Broker',
+    location: 'Dubai & Kochi · Luxury Villas',
+    bio: 'Connecting international investors to premier waterfront villas and bespoke residential developments.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'cinemahub.live',
+    aliases: ['cinemahub.live', 'cinemahub'],
+    fullName: 'cinemahub.live',
+    email: 'cinemahub@boolok.ai',
+    headline: 'Media Studio & Film Production Estate Specialist',
+    location: 'Mumbai & Chennai · Studio Properties',
+    bio: 'Acquiring prime production lots, sound stages, and expansive filming estates across India.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'bavadharini_rs',
+    aliases: ['bavadharini_rs', 'bavadharini'],
+    fullName: 'Bavadharini RS',
+    email: 'bavadharini@boolok.ai',
+    headline: 'Interior Designer & Modern Living Specialist',
+    location: 'Chennai, Tamil Nadu · Modern Living',
+    bio: 'Bespoke high-end interior architecture, penthouse makeovers, and custom luxury styling.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+];
+
+async function resolveOrSeedUser(id) {
+  let profileUser = null;
+  const lookup = (id || '').toString().trim().toLowerCase();
+
+  if (mongoose.Types.ObjectId.isValid(lookup)) {
+    profileUser = await User.findById(lookup)
+      .populate('followers', 'fullName username profilePicture headline location')
+      .populate('following', 'fullName username profilePicture headline location');
+  }
+
+  if (!profileUser) {
+    profileUser = await User.findOne({ username: lookup })
+      .populate('followers', 'fullName username profilePicture headline location')
+      .populate('following', 'fullName username profilePicture headline location');
+  }
+
+  if (!profileUser) {
+    const memberDef = COMMUNITY_MEMBERS.find(
+      (m) => m.username.toLowerCase() === lookup || m.aliases.map((a) => a.toLowerCase()).includes(lookup)
+    );
+
+    if (memberDef) {
+      let existing = await User.findOne({
+        $or: [{ username: memberDef.username }, { email: memberDef.email }],
+      });
+
+      if (!existing) {
+        existing = await User.create({
+          fullName: memberDef.fullName,
+          username: memberDef.username,
+          email: memberDef.email,
+          password: '$2a$10$BoolokDefaultPasswordHash2026.SeededUser',
+          headline: memberDef.headline,
+          location: memberDef.location,
+          bio: memberDef.bio,
+          closedDeals: '0',
+          profilePicture: null,
+          followers: [],
+          following: [],
+        });
+      }
+
+      profileUser = await User.findById(existing._id)
+        .populate('followers', 'fullName username profilePicture headline location')
+        .populate('following', 'fullName username profilePicture headline location');
+    }
+  }
+
+  return profileUser;
+}
+
 // ── GET /api/users/:id (Get profile by ID or username) ────────────────────
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const viewerId = getAuthenticatedUserId(req);
 
-    let profileUser = null;
-
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      profileUser = await User.findById(id)
-        .populate('followers', 'fullName username profilePicture')
-        .populate('following', 'fullName username profilePicture');
-    }
-
-    if (!profileUser) {
-      profileUser = await User.findOne({ username: id.toLowerCase() })
-        .populate('followers', 'fullName username profilePicture')
-        .populate('following', 'fullName username profilePicture');
-    }
+    const profileUser = await resolveOrSeedUser(id);
 
     if (!profileUser) {
       return res.status(404).json({ message: 'User not found.' });
@@ -234,6 +375,41 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// ── GET /api/users/:id/followers (Get real-time followers list) ───────────
+router.get('/:id/followers', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const profileUser = await resolveOrSeedUser(id);
+
+    if (!profileUser) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const populatedFollowers = (profileUser.followers || []).map((f) => {
+      if (typeof f === 'object' && f !== null) {
+        return {
+          id: f._id ? f._id.toString() : f.id,
+          _id: f._id ? f._id.toString() : f.id,
+          fullName: f.fullName || 'Boolok Member',
+          username: f.username || 'member',
+          headline: f.headline || 'Real Estate Professional',
+          location: f.location || 'Global Real Estate Network',
+          profilePicture: f.profilePicture || null,
+        };
+      }
+      return { id: f.toString(), _id: f.toString(), fullName: 'Boolok Member', username: 'member', profilePicture: null };
+    });
+
+    return res.status(200).json({
+      followers: populatedFollowers,
+      followerCount: populatedFollowers.length,
+    });
+  } catch (error) {
+    console.error('GET FOLLOWERS LIST ERROR:', error);
+    return res.status(500).json({ message: 'Failed to fetch followers list.', error: error.message });
+  }
+});
+
 // ── POST /api/users/:id/follow (Toggle follow & dispatch notification) ────
 router.post('/:id/follow', authMiddleware, async (req, res) => {
   try {
@@ -242,13 +418,7 @@ router.post('/:id/follow', authMiddleware, async (req, res) => {
 
     if (!viewerId) return res.status(401).json({ message: 'Unauthorized.' });
 
-    let target = null;
-    if (mongoose.Types.ObjectId.isValid(id)) {
-      target = await User.findById(id);
-    }
-    if (!target) {
-      target = await User.findOne({ username: id.toLowerCase() });
-    }
+    let target = await resolveOrSeedUser(id);
 
     if (!target) return res.status(404).json({ message: 'User not found.' });
     if (target._id.toString() === viewerId.toString()) {
