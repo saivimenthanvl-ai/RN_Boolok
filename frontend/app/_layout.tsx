@@ -17,20 +17,39 @@ import { ThemeProvider } from '../context/ThemeContext';
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    Poppins_400Regular,
-    Poppins_500Medium,
-    Poppins_600SemiBold,
-    Poppins_700Bold,
-  });
+  const [fontsLoaded, fontError] = useFonts(
+    Platform.OS === 'web'
+      ? {}
+      : {
+          Poppins_400Regular,
+          Poppins_500Medium,
+          Poppins_600SemiBold,
+          Poppins_700Bold,
+        }
+  );
 
   useEffect(() => {
-    if (fontsLoaded || fontError || Platform.OS === 'web') {
+    if (Platform.OS === 'web') {
+      try {
+        const linkId = 'google-font-poppins';
+        if (typeof document !== 'undefined' && !document.getElementById(linkId)) {
+          const link = document.createElement('link');
+          link.id = linkId;
+          link.rel = 'stylesheet';
+          link.href =
+            'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap';
+          document.head.appendChild(link);
+        }
+      } catch (e) {
+        // ignore web font link error
+      }
+      SplashScreen.hideAsync().catch(() => undefined);
+    } else if (fontsLoaded || fontError) {
       SplashScreen.hideAsync().catch(() => undefined);
     }
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError && Platform.OS !== 'web') {
+  if (Platform.OS !== 'web' && !fontsLoaded && !fontError) {
     return null;
   }
 
