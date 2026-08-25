@@ -59,7 +59,7 @@ const userSchema = new mongoose.Schema(
     },
     closedDeals: {
       type: String,
-      default: '$0M+',
+      default: '0',
     },
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],

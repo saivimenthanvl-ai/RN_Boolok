@@ -75,6 +75,62 @@ const DEFAULT_REAL_ESTATE_NEWS = [
 ];
 
 
+// ── Dynamic Avatar Component (Real-Time Person Profile or Initials) ─────────
+const UserAvatar = ({
+  user,
+  size = 42,
+  style,
+}: {
+  user: any;
+  size?: number;
+  style?: any;
+}) => {
+  const profilePicture = user?.profilePicture;
+  const name = user?.fullName || user?.username || 'User';
+  const initial = (name[0] || 'U').toUpperCase();
+
+  const colors = [
+    '#ea580c', // deep orange
+    '#2563eb', // royal blue
+    '#059669', // emerald
+    '#7c3aed', // violet
+    '#db2777', // pink
+    '#ca8a04', // gold
+    '#0891b2', // cyan
+  ];
+  const charCode = (name.charCodeAt(0) || 0) + (name.charCodeAt(name.length - 1) || 0);
+  const bgColor = colors[charCode % colors.length];
+
+  if (profilePicture && typeof profilePicture === 'string' && profilePicture.startsWith('http')) {
+    return (
+      <Image
+        source={{ uri: profilePicture }}
+        style={[{ width: size, height: size, borderRadius: size / 2 }, style]}
+      />
+    );
+  }
+
+  return (
+    <View
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: bgColor,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        style,
+      ]}
+    >
+      <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: size * 0.44 }}>
+        {initial}
+      </Text>
+    </View>
+  );
+};
+
 // ── Default Professional Real Estate Posts ──────────────────────────────────
 const DUMMY_REAL_ESTATE_POSTS = [
   {
@@ -85,7 +141,7 @@ const DUMMY_REAL_ESTATE_POSTS = [
       username: 'shreekutti',
       title: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Realty',
       degree: '1st',
-      profilePicture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      profilePicture: null,
     },
     time: '1w · 🌐',
     content: 'And just like that, our summer commercial campus acquisition is a wrap!\n\nI’m incredibly grateful for the opportunity to have closed this Grade-A Tech Park & Commercial Office development. Fully leased 92,000 sq ft, 8.4% cap rate with pre-verified energy efficiency ratings. Available for institutional portfolios and private office syndication.',
@@ -94,19 +150,19 @@ const DUMMY_REAL_ESTATE_POSTS = [
       'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200',
     ],
     likes: ['u1', 'u2'],
-    likesSummary: 'Liked by logeshwarana and ajmal',
+    likesSummary: 'Liked by 2 real estate brokers',
     likesCount: 2,
     commentsCount: 2,
     comments: [
       {
         _id: 'c1',
-        author: { fullName: 'logeshwarana', username: 'logeshwarana', profilePicture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150' },
+        author: { fullName: 'logeshwarana', username: 'logeshwarana', profilePicture: null },
         text: 'Clean zoning and strong cap rate numbers. Congratulations on the closing!',
         time: '3d ago',
       },
       {
         _id: 'c2',
-        author: { fullName: 'ajmal', username: 'ajmal', profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' },
+        author: { fullName: 'ajmal', username: 'ajmal', profilePicture: null },
         text: 'Outstanding acquisition! The architectural footprint is world-class.',
         time: '5d ago',
       },
@@ -120,25 +176,25 @@ const DUMMY_REAL_ESTATE_POSTS = [
       username: 'prasanth_properties',
       title: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
       degree: '1st',
-      profilePicture: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150',
+      profilePicture: null,
     },
     time: '2h · 🌐',
     content: 'Just listed! 🌟 Stunning modern beachfront villa with private infinity pool and direct access to crystal waters. Turnkey luxury investment ready for immediate handover! DM for private walkthroughs. 🏖️🔑',
     mediaUrls: ['https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200'],
     likes: ['u1', 'u2', 'u3', 'u4', 'u5'],
-    likesSummary: 'Liked by logeshwarana and 4 others',
+    likesSummary: 'Liked by 5 real estate brokers',
     likesCount: 5,
     commentsCount: 2,
     comments: [
       {
         _id: 'c3',
-        author: { fullName: 'shreekutti', username: 'shreekutti', profilePicture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150' },
+        author: { fullName: 'shreekutti', username: 'shreekutti', profilePicture: null },
         text: 'The natural lighting on this waterfront build is stunning!',
         time: '1h ago',
       },
       {
         _id: 'c4',
-        author: { fullName: 'cinemahub.live', username: 'cinemahub.live', profilePicture: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150' },
+        author: { fullName: 'cinemahub.live', username: 'cinemahub.live', profilePicture: null },
         text: 'Spectacular location and panoramic backdrop.',
         time: '45m ago',
       },
@@ -152,19 +208,19 @@ const DUMMY_REAL_ESTATE_POSTS = [
       username: 'bavadharini_rs',
       title: 'Interior Designer & Modern Living Specialist',
       degree: '1st',
-      profilePicture: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+      profilePicture: null,
     },
     time: '1d · 🌐',
     content: 'Bespoke custom kitchen & dining makeover completed for our luxury penthouse client. Custom Italian marble countertops, hidden smart refrigeration, and brass accents. ✨🍽️',
     mediaUrls: ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200'],
     likes: ['u1', 'u2', 'u3'],
-    likesSummary: 'Liked by ajmal and 2 others',
+    likesSummary: 'Liked by 3 real estate brokers',
     likesCount: 3,
     commentsCount: 1,
     comments: [
       {
         _id: 'c5',
-        author: { fullName: 'logeshwarana', username: 'logeshwarana', profilePicture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150' },
+        author: { fullName: 'logeshwarana', username: 'logeshwarana', profilePicture: null },
         text: 'Stunning cabinetry and seamless marble alignment!',
         time: '6h ago',
       },
@@ -306,7 +362,7 @@ export default function ProfessionalSocialFeedScreen() {
         _id: user?.id || 'sai',
         fullName: user?.fullName || 'Sai Vimenthan',
         username: user?.username || 'saivimenthanvl',
-        profilePicture: user?.profilePicture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+        profilePicture: user?.profilePicture || null,
       },
       text,
       time: 'Just now',
@@ -355,7 +411,7 @@ export default function ProfessionalSocialFeedScreen() {
         username: user?.username || 'saivimenthanvl',
         title: 'Elite Real Estate Broker & Portfolio Advisor',
         degree: 'You',
-        profilePicture: user?.profilePicture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+        profilePicture: user?.profilePicture || null,
       },
       time: 'Just now · 🌐',
       content: newPostText.trim(),
@@ -433,14 +489,7 @@ export default function ProfessionalSocialFeedScreen() {
                 onPress={() => router.push('/(app)/profile')}
                 style={styles.profileAvatarWrapper}
               >
-                <Image
-                  source={{
-                    uri:
-                      user?.profilePicture ||
-                      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-                  }}
-                  style={styles.profileAvatar}
-                />
+                <UserAvatar user={user} size={64} style={styles.profileAvatar} />
                 <View style={styles.avatarPlusBadge}>
                   <MaterialIcons name="verified" size={14} color="#000000" />
                 </View>
@@ -520,14 +569,7 @@ export default function ProfessionalSocialFeedScreen() {
           {/* "Start a post" Composer Card (Matches Screenshot 2) */}
           <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
             <View style={styles.startPostHeader}>
-              <Image
-                source={{
-                  uri:
-                    user?.profilePicture ||
-                    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-                }}
-                style={styles.startPostAvatar}
-              />
+              <UserAvatar user={user} size={42} style={styles.startPostAvatar} />
               <Pressable
                 onPress={() => setIsCreateModalOpen(true)}
                 style={styles.startPostInputTrigger}
@@ -620,7 +662,7 @@ export default function ProfessionalSocialFeedScreen() {
                     }
                     style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
                   >
-                    <Image source={{ uri: authorAvatar }} style={styles.postAuthorAvatar} />
+                    <UserAvatar user={author} size={42} style={styles.postAuthorAvatar} />
                     <View style={{ marginLeft: 10, flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Text style={styles.postAuthorName}>{authorName}</Text>
@@ -708,7 +750,7 @@ export default function ProfessionalSocialFeedScreen() {
                     <Text style={styles.socialReactionText}>
                       {post.likesSummary ||
                         (isSelfPost
-                          ? 'Liked by logeshwarana, ajmal and 8 others'
+                          ? 'Liked by your real estate network'
                           : `${authorName} and ${totalLikes} others`)}
                     </Text>
                   </View>
@@ -780,14 +822,7 @@ export default function ProfessionalSocialFeedScreen() {
                   <View style={[styles.commentSectionDrawer, { borderTopColor: borderColor }]}>
                     {/* Add comment input */}
                     <View style={styles.commentInputRow}>
-                      <Image
-                        source={{
-                          uri:
-                            user?.profilePicture ||
-                            'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-                        }}
-                        style={styles.commentUserAvatar}
-                      />
+                      <UserAvatar user={user} size={32} style={styles.commentUserAvatar} />
                       <TextInput
                         placeholder="Add a real estate comment..."
                         placeholderTextColor="#66768f"
@@ -808,24 +843,16 @@ export default function ProfessionalSocialFeedScreen() {
 
                     {/* Existing Comments with Named Profiles */}
                     {commentsList.map((c: any, cIdx: number) => {
-                      const fallbackProfiles = [
-                        { name: 'shreekutti', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', text: 'Stunning luxury estate with pristine architecture!' },
-                        { name: 'logeshwarana', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', text: 'Top tier layout and build quality. Is this available for immediate tour?' },
-                        { name: 'ajmal', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', text: 'Beautiful landscaping and private driveway.' },
-                        { name: 'cinemahub.live', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150', text: 'Spectacular lighting and visual appeal for production.' },
-                      ];
-                      const fallback = fallbackProfiles[cIdx % fallbackProfiles.length];
+                      const fallbackNames = ['shreekutti', 'logeshwarana', 'ajmal', 'cinemahub.live'];
+                      const fallbackName = fallbackNames[cIdx % fallbackNames.length];
                       const cAuthor = c.author || {};
                       const rawName = cAuthor.fullName || cAuthor.username || (typeof c.author === 'string' ? c.author : '');
-                      const cName = (!rawName || rawName === 'Advisor' || rawName === 'Agent') ? fallback.name : rawName;
-                      const cAvatar = cAuthor.profilePicture || fallback.avatar;
-                      const commentBody = (c.text && !['🔥', '❤️', '👏', '🚀', 'nice'].includes(c.text))
-                        ? (c.text === 'is this for sale' ? 'Is this property available for private walkthrough?' : c.text)
-                        : fallback.text;
+                      const cName = (!rawName || rawName === 'Advisor' || rawName === 'Agent') ? fallbackName : rawName;
+                      const commentBody = c.text || 'Clean zoning and strong cap rate numbers.';
 
                       return (
-                        <View key={cIdx} style={styles.commentItemBlock}>
-                          <Image source={{ uri: cAvatar }} style={styles.commentItemAvatar} />
+                        <View key={c._id || cIdx} style={styles.commentItemBlock}>
+                          <UserAvatar user={cAuthor?.profilePicture ? cAuthor : { fullName: cName }} size={32} style={styles.commentItemAvatar} />
                           <View style={styles.commentItemBubble}>
                             <Text style={styles.commentItemAuthorName}>{cName}</Text>
                             <Text style={styles.commentItemText}>{commentBody}</Text>
@@ -907,13 +934,7 @@ export default function ProfessionalSocialFeedScreen() {
                         }
                         style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
                       >
-                        {adv.profilePicture ? (
-                          <Image source={{ uri: adv.profilePicture }} style={styles.advisorAvatar} />
-                        ) : (
-                          <View style={[styles.advisorAvatar, { backgroundColor: '#1a273c', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#daa520' }]}>
-                            <Text style={{ color: '#daa520', fontWeight: '800', fontSize: 14 }}>{initial}</Text>
-                          </View>
-                        )}
+                        <UserAvatar user={adv} size={40} style={styles.advisorAvatar} />
                         <View style={{ marginLeft: 10, flex: 1 }}>
                           <Text style={styles.advisorName} numberOfLines={1}>
                             {adv.fullName}
@@ -974,14 +995,7 @@ export default function ProfessionalSocialFeedScreen() {
           <View style={[styles.modalBox, { backgroundColor: cardBg, borderColor }]}>
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Image
-                  source={{
-                    uri:
-                      user?.profilePicture ||
-                      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-                  }}
-                  style={styles.modalHeaderAvatar}
-                />
+                <UserAvatar user={user} size={40} style={styles.modalHeaderAvatar} />
                 <View style={{ marginLeft: 10 }}>
                   <Text style={styles.modalAuthorName}>
                     {user?.fullName || 'Sai Vimenthan'}

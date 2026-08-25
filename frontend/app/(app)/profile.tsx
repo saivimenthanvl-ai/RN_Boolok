@@ -361,7 +361,7 @@ export default function ProfessionalUserProfileScreen() {
     bio: viewer?.bio || 'Real estate professional and advisor on the Boolok AI network.',
     profilePicture: viewer?.profilePicture || null,
     coverImage: viewer?.coverImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-    closedDeals: viewer?.closedDeals || '$0M+',
+    closedDeals: viewer?.closedDeals || '0',
     mutuals: '',
   };
 
@@ -446,7 +446,7 @@ export default function ProfessionalUserProfileScreen() {
     setEditHeadline(curr.headline || '');
     setEditLocation(curr.location || '');
     setEditBio(curr.bio || '');
-    setEditClosedDeals(curr.closedDeals || '$0M+');
+    setEditClosedDeals(curr.closedDeals || '0');
     setEditAvatarUrl(curr.profilePicture || '');
     setIsEditModalOpen(true);
   };
@@ -862,7 +862,7 @@ export default function ProfessionalUserProfileScreen() {
                 </Text>
                 <Text style={styles.metricsDot}>·</Text>
                 <Text style={styles.volumeMetric}>
-                  <Text style={{ fontWeight: '800', color: goldPrimary }}>{profileUser.closedDeals || '$0M+'}</Text> Closed Deals
+                  <Text style={{ fontWeight: '800', color: goldPrimary }}>{profileUser.closedDeals || '0'}</Text> Closed Deals
                 </Text>
               </View>
 
@@ -1614,6 +1614,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   secondaryCtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     paddingHorizontal: 18,
     paddingVertical: 9,
     borderRadius: 20,

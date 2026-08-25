@@ -40,7 +40,7 @@ function sanitizeUserProfile(user, viewerId = null) {
     location: user.location || 'Global Real Estate Network',
     coverImage: user.coverImage || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
     profilePicture: user.profilePicture || null,
-    closedDeals: user.closedDeals || '$0M+',
+    closedDeals: user.closedDeals || '0',
     followerCount: followers.length,
     followingCount: following.length,
     isFollowing,
