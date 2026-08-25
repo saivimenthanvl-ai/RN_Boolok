@@ -365,6 +365,39 @@ export default function ProfessionalUserProfileScreen() {
     mutuals: '',
   };
 
+const PROFILE_ILLUSTRATIONS = [
+  {
+    id: 'ill-1',
+    name: 'Metropolis Tower',
+    url: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=300',
+  },
+  {
+    id: 'ill-2',
+    name: 'Luxury Residence',
+    url: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=300',
+  },
+  {
+    id: 'ill-3',
+    name: 'Coastal Villa',
+    url: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=300',
+  },
+  {
+    id: 'ill-4',
+    name: 'Tech SEZ Park',
+    url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300',
+  },
+  {
+    id: 'ill-5',
+    name: 'Architect Blueprint',
+    url: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=300',
+  },
+  {
+    id: 'ill-6',
+    name: 'Modern Penthouse',
+    url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=300',
+  },
+];
+
   // Edit profile modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editFullName, setEditFullName] = useState('');
@@ -374,6 +407,11 @@ export default function ProfessionalUserProfileScreen() {
   const [editClosedDeals, setEditClosedDeals] = useState('');
   const [editAvatarUrl, setEditAvatarUrl] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // Google-style "Add Profile Picture" Modal state
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [showAllIllustrations, setShowAllIllustrations] = useState(false);
 
   // Real-time Followers list modal state
   const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
@@ -465,6 +503,71 @@ export default function ProfessionalUserProfileScreen() {
       setFollowerCountState(0);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveAvatar = async (avatarUrl: string | null) => {
+    setIsUploadingAvatar(true);
+    try {
+      const token = await getToken();
+      const res = await axios.put(
+        `${API_BASE_URL}/api/users/profile`,
+        { profilePicture: avatarUrl },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      if (res.data?.user) {
+        setData((prev: any) => ({ ...prev, user: res.data.user }));
+        await updateUser(res.data.user);
+        setIsAvatarModalOpen(false);
+        alertMsg(avatarUrl ? 'Profile picture updated successfully in database!' : 'Profile picture removed.');
+      }
+    } catch (err: any) {
+      console.error('Avatar update failed:', err);
+      alertMsg(err.response?.data?.message || 'Failed to update profile picture.');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleUploadFromDevice = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const avatarData = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        await handleSaveAvatar(avatarData);
+      }
+    } catch (e) {
+      console.error('Pick error:', e);
+      alertMsg('Could not open file picker.');
+    }
+  };
+
+  const handleTakeCameraPicture = async () => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const avatarData = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        await handleSaveAvatar(avatarData);
+      }
+    } catch (e) {
+      console.error('Camera error:', e);
+      alertMsg('Could not open camera.');
     }
   };
 
@@ -819,7 +922,7 @@ export default function ProfessionalUserProfileScreen() {
             <View style={styles.avatarRow}>
               {/* Overlapping Avatar */}
               <Pressable
-                onPress={isSelf ? handleOpenEditModal : undefined}
+                onPress={isSelf ? () => setIsAvatarModalOpen(true) : undefined}
                 style={styles.avatarWrapper}
               >
                 {profileUser.profilePicture ? (
@@ -836,7 +939,7 @@ export default function ProfessionalUserProfileScreen() {
                 )}
                 {isSelf ? (
                   <View style={[styles.avatarVerifiedBadge, { backgroundColor: '#daa520', borderRadius: 12, padding: 3 }]}>
-                    <MaterialIcons name="edit" size={14} color="#000000" />
+                    <MaterialIcons name="photo-camera" size={14} color="#000000" />
                   </View>
                 ) : (
                   <View style={styles.avatarVerifiedBadge}>
@@ -1343,15 +1446,29 @@ export default function ProfessionalUserProfileScreen() {
                   placeholderTextColor="#475569"
                 />
 
-                {/* Profile Picture URL */}
-                <Text style={{ color: '#8b9bb4', fontSize: 12, fontWeight: '700', marginBottom: 6 }}>AVATAR PHOTO URL (OR LEAVE BLANK FOR INITIALS)</Text>
-                <TextInput
-                  style={{ backgroundColor: '#070e1a', color: '#ffffff', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#1a273c', marginBottom: 16, fontSize: 14 }}
-                  value={editAvatarUrl}
-                  onChangeText={setEditAvatarUrl}
-                  placeholder="https://... (Direct Image URL or leave blank)"
-                  placeholderTextColor="#475569"
-                />
+                {/* Profile Picture Section */}
+                <Text style={{ color: '#8b9bb4', fontSize: 12, fontWeight: '700', marginBottom: 8 }}>PROFILE PICTURE</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                  {editAvatarUrl || profileUser.profilePicture ? (
+                    <Image source={{ uri: editAvatarUrl || profileUser.profilePicture }} style={{ width: 52, height: 52, borderRadius: 26, borderWidth: 1.5, borderColor: '#daa520' }} />
+                  ) : (
+                    <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: '#1a273c', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#daa520' }}>
+                      <Text style={{ color: '#daa520', fontWeight: '800', fontSize: 18 }}>
+                        {(editFullName || profileUser.fullName || 'U')[0]?.toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  <Pressable
+                    onPress={() => {
+                      setIsEditModalOpen(false);
+                      setIsAvatarModalOpen(true);
+                    }}
+                    style={{ backgroundColor: '#162338', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 8, borderWidth: 1, borderColor: '#daa520', flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                  >
+                    <MaterialIcons name="photo-camera" size={16} color="#daa520" />
+                    <Text style={{ color: '#daa520', fontWeight: '700', fontSize: 13 }}>Choose Photo / Illustration</Text>
+                  </Pressable>
+                </View>
 
                 {/* Headline */}
                 <Text style={{ color: '#8b9bb4', fontSize: 12, fontWeight: '700', marginBottom: 6 }}>PROFESSIONAL HEADLINE</Text>
@@ -1500,6 +1617,169 @@ export default function ProfessionalUserProfileScreen() {
                     </Text>
                   </View>
                 )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* GOOGLE-STYLE "ADD PROFILE PICTURE" MODAL */}
+        <Modal
+          visible={isAvatarModalOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsAvatarModalOpen(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+            <View style={{ width: '100%', maxWidth: 440, backgroundColor: '#0c1626', borderRadius: 24, borderWidth: 1, borderColor: '#1a273c', overflow: 'hidden' }}>
+              {/* Header (Close Button, Title, Options) */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 }}>
+                <Pressable
+                  onPress={() => setIsAvatarModalOpen(false)}
+                  style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#162338', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#24354d' }}
+                >
+                  <MaterialIcons name="close" size={20} color="#ffffff" />
+                </Pressable>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: '#ffffff' }}>
+                  Add profile picture
+                </Text>
+                <Pressable style={{ padding: 4 }}>
+                  <MaterialIcons name="more-vert" size={22} color="#8b9bb4" />
+                </Pressable>
+              </View>
+
+              <ScrollView style={{ paddingHorizontal: 20, paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+                {/* Current Avatar / Preview */}
+                <View style={{ alignItems: 'center', marginVertical: 14 }}>
+                  {profileUser.profilePicture ? (
+                    <Image
+                      source={{ uri: profileUser.profilePicture }}
+                      style={{ width: 90, height: 90, borderRadius: 45, borderWidth: 3, borderColor: '#daa520' }}
+                    />
+                  ) : (
+                    <View style={{ width: 90, height: 90, borderRadius: 45, backgroundColor: '#1a273c', justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#daa520' }}>
+                      <Text style={{ fontSize: 36, fontWeight: '800', color: '#daa520' }}>
+                        {(profileUser.fullName || profileUser.username || 'U')[0]?.toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  {isUploadingAvatar && (
+                    <ActivityIndicator size="small" color="#daa520" style={{ marginTop: 10 }} />
+                  )}
+                </View>
+
+                {/* Browse illustrations section (Matches Google Screenshot) */}
+                <View style={{ marginTop: 6, marginBottom: 18 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
+                      Browse illustrations
+                    </Text>
+                    <Pressable onPress={() => setShowAllIllustrations(!showAllIllustrations)}>
+                      <Text style={{ fontSize: 12, color: '#daa520', fontWeight: '700' }}>
+                        {showAllIllustrations ? 'Show less' : 'View all'}
+                      </Text>
+                    </Pressable>
+                  </View>
+
+                  <ScrollView
+                    horizontal={!showAllIllustrations}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={showAllIllustrations ? { flexDirection: 'row', flexWrap: 'wrap', gap: 12 } : { flexDirection: 'row', gap: 12 }}
+                  >
+                    {PROFILE_ILLUSTRATIONS.map((ill) => (
+                      <Pressable
+                        key={ill.id}
+                        onPress={() => handleSaveAvatar(ill.url)}
+                        style={({ pressed, hovered }: any) => [
+                          {
+                            width: showAllIllustrations ? 84 : 76,
+                            height: showAllIllustrations ? 84 : 76,
+                            borderRadius: showAllIllustrations ? 42 : 38,
+                            overflow: 'hidden',
+                            borderWidth: 2,
+                            borderColor: profileUser.profilePicture === ill.url ? '#daa520' : '#1e2d42',
+                          },
+                          (pressed || hovered) && { borderColor: '#daa520', transform: [{ scale: 1.05 }] },
+                        ]}
+                      >
+                        <Image source={{ uri: ill.url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                {/* Action Options List (Matching Google Screenshot) */}
+                <View style={{ backgroundColor: '#080f1a', borderRadius: 16, borderWidth: 1, borderColor: '#162338', overflow: 'hidden', marginBottom: 12 }}>
+                  {/* See more illustrations */}
+                  <Pressable
+                    onPress={() => setShowAllIllustrations(!showAllIllustrations)}
+                    style={({ pressed, hovered }: any) => [
+                      { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#142033' },
+                      (pressed || hovered) && { backgroundColor: '#131e30' },
+                    ]}
+                  >
+                    <MaterialIcons name="palette" size={22} color="#daa520" style={{ marginRight: 14 }} />
+                    <Text style={{ fontSize: 14.5, color: '#ffffff', fontWeight: '600', flex: 1 }}>
+                      See more illustrations
+                    </Text>
+                    <MaterialIcons name={showAllIllustrations ? 'expand-less' : 'chevron-right'} size={20} color="#8b9bb4" />
+                  </Pressable>
+
+                  {/* Upload from device */}
+                  <Pressable
+                    onPress={handleUploadFromDevice}
+                    style={({ pressed, hovered }: any) => [
+                      { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#142033' },
+                      (pressed || hovered) && { backgroundColor: '#131e30' },
+                    ]}
+                  >
+                    <MaterialIcons name="photo-library" size={22} color="#60a5fa" style={{ marginRight: 14 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14.5, color: '#ffffff', fontWeight: '600' }}>
+                        Upload from device
+                      </Text>
+                      <Text style={{ fontSize: 11.5, color: '#8b9bb4', marginTop: 1 }}>
+                        Choose JPG, PNG, or WebP photo
+                      </Text>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={20} color="#8b9bb4" />
+                  </Pressable>
+
+                  {/* Take a picture */}
+                  <Pressable
+                    onPress={handleTakeCameraPicture}
+                    style={({ pressed, hovered }: any) => [
+                      { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: profileUser.profilePicture ? 1 : 0, borderBottomColor: '#142033' },
+                      (pressed || hovered) && { backgroundColor: '#131e30' },
+                    ]}
+                  >
+                    <MaterialIcons name="photo-camera" size={22} color="#34d399" style={{ marginRight: 14 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14.5, color: '#ffffff', fontWeight: '600' }}>
+                        Take a picture
+                      </Text>
+                      <Text style={{ fontSize: 11.5, color: '#8b9bb4', marginTop: 1 }}>
+                        Use camera for live photo
+                      </Text>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={20} color="#8b9bb4" />
+                  </Pressable>
+
+                  {/* Remove picture (revert to initials) */}
+                  {profileUser.profilePicture && (
+                    <Pressable
+                      onPress={() => handleSaveAvatar(null)}
+                      style={({ pressed, hovered }: any) => [
+                        { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16 },
+                        (pressed || hovered) && { backgroundColor: '#131e30' },
+                      ]}
+                    >
+                      <MaterialIcons name="delete-outline" size={22} color="#ef4444" style={{ marginRight: 14 }} />
+                      <Text style={{ fontSize: 14.5, color: '#ef4444', fontWeight: '600', flex: 1 }}>
+                        Remove picture (Use Initials)
+                      </Text>
+                    </Pressable>
+                  )}
+                </View>
               </ScrollView>
             </View>
           </View>

@@ -151,13 +151,55 @@ router.put('/notifications/read-all', authMiddleware, async (req, res) => {
   }
 });
 
+const upload = require('../config/localUpload');
+
+// ── POST /api/users/avatar (Upload custom avatar photo from device / camera) 
+router.post('/avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
+  try {
+    const viewerId = getAuthenticatedUserId(req);
+    if (!viewerId) return res.status(401).json({ message: 'Unauthorized.' });
+
+    let profilePicture = null;
+    if (req.file) {
+      profilePicture = `/uploads/posts/${req.file.filename}`;
+    } else if (req.body.avatar && typeof req.body.avatar === 'string') {
+      profilePicture = req.body.avatar.trim();
+    } else if (req.body.profilePicture && typeof req.body.profilePicture === 'string') {
+      profilePicture = req.body.profilePicture.trim();
+    }
+
+    if (!profilePicture) {
+      return res.status(400).json({ message: 'No avatar image provided.' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      viewerId,
+      { $set: { profilePicture } },
+      { new: true }
+    )
+      .populate('followers', 'fullName username profilePicture')
+      .populate('following', 'fullName username profilePicture');
+
+    if (!updatedUser) return res.status(404).json({ message: 'User not found.' });
+
+    return res.status(200).json({
+      success: true,
+      profilePicture,
+      user: sanitizeUserProfile(updatedUser, viewerId),
+    });
+  } catch (error) {
+    console.error('AVATAR UPLOAD ERROR:', error);
+    return res.status(500).json({ message: 'Failed to upload avatar.', error: error.message });
+  }
+});
+
 // ── PUT /api/users/profile (Update self profile) ──────────────────────────
 router.put('/profile', authMiddleware, async (req, res) => {
   try {
     const viewerId = getAuthenticatedUserId(req);
     if (!viewerId) return res.status(401).json({ message: 'Unauthorized.' });
 
-    const { fullName, username, bio, headline, location, coverImage, profilePicture } = req.body;
+    const { fullName, username, bio, headline, location, coverImage, profilePicture, closedDeals } = req.body;
     const updateData = {};
 
     if (typeof fullName === 'string' && fullName.trim()) updateData.fullName = fullName.trim();
@@ -166,7 +208,8 @@ router.put('/profile', authMiddleware, async (req, res) => {
     if (typeof headline === 'string') updateData.headline = headline.trim();
     if (typeof location === 'string') updateData.location = location.trim();
     if (typeof coverImage === 'string') updateData.coverImage = coverImage.trim();
-    if (typeof profilePicture === 'string') updateData.profilePicture = profilePicture.trim();
+    if (typeof closedDeals === 'string') updateData.closedDeals = closedDeals.trim();
+    if (profilePicture !== undefined) updateData.profilePicture = profilePicture ? profilePicture.trim() : null;
 
     const updatedUser = await User.findByIdAndUpdate(viewerId, { $set: updateData }, { new: true })
       .populate('followers', 'fullName username profilePicture')

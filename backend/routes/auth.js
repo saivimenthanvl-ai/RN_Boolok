@@ -426,11 +426,12 @@ router.post('/google', async (req, res) => {
         googleSubject,
         profilePicture,
       });
-    } else if (!user.googleSubject && googleSubject) {
-      user.googleSubject = googleSubject;
-      if (!user.profilePicture && profilePicture) {
+    } else {
+      if (googleSubject) user.googleSubject = googleSubject;
+      if (profilePicture) {
         user.profilePicture = profilePicture;
       }
+      user.authProvider = 'google';
       await user.save();
     }
 
@@ -446,14 +447,18 @@ router.post('/google', async (req, res) => {
 router.put('/personalize', authMiddleware, async (req, res) => {
   try {
     const allowedGoals = ['buying', 'selling', 'investing', 'analysis'];
-    const goal = req.body.goal;
+    const { goal, profilePicture } = req.body;
 
-    if (!allowedGoals.includes(goal)) {
+    if (goal && !allowedGoals.includes(goal)) {
       return res.status(400).json({ message: 'Invalid personalization goal.' });
     }
 
     const userId = req.user?.id || req.user?._id || req.userId;
-    const user = await User.findByIdAndUpdate(userId, { goal }, { new: true });
+    const updateObj = {};
+    if (goal) updateObj.goal = goal;
+    if (profilePicture !== undefined) updateObj.profilePicture = profilePicture ? profilePicture.trim() : null;
+
+    const user = await User.findByIdAndUpdate(userId, { $set: updateObj }, { new: true });
 
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });

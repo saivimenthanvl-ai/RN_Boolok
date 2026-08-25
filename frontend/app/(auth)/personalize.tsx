@@ -18,7 +18,43 @@ import BoolokLogo from '../../components/BoolokLogo';
 import { colors, spacing, typography, radius } from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
 
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'react-native';
+
 const MD_BREAKPOINT = 768;
+
+const PROFILE_ILLUSTRATIONS = [
+  {
+    id: 'ill-1',
+    name: 'Metropolis Tower',
+    url: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=300',
+  },
+  {
+    id: 'ill-2',
+    name: 'Luxury Residence',
+    url: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=300',
+  },
+  {
+    id: 'ill-3',
+    name: 'Coastal Villa',
+    url: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=300',
+  },
+  {
+    id: 'ill-4',
+    name: 'Tech SEZ Park',
+    url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300',
+  },
+  {
+    id: 'ill-5',
+    name: 'Architect Blueprint',
+    url: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=300',
+  },
+  {
+    id: 'ill-6',
+    name: 'Modern Penthouse',
+    url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=300',
+  },
+];
 
 const GOALS = [
   {
@@ -50,19 +86,60 @@ const GOALS = [
 export default function PersonalizeScreen() {
   const { width } = useWindowDimensions();
   const isWide = width >= MD_BREAKPOINT;
-  const { token, user, signIn } = useAuth();
+  const { token, user, signIn, updateUser } = useAuth();
 
-  const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
+  const [selectedGoal, setSelectedGoal] = useState<string | null>('buying');
+  const [profilePicture, setProfilePicture] = useState<string | null>(user?.profilePicture || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const handlePickFromDevice = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const avatarData = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        setProfilePicture(avatarData);
+      }
+    } catch (e) {
+      console.error('Pick error:', e);
+    }
+  };
+
+  const handleTakeCamera = async () => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const avatarData = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        setProfilePicture(avatarData);
+      }
+    } catch (e) {
+      console.error('Camera error:', e);
+    }
+  };
+
   const handleContinue = async () => {
-    if (!selectedGoal || !token) return;
+    if (!token) return;
     setIsSubmitting(true);
 
     try {
       const response = await axios.put(
         `${API_BASE_URL}/api/auth/personalize`,
-        { goal: selectedGoal },
+        { goal: selectedGoal || 'buying', profilePicture },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -154,6 +231,78 @@ export default function PersonalizeScreen() {
             <Text style={[typography.bodyLg, { color: colors.onSurfaceVariant, marginBottom: spacing.xl }]}>
               Tell us your primary goal so Boolok AI can better assist you.
             </Text>
+
+            {/* Profile Picture Setup Section */}
+            <View style={{ backgroundColor: '#070e1a', borderRadius: 16, borderWidth: 1, borderColor: '#1a273c', padding: 16, marginBottom: 20 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#ffffff', marginBottom: 4 }}>
+                Profile Picture
+              </Text>
+              <Text style={{ fontSize: 12, color: '#8b9bb4', marginBottom: 14 }}>
+                {user?.authProvider === 'google'
+                  ? 'Your Google profile photo is synced, or choose an illustration below.'
+                  : 'Choose a professional avatar illustration or upload from your device.'}
+              </Text>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+                {profilePicture ? (
+                  <Image source={{ uri: profilePicture }} style={{ width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: '#daa520' }} />
+                ) : (
+                  <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#162338', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#daa520' }}>
+                    <Text style={{ fontSize: 24, fontWeight: '800', color: '#daa520' }}>
+                      {(user?.fullName || 'U')[0]?.toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, flex: 1 }}>
+                  <Pressable
+                    onPress={handlePickFromDevice}
+                    style={{ backgroundColor: '#142033', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#24354d', flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                  >
+                    <MaterialIcons name="photo-library" size={16} color="#60a5fa" />
+                    <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '600' }}>Upload Photo</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={handleTakeCamera}
+                    style={{ backgroundColor: '#142033', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#24354d', flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                  >
+                    <MaterialIcons name="photo-camera" size={16} color="#34d399" />
+                    <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '600' }}>Take Picture</Text>
+                  </Pressable>
+
+                  {profilePicture && (
+                    <Pressable
+                      onPress={() => setProfilePicture(null)}
+                      style={{ backgroundColor: '#142033', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: '#ef4444', flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                    >
+                      <MaterialIcons name="close" size={14} color="#ef4444" />
+                      <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '600' }}>Reset</Text>
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+
+              {/* Quick illustration picks */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 4 }}>
+                {PROFILE_ILLUSTRATIONS.map((ill) => (
+                  <Pressable
+                    key={ill.id}
+                    onPress={() => setProfilePicture(ill.url)}
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 24,
+                      overflow: 'hidden',
+                      borderWidth: 2,
+                      borderColor: profilePicture === ill.url ? '#daa520' : '#1e2d42',
+                    }}
+                  >
+                    <Image source={{ uri: ill.url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
 
             {/* Selection Grid */}
             <View style={styles.grid}>

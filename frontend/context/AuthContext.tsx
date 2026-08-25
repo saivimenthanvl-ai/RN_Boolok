@@ -25,6 +25,7 @@ export type AuthUser = {
   closedDeals?: string | null;
   goal?: string | null;
   role?: string | null;
+  authProvider?: string | null;
   followers?: any[];
   following?: any[];
 };
