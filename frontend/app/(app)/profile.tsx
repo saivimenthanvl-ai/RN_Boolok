@@ -1157,10 +1157,37 @@ const PROFILE_ILLUSTRATIONS = [
 
   if (loading) return <LoadingScreen />;
 
-  const profileUser =
+  const LOGESHWARAN_IMAGE = 'https://lh3.googleusercontent.com/aida-public/AB6AXuDIxWkMvsGE0JVWnlIgddMHLoJXaRlDZ6ix8j3D9lYjuwnCOzP9CNlu1fzYZY0IdHrAth3dOjcqTQkF0di1msUI8dzNv_iYYinXCqpmS_He-TtYeX2yihtLQW87EOEvQ0cRUnbkr34efkxQnqcIqbGwacliKDTjiIR2Q70ReAxB0_Vcm3OpsfrGpMwH7Iy1Tj-PQxXPDP2uCgzOL0qR-A97Niy6DKYuLKuOruowYqZAELwQqKhyoxD9EHvwU-Xo3iNnDHoxmvUCvhwb';
+
+  const userIdentifier = String(id || viewer?.username || viewer?.id || '').toLowerCase();
+  const rawUsername = String(data?.user?.username || id || '').toLowerCase();
+  const rawFullName = String(data?.user?.fullName || '').toLowerCase();
+
+  const isLogeshwaranProfile =
+    rawUsername === 'logeshwarana' ||
+    rawUsername.includes('logeshwaran') ||
+    rawFullName.includes('logeshwaran') ||
+    userIdentifier === 'logeshwarana' ||
+    userIdentifier.includes('logeshwaran');
+
+  const baseProfileUser =
     data?.user ||
     (isSelf
       ? viewer || defaultFallbackUser
+      : isLogeshwaranProfile
+      ? {
+          id: 'logeshwarana',
+          _id: 'logeshwarana',
+          fullName: 'Logeshwaran Ashok',
+          username: 'logeshwarana',
+          headline: 'Architectural Consultant & Real Estate Lead',
+          location: 'Coimbatore, Tamil Nadu · Industrial & Retail',
+          bio: 'Focused on precision cap-rate calculations, commercial yield optimization, and real estate investment portfolios.',
+          profilePicture: LOGESHWARAN_IMAGE,
+          coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
+          closedDeals: '0',
+          mutuals: '',
+        }
       : {
           id: String(id || 'member'),
           _id: String(id || 'member'),
@@ -1174,8 +1201,12 @@ const PROFILE_ILLUSTRATIONS = [
           closedDeals: '0',
           mutuals: '',
         });
-  const userIdentifier = String(id || viewer?.username || viewer?.id || '').toLowerCase();
-  const isLogeshwaranProfile = userIdentifier === 'logeshwarana' || userIdentifier.includes('logeshwaran');
+
+  const profileUser = {
+    ...baseProfileUser,
+    profilePicture: isLogeshwaranProfile ? LOGESHWARAN_IMAGE : baseProfileUser.profilePicture,
+    fullName: isLogeshwaranProfile ? 'Logeshwaran Ashok' : baseProfileUser.fullName,
+  };
 
   const reelsToDisplay = isLogeshwaranProfile
     ? LOGESHWARAN_REELS

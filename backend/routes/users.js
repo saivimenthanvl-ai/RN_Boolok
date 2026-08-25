@@ -30,16 +30,19 @@ function sanitizeUserProfile(user, viewerId = null) {
     mutualsText = `Followed by ${followerNames[0]}, ${followerNames[1]} and ${followerNames.length - 2} other${followerNames.length - 2 > 1 ? 's' : ''}`;
   }
 
+  const isLogesh = (user.username || '').toLowerCase() === 'logeshwarana';
+  const LOGESHWARAN_GOOGLE_PIC = 'https://lh3.googleusercontent.com/aida-public/AB6AXuDIxWkMvsGE0JVWnlIgddMHLoJXaRlDZ6ix8j3D9lYjuwnCOzP9CNlu1fzYZY0IdHrAth3dOjcqTQkF0di1msUI8dzNv_iYYinXCqpmS_He-TtYeX2yihtLQW87EOEvQ0cRUnbkr34efkxQnqcIqbGwacliKDTjiIR2Q70ReAxB0_Vcm3OpsfrGpMwH7Iy1Tj-PQxXPDP2uCgzOL0qR-A97Niy6DKYuLKuOruowYqZAELwQqKhyoxD9EHvwU-Xo3iNnDHoxmvUCvhwb';
+
   return {
     id: user._id.toString(),
     _id: user._id.toString(),
-    fullName: user.fullName,
+    fullName: isLogesh ? 'Logeshwaran Ashok' : user.fullName,
     username: user.username || user.fullName?.replace(/\s+/g, '').toLowerCase() || 'user',
     bio: user.bio || '',
     headline: user.headline || 'Real Estate Professional & Boolok Member',
     location: user.location || 'Global Real Estate Network',
     coverImage: user.coverImage || 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
-    profilePicture: user.profilePicture || null,
+    profilePicture: isLogesh ? (user.profilePicture || LOGESHWARAN_GOOGLE_PIC) : (user.profilePicture || null),
     closedDeals: user.closedDeals || '0',
     followerCount: followers.length,
     followingCount: following.length,
