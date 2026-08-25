@@ -153,9 +153,75 @@ const defaultFallbackUser = {
   mutuals: '',
 };
 
+const LOGESHWARAN_REELS = [
+  {
+    _id: 'logesh-reel-1',
+    title: 'Margaret River Vineyard',
+    location: 'Western Australia',
+    aiMatch: 98,
+    insight: 'Soil analysis indicates 92% suitability for premium Cabernet Sauvignon. Water rights pre-verified for 50 years.',
+    likes: 2400,
+    poster: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1200',
+    thumbnail: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1200',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    comments: [
+      { _id: 'c1-1', user: { fullName: 'Shreekutti Realty' }, text: 'The terroir and climate suitability metrics are exceptional here! 🍇✨', createdAt: new Date() },
+      { _id: 'c1-2', user: { fullName: 'Ajmal Khan' }, text: '50-year pre-verified water rights make this a bulletproof acquisition. 🍷', createdAt: new Date() },
+    ],
+  },
+  {
+    _id: 'logesh-reel-2',
+    title: 'Kyoto Forest Retreat',
+    location: 'Kyoto, Japan',
+    aiMatch: 95,
+    insight: 'Thermal zoning optimized. High potential for eco-luxury cabins or a private wellness estate.',
+    likes: 920,
+    poster: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200',
+    thumbnail: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    comments: [
+      { _id: 'c2-1', user: { fullName: 'Ajmal Khan' }, text: 'Thermal zoning and serene forested topography are hard to find in Kyoto! ⛩️🍃', createdAt: new Date() },
+      { _id: 'c2-2', user: { fullName: 'Shreekutti Realty' }, text: 'Eco-luxury cabins here will command top-tier international ADRs. 🏡✨', createdAt: new Date() },
+    ],
+  },
+  {
+    _id: 'logesh-reel-3',
+    title: 'Uluwatu Cliffside',
+    location: 'Bali, Indonesia',
+    aiMatch: 92,
+    insight: 'Tourism growth in this sector is up 14% YoY. Zoning allows for luxury boutique resort development.',
+    likes: 1800,
+    poster: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200',
+    thumbnail: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    comments: [
+      { _id: 'c3-1', user: { fullName: 'Akshat Commercials' }, text: 'Breathtaking ocean cliff views! Perfect setting for luxury resort hospitality. 🌅🏖️', createdAt: new Date() },
+      { _id: 'c3-2', user: { fullName: 'Shreekutti Realty' }, text: '14% YoY tourism surge matches our regional Bali portfolio forecast. 📈', createdAt: new Date() },
+    ],
+  },
+];
+
+const SAI_REELS = [
+  {
+    _id: 'sai-reel-coventry',
+    title: 'Coventry Office',
+    location: 'Coventry, United Kingdom',
+    aiMatch: 97,
+    insight: 'Strong engagement expected based on similar recent listings.',
+    likes: 0,
+    poster: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
+    thumbnail: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    comments: [
+      { _id: 'c4-1', user: { fullName: 'Logeshwaran Ashok' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
+      { _id: 'c4-2', user: { fullName: 'Shreekutti Realty' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
+    ],
+  },
+];
+
 const ProfileReelItem = ({ reel }: { reel: any }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [likesCount, setLikesCount] = useState<number>(reel.likes?.length ?? reel.likes ?? 920);
+  const [likesCount, setLikesCount] = useState<number>(reel.likes?.length ?? reel.likes ?? 100);
   const [hasLiked, setHasLiked] = useState(false);
   const [comments, setComments] = useState<any[]>(reel.comments || [
     { _id: 'c1', user: { fullName: 'Logeshwaran Ashok' }, text: 'Incredible property location and zoning potential! 🏢✨', createdAt: new Date() },
@@ -164,7 +230,7 @@ const ProfileReelItem = ({ reel }: { reel: any }) => {
   const [showComments, setShowComments] = useState(false);
   const [commentInput, setCommentInput] = useState('');
 
-  const videoSource = reel.videoUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4';
+  const videoSource = reel.videoUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
   const videoRef = useRef<any>(null);
 
   const player = useVideoPlayer(videoSource, (p) => {
@@ -175,7 +241,15 @@ const ProfileReelItem = ({ reel }: { reel: any }) => {
   const togglePlay = () => {
     if (Platform.OS === 'web' && videoRef.current) {
       if (videoRef.current.paused) {
-        videoRef.current.play().then(() => setIsPlaying(true)).catch((e: any) => console.log(e));
+        videoRef.current.play().then(() => {
+          setIsPlaying(true);
+        }).catch((e: any) => {
+          console.log('Video autoplay blocked, trying muted play:', e);
+          if (videoRef.current) {
+            videoRef.current.muted = true;
+            videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+          }
+        });
       } else {
         videoRef.current.pause();
         setIsPlaying(false);
@@ -183,12 +257,14 @@ const ProfileReelItem = ({ reel }: { reel: any }) => {
       return;
     }
 
-    if (player.playing) {
-      player.pause();
-      setIsPlaying(false);
-    } else {
-      player.play();
-      setIsPlaying(true);
+    if (player) {
+      if (player.playing) {
+        player.pause();
+        setIsPlaying(false);
+      } else {
+        player.play();
+        setIsPlaying(true);
+      }
     }
   };
 
@@ -219,13 +295,12 @@ const ProfileReelItem = ({ reel }: { reel: any }) => {
       {/* ── Video Player / Fallback ── */}
       <Pressable onPress={togglePlay} style={StyleSheet.absoluteFill}>
         {Platform.OS === 'web' ? (
-          // Use native video element on web for guaranteed autoplay/play support with controls
           <video
             ref={videoRef}
             src={videoSource}
-            poster={reel.thumbnail}
+            poster={reel.thumbnail || reel.poster}
             loop
-            muted
+            preload="metadata"
             playsInline
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
@@ -237,13 +312,14 @@ const ProfileReelItem = ({ reel }: { reel: any }) => {
               top: 0,
               left: 0,
               pointerEvents: 'none',
+              backgroundColor: '#000000',
             }}
           />
         ) : (
           <>
-            {reel.thumbnail && !isPlaying && (
+            {(reel.thumbnail || reel.poster) && !isPlaying && (
               <Image
-                source={{ uri: reel.thumbnail }}
+                source={{ uri: reel.thumbnail || reel.poster }}
                 style={StyleSheet.absoluteFill}
                 resizeMode="cover"
               />
@@ -446,38 +522,7 @@ export default function ProfessionalUserProfileScreen() {
   const [isPublishingReel, setIsPublishingReel] = useState(false);
 
   // User's own reels with 5-10s sample house walkthroughs (front view, back view, luxury villa)
-  const [userReels, setUserReels] = useState<any[]>([
-    {
-      _id: 'sai-reel-front',
-      title: 'Modern Waterfront Villa — Front Elevation & Grand Entry',
-      location: 'Chennai & ECR Scenic Coast',
-      aiMatch: 98,
-      insight: 'High buyer interest predicted for turnkey modern beachfront architecture.',
-      likes: 124,
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      thumbnail: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-    },
-    {
-      _id: 'sai-reel-back',
-      title: 'Private Infinity Pool & Backyard Garden Lounge',
-      location: 'Beverly Hills & Palm Coast',
-      aiMatch: 96,
-      insight: 'Expansive outdoor patio and custom landscape pool maximize luxury appraisal.',
-      likes: 88,
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-      thumbnail: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
-    },
-    {
-      _id: 'sai-reel-interior',
-      title: 'Turnkey Luxury Residence — Full Architectural Walkthrough',
-      location: 'Coventry, United Kingdom',
-      aiMatch: 97,
-      insight: 'Double-height ceilings and premium marble finishes yield high engagement.',
-      likes: 210,
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-      thumbnail: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
-    },
-  ]);
+  const [userReels, setUserReels] = useState<any[]>(SAI_REELS);
 
   const defaultFallbackUser = {
     id: viewer?.id || viewer?._id || 'self',
@@ -1129,12 +1174,21 @@ const PROFILE_ILLUSTRATIONS = [
           closedDeals: '0',
           mutuals: '',
         });
+  const userIdentifier = String(id || viewer?.username || viewer?.id || '').toLowerCase();
+  const isLogeshwaranProfile = userIdentifier === 'logeshwarana' || userIdentifier.includes('logeshwaran');
+
+  const reelsToDisplay = isLogeshwaranProfile
+    ? LOGESHWARAN_REELS
+    : (isSelf || userIdentifier.includes('sai') || userIdentifier === 'saivimenthanvl'
+      ? (userReels.length > 0 ? userReels : SAI_REELS)
+      : (data?.reels && data.reels.length > 0 ? data.reels : []));
+
   const postCount = data?.postCount !== undefined ? data.postCount : (data?.posts?.length || 1);
-  const reelCount = data?.reelCount !== undefined ? data.reelCount : 1;
+  const reelCount = reelsToDisplay.length;
   const followerCount = followerCountState;
   const followingCount = isSelf ? GLOBAL_FOLLOWED_USERS.size : (data?.followingCount || 0);
   const posts = data?.posts || [];
-  const reels = isSelf ? userReels : (data?.reels || []);
+  const reels = reelsToDisplay;
 
   const bgDark = '#060b13';
   const cardBg = '#0c1626';

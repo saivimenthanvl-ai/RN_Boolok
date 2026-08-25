@@ -391,6 +391,72 @@ router.put('/profile', authMiddleware, async (req, res) => {
   }
 });
 
+const LOGESHWARAN_REELS = [
+  {
+    _id: 'logesh-reel-1',
+    title: 'Margaret River Vineyard',
+    location: 'Western Australia',
+    aiMatch: 98,
+    insight: 'Soil analysis indicates 92% suitability for premium Cabernet Sauvignon. Water rights pre-verified for 50 years.',
+    likes: 2400,
+    poster: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1200',
+    thumbnail: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1200',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    comments: [
+      { _id: 'c1-1', user: { fullName: 'Shreekutti Realty' }, text: 'The terroir and climate suitability metrics are exceptional here! 🍇✨', createdAt: new Date() },
+      { _id: 'c1-2', user: { fullName: 'Ajmal Khan' }, text: '50-year pre-verified water rights make this a bulletproof acquisition. 🍷', createdAt: new Date() },
+    ],
+  },
+  {
+    _id: 'logesh-reel-2',
+    title: 'Kyoto Forest Retreat',
+    location: 'Kyoto, Japan',
+    aiMatch: 95,
+    insight: 'Thermal zoning optimized. High potential for eco-luxury cabins or a private wellness estate.',
+    likes: 920,
+    poster: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200',
+    thumbnail: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    comments: [
+      { _id: 'c2-1', user: { fullName: 'Ajmal Khan' }, text: 'Thermal zoning and serene forested topography are hard to find in Kyoto! ⛩️🍃', createdAt: new Date() },
+      { _id: 'c2-2', user: { fullName: 'Shreekutti Realty' }, text: 'Eco-luxury cabins here will command top-tier international ADRs. 🏡✨', createdAt: new Date() },
+    ],
+  },
+  {
+    _id: 'logesh-reel-3',
+    title: 'Uluwatu Cliffside',
+    location: 'Bali, Indonesia',
+    aiMatch: 92,
+    insight: 'Tourism growth in this sector is up 14% YoY. Zoning allows for luxury boutique resort development.',
+    likes: 1800,
+    poster: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200',
+    thumbnail: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    comments: [
+      { _id: 'c3-1', user: { fullName: 'Akshat Commercials' }, text: 'Breathtaking ocean cliff views! Perfect setting for luxury resort hospitality. 🌅🏖️', createdAt: new Date() },
+      { _id: 'c3-2', user: { fullName: 'Shreekutti Realty' }, text: '14% YoY tourism surge matches our regional Bali portfolio forecast. 📈', createdAt: new Date() },
+    ],
+  },
+];
+
+const SAI_REELS = [
+  {
+    _id: 'sai-reel-coventry',
+    title: 'Coventry Office',
+    location: 'Coventry, United Kingdom',
+    aiMatch: 97,
+    insight: 'Strong engagement expected based on similar recent listings.',
+    likes: 100,
+    poster: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
+    thumbnail: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    comments: [
+      { _id: 'c4-1', user: { fullName: 'Logeshwaran Ashok' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
+      { _id: 'c4-2', user: { fullName: 'Shreekutti Realty' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
+    ],
+  },
+];
+
 // ── GET /api/users/:id (Get profile by ID or username) ────────────────────
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
@@ -411,17 +477,25 @@ router.get('/:id', authMiddleware, async (req, res) => {
     ]);
 
     const sanitized = sanitizeUserProfile(profileUser, viewerId);
+    const usernameKey = (profileUser.username || '').toLowerCase();
+
+    let userReels = [];
+    if (usernameKey === 'logeshwarana' || usernameKey.includes('logeshwaran')) {
+      userReels = LOGESHWARAN_REELS;
+    } else if (sanitized.isSelf || usernameKey.includes('sai') || usernameKey === 'saivimenthanvl') {
+      userReels = SAI_REELS;
+    }
 
     return res.status(200).json({
       user: sanitized,
       postCount,
-      reelCount: 0,
+      reelCount: userReels.length,
       followerCount: sanitized.followerCount,
       followingCount: sanitized.followingCount,
       isFollowing: sanitized.isFollowing,
       isSelf: sanitized.isSelf,
       posts,
-      reels: [],
+      reels: userReels,
     });
   } catch (error) {
     console.error('GET USER PROFILE ERROR:', error);
