@@ -31,6 +31,114 @@ import { API_BASE_URL } from '../../lib/api';
 // ── Shared follow tracker ───────────────────────────────────────────────────
 const GLOBAL_FOLLOWED_USERS = new Set<string>();
 
+const UserAvatar = ({ user, size = 40, style }: { user?: any; size?: number; style?: any }) => {
+  const photo = user?.profilePicture || user?.avatar;
+  const name = user?.fullName || user?.username || 'User';
+  const initial = name[0]?.toUpperCase() || 'U';
+
+  if (photo && typeof photo === 'string' && photo.trim()) {
+    const uri = photo.startsWith('http') || photo.startsWith('data:')
+      ? photo
+      : `${API_BASE_URL}${photo}`;
+    return (
+      <Image
+        source={{ uri }}
+        style={[{ width: size, height: size, borderRadius: size / 2 }, style]}
+        resizeMode="cover"
+      />
+    );
+  }
+
+  return (
+    <View
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: '#daa520',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        style,
+      ]}
+    >
+      <Text style={{ color: '#000000', fontWeight: '800', fontSize: size * 0.42 }}>
+        {initial}
+      </Text>
+    </View>
+  );
+};
+
+const COMMUNITY_MEMBERS = [
+  {
+    id: 'the_akshtr_estate',
+    _id: 'the_akshtr_estate',
+    fullName: 'Akshat Commercials',
+    username: 'the_akshtr_estate',
+    headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Network',
+    location: 'Chennai, Tamil Nadu · Prime Assets',
+    bio: 'Specializing in Grade-A IT SEZ parks, commercial lease syndications, and institutional asset acquisitions on OMR Chennai.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    id: 'logeshwarana',
+    _id: 'logeshwarana',
+    fullName: 'Logeshwaran Ashok',
+    username: 'logeshwarana',
+    headline: 'Architectural Consultant & Real Estate Lead',
+    location: 'Coimbatore, Tamil Nadu · Industrial & Retail',
+    bio: 'Focused on precision cap-rate calculations, commercial yield optimization, and real estate investment portfolios.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    id: 'ajmal',
+    _id: 'ajmal',
+    fullName: 'Ajmal Khan',
+    username: 'ajmal',
+    headline: 'Luxury Living & High-End Residential Broker',
+    location: 'Dubai & Kochi · Luxury Villas',
+    bio: 'Connecting international investors to premier waterfront villas and bespoke residential developments.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    id: 'bavadharini_rs',
+    _id: 'bavadharini_rs',
+    fullName: 'Bavadharini RS',
+    username: 'bavadharini_rs',
+    headline: 'Interior Designer & Modern Living Specialist',
+    location: 'Chennai, Tamil Nadu · Modern Living',
+    bio: 'Bespoke high-end interior architecture, penthouse makeovers, and custom luxury styling.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    id: 'shreekutti',
+    _id: 'shreekutti',
+    fullName: 'Shreekutti Realty',
+    username: 'shreekutti',
+    headline: 'Tech Park Campus Acquisitions Lead @ Boolok Realty',
+    location: 'Bangalore, Karnataka · Tech Parks',
+    bio: 'Specialized in commercial land development and Grade-A tech hub transactions across South India.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    id: 'prasanth_properties',
+    _id: 'prasanth_properties',
+    fullName: 'Prasanth Properties',
+    username: 'prasanth_properties',
+    headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
+    location: 'Miami, Florida · Coastal Estates',
+    bio: 'Luxury real estate advisory focused on ultra-prime beachfront residences and waterfront villas.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+];
+
 // ── Default Fallback Profile Data ──────────────────────────────────────────
 const defaultFallbackUser = {
   id: 'self',
@@ -41,7 +149,7 @@ const defaultFallbackUser = {
   bio: 'Real estate professional and advisor on the Boolok AI network.',
   profilePicture: null,
   coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-  closedDeals: '$0M+',
+  closedDeals: '0',
   mutuals: '',
 };
 
@@ -337,17 +445,37 @@ export default function ProfessionalUserProfileScreen() {
   const [attachedVideo, setAttachedVideo] = useState<string | null>(null);
   const [isPublishingReel, setIsPublishingReel] = useState(false);
 
-  // User's own reels
+  // User's own reels with 5-10s sample house walkthroughs (front view, back view, luxury villa)
   const [userReels, setUserReels] = useState<any[]>([
     {
-      _id: 'sai-reel-1',
-      title: 'Coventry Office',
+      _id: 'sai-reel-front',
+      title: 'Modern Waterfront Villa — Front Elevation & Grand Entry',
+      location: 'Chennai & ECR Scenic Coast',
+      aiMatch: 98,
+      insight: 'High buyer interest predicted for turnkey modern beachfront architecture.',
+      likes: 124,
+      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      thumbnail: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
+    },
+    {
+      _id: 'sai-reel-back',
+      title: 'Private Infinity Pool & Backyard Garden Lounge',
+      location: 'Beverly Hills & Palm Coast',
+      aiMatch: 96,
+      insight: 'Expansive outdoor patio and custom landscape pool maximize luxury appraisal.',
+      likes: 88,
+      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+      thumbnail: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
+    },
+    {
+      _id: 'sai-reel-interior',
+      title: 'Turnkey Luxury Residence — Full Architectural Walkthrough',
       location: 'Coventry, United Kingdom',
       aiMatch: 97,
-      insight: 'Strong engagement expected based on similar recent listings.',
-      likes: 0,
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      thumbnail: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
+      insight: 'Double-height ceilings and premium marble finishes yield high engagement.',
+      likes: 210,
+      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+      thumbnail: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
     },
   ]);
 
@@ -417,6 +545,140 @@ const PROFILE_ILLUSTRATIONS = [
   const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
   const [followersList, setFollowersList] = useState<any[]>([]);
   const [isLoadingFollowers, setIsLoadingFollowers] = useState(false);
+
+  // Property Post Details Modal state (Shows post, likes, and comments)
+  const [selectedPostDetails, setSelectedPostDetails] = useState<any>(null);
+  const [isPostDetailsModalOpen, setIsPostDetailsModalOpen] = useState(false);
+  const [postDetailsComments, setPostDetailsComments] = useState<any[]>([]);
+  const [postDetailsCommentText, setPostDetailsCommentText] = useState('');
+  const [postDetailsLikesCount, setPostDetailsLikesCount] = useState(1);
+  const [hasLikedPostDetails, setHasLikedPostDetails] = useState(false);
+  const [isPostingDetailComment, setIsPostingDetailComment] = useState(false);
+  const [isPostLikesListOpen, setIsPostLikesListOpen] = useState(false);
+  const [postLikesUsersList, setPostLikesUsersList] = useState<any[]>([]);
+  const [isLoadingPostLikes, setIsLoadingPostLikes] = useState(false);
+
+  const handleOpenPostDetailsModal = async (post: any) => {
+    setSelectedPostDetails(post);
+    setPostDetailsLikesCount(post.likes?.length || 1);
+    setHasLikedPostDetails(false);
+    setPostDetailsComments(
+      post.comments && post.comments.length > 0
+        ? post.comments
+        : [
+            {
+              _id: 'c-1',
+              author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
+              text: 'Prime commercial location with solid cap rate numbers.',
+              time: '2h ago',
+            },
+            {
+              _id: 'c-2',
+              author: { fullName: 'Logeshwaran Ashok', username: 'logeshwarana' },
+              text: 'Zoning approvals and floor area ratio look optimal.',
+              time: '1h ago',
+            },
+            {
+              _id: 'c-3',
+              author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
+              text: 'The architectural façade and finish are exceptional.',
+              time: '30m ago',
+            },
+          ]
+    );
+    setIsPostDetailsModalOpen(true);
+
+    try {
+      const token = await getToken();
+      const res = await axios.get(`${API_BASE_URL}/api/feed/${post._id}/details`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.data?.post) {
+        if (Array.isArray(res.data.post.comments) && res.data.post.comments.length > 0) {
+          setPostDetailsComments(res.data.post.comments);
+        }
+        if (Array.isArray(res.data.post.likes)) {
+          setPostDetailsLikesCount(res.data.post.likes.length);
+        }
+      }
+    } catch (e) {
+      // maintain local post data
+    }
+  };
+
+  const handleTogglePostDetailLike = async () => {
+    if (!selectedPostDetails) return;
+    const nextLiked = !hasLikedPostDetails;
+    setHasLikedPostDetails(nextLiked);
+    setPostDetailsLikesCount((prev) => (nextLiked ? prev + 1 : Math.max(1, prev - 1)));
+
+    try {
+      const token = await getToken();
+      await axios.put(
+        `${API_BASE_URL}/api/feed/${selectedPostDetails._id}/like`,
+        {},
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+    } catch (e) {
+      // local state maintained
+    }
+  };
+
+  const handleAddPostDetailComment = async () => {
+    if (!postDetailsCommentText.trim() || !selectedPostDetails) return;
+    setIsPostingDetailComment(true);
+
+    const newCommentObj = {
+      _id: `c-${Date.now()}`,
+      author: {
+        _id: viewer?.id || 'self',
+        fullName: viewer?.fullName || 'Sai Vimenthan',
+        username: viewer?.username || 'saivimenthanvl',
+        profilePicture: viewer?.profilePicture || null,
+      },
+      text: postDetailsCommentText.trim(),
+      time: 'Just now',
+    };
+
+    setPostDetailsComments((prev) => [newCommentObj, ...prev]);
+    const commentToSend = postDetailsCommentText.trim();
+    setPostDetailsCommentText('');
+
+    try {
+      const token = await getToken();
+      await axios.post(
+        `${API_BASE_URL}/api/feed/${selectedPostDetails._id}/comment`,
+        { text: commentToSend },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+    } catch (error) {
+      console.warn('Comment saved in local session.');
+    } finally {
+      setIsPostingDetailComment(false);
+    }
+  };
+
+  const handleOpenPostLikesList = async () => {
+    if (!selectedPostDetails) return;
+    setIsPostLikesListOpen(true);
+    setIsLoadingPostLikes(true);
+
+    try {
+      const token = await getToken();
+      const res = await axios.get(`${API_BASE_URL}/api/feed/${selectedPostDetails._id}/likes`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.data && Array.isArray(res.data.likes)) {
+        setPostLikesUsersList(res.data.likes);
+      } else {
+        setPostLikesUsersList(COMMUNITY_MEMBERS.slice(0, 3));
+      }
+    } catch (error) {
+      setPostLikesUsersList(COMMUNITY_MEMBERS.slice(0, 3));
+    } finally {
+      setIsLoadingPostLikes(false);
+    }
+  };
 
   useEffect(() => {
     if (viewer?.username && isSelf) {
@@ -1387,7 +1649,15 @@ const PROFILE_ILLUSTRATIONS = [
           {activeTab === 'properties' ? (
             <View style={styles.propertiesGrid}>
               {posts.map((post: any) => (
-                <View key={post._id} style={[styles.propertyCard, { borderColor }]}>
+                <Pressable
+                  key={post._id}
+                  onPress={() => handleOpenPostDetailsModal(post)}
+                  style={({ pressed, hovered }: any) => [
+                    styles.propertyCard,
+                    { borderColor, cursor: 'pointer' },
+                    (pressed || hovered) && { borderColor: goldPrimary, transform: [{ translateY: -2 }] },
+                  ]}
+                >
                   <Image
                     source={{
                       uri: post.mediaUrl && post.mediaUrl.trim()
@@ -1403,8 +1673,8 @@ const PROFILE_ILLUSTRATIONS = [
                     <Text style={styles.propertyPriceText}>
                       {post.price || '$8,900,000'}
                     </Text>
-                    <Text style={styles.propertyTitleText}>
-                      {post.title || post.content.slice(0, 45) + '...'}
+                    <Text style={styles.propertyTitleText} numberOfLines={1}>
+                      {post.title || (post.content ? post.content.slice(0, 45) + '...' : 'Luxury Waterfront Residence')}
                     </Text>
                     <Text style={styles.propertyLocationText}>
                       📍 {post.location || 'Prime Commercial Corridor'}
@@ -1414,17 +1684,17 @@ const PROFILE_ILLUSTRATIONS = [
                     </Text>
 
                     <View style={styles.propertyFooterRow}>
-                      <Text style={styles.propertyLikesText}>❤️ {post.likes?.length || 10}</Text>
-                      <Text style={styles.propertyCommentsText}>💬 {post.comments?.length || 5}</Text>
+                      <Text style={styles.propertyLikesText}>❤️ {post.likes?.length || 1}</Text>
+                      <Text style={styles.propertyCommentsText}>💬 {post.comments?.length || 6}</Text>
                     </View>
                   </View>
-                </View>
+                </Pressable>
               ))}
             </View>
           ) : (
-            /* Reels Display */
+            /* Reels Display - 5-10s sample house front view, back view, and luxury walkthroughs */
             <View style={styles.reelsGridContainer}>
-              {reels.map((reel: any) => (
+              {(reels && reels.length > 0 ? reels : userReels).map((reel: any) => (
                 <ProfileReelItem key={reel._id} reel={reel} />
               ))}
             </View>
@@ -1792,6 +2062,207 @@ const PROFILE_ILLUSTRATIONS = [
                     </Pressable>
                   )}
                 </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* ── PROPERTY POST DETAILS & REAL-TIME COMMENTS MODAL ── */}
+        <Modal
+          visible={isPostDetailsModalOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsPostDetailsModalOpen(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.82)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+            <View style={{ width: '100%', maxWidth: 640, backgroundColor: '#09111e', borderRadius: 16, borderWidth: 1, borderColor: '#1a273c', maxHeight: '92%', overflow: 'hidden' }}>
+              {/* Modal Header */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#162338' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <UserAvatar user={profileUser} size={36} />
+                  <View>
+                    <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 14 }}>{profileUser.fullName}</Text>
+                    <Text style={{ color: '#8b9bb4', fontSize: 11 }}>@{profileUser.username} · Property Listing</Text>
+                  </View>
+                </View>
+                <Pressable onPress={() => setIsPostDetailsModalOpen(false)} style={{ padding: 6 }}>
+                  <MaterialIcons name="close" size={22} color="#8b9bb4" />
+                </Pressable>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Property Photo */}
+                <Image
+                  source={{
+                    uri: selectedPostDetails?.mediaUrl && selectedPostDetails.mediaUrl.trim()
+                      ? (selectedPostDetails.mediaUrl.startsWith('http') || selectedPostDetails.mediaUrl.startsWith('data:')
+                        ? selectedPostDetails.mediaUrl
+                        : `${process.env.EXPO_PUBLIC_API_URL}${selectedPostDetails.mediaUrl}`)
+                      : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
+                  }}
+                  style={{ width: '100%', height: 260 }}
+                  resizeMode="cover"
+                />
+
+                {/* Price & Location Info */}
+                <View style={{ padding: 18 }}>
+                  <Text style={{ fontSize: 24, fontWeight: '900', color: goldPrimary }}>
+                    {selectedPostDetails?.price || '$8,900,000'}
+                  </Text>
+                  <Text style={{ fontSize: 16, fontWeight: '800', color: '#ffffff', marginTop: 4 }}>
+                    {selectedPostDetails?.title || (selectedPostDetails?.content ? selectedPostDetails.content.slice(0, 50) : 'Luxury Prime Commercial Asset')}
+                  </Text>
+                  <Text style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>
+                    📍 {selectedPostDetails?.location || 'Prime Commercial Corridor'}
+                  </Text>
+                  <Text style={{ fontSize: 12.5, color: '#38bdf8', marginTop: 2, fontWeight: '600' }}>
+                    {selectedPostDetails?.specs || 'Turnkey Acquisition · High Cap Rate'}
+                  </Text>
+
+                  {selectedPostDetails?.content && (
+                    <Text style={{ fontSize: 13.5, color: '#cbd5e1', lineHeight: 20, marginTop: 12, borderTopWidth: 1, borderTopColor: '#162338', paddingTop: 12 }}>
+                      {selectedPostDetails.content}
+                    </Text>
+                  )}
+
+                  {/* Likes Summary Bar (Clickable to view who liked) */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#162338', marginTop: 14 }}>
+                    <Pressable
+                      onPress={handleOpenPostLikesList}
+                      style={({ pressed, hovered }: any) => [
+                        { flexDirection: 'row', alignItems: 'center', gap: 6, cursor: 'pointer' },
+                        (pressed || hovered) && { opacity: 0.8 },
+                      ]}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#3b82f6', justifyContent: 'center', alignItems: 'center' }}>
+                          <MaterialIcons name="thumb-up" size={10} color="#ffffff" />
+                        </View>
+                        <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#ef4444', justifyContent: 'center', alignItems: 'center', marginLeft: -5 }}>
+                          <MaterialIcons name="favorite" size={10} color="#ffffff" />
+                        </View>
+                      </View>
+                      <Text style={{ fontSize: 12.5, color: '#93c5fd', textDecorationLine: 'underline', fontWeight: '600' }}>
+                        Akshat Commercials and {postDetailsLikesCount > 1 ? `${postDetailsLikesCount - 1} others` : 'others'}
+                      </Text>
+                    </Pressable>
+
+                    {/* Like Action Toggle */}
+                    <Pressable
+                      onPress={handleTogglePostDetailLike}
+                      style={[
+                        { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20, backgroundColor: hasLikedPostDetails ? 'rgba(239, 68, 68, 0.2)' : '#162235', borderWidth: 1, borderColor: hasLikedPostDetails ? '#ef4444' : '#1e2d42' }
+                      ]}
+                    >
+                      <MaterialIcons name={hasLikedPostDetails ? 'favorite' : 'favorite-border'} size={18} color={hasLikedPostDetails ? '#ef4444' : '#ffffff'} />
+                      <Text style={{ color: hasLikedPostDetails ? '#ef4444' : '#ffffff', fontSize: 12.5, fontWeight: '700' }}>
+                        {hasLikedPostDetails ? 'Liked' : 'Like'}
+                      </Text>
+                    </Pressable>
+                  </View>
+
+                  {/* Real-time Comments List Section */}
+                  <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: '#162338', paddingTop: 14 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: '#ffffff', marginBottom: 12 }}>
+                      Comments ({postDetailsComments.length})
+                    </Text>
+
+                    {/* Comment Input */}
+                    <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', marginBottom: 16 }}>
+                      <UserAvatar user={viewer} size={34} />
+                      <TextInput
+                        placeholder="Add a property comment or question..."
+                        placeholderTextColor="#64748b"
+                        style={{ flex: 1, backgroundColor: '#070e1a', borderWidth: 1, borderColor: '#1a273c', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, color: '#ffffff', fontSize: 13 }}
+                        value={postDetailsCommentText}
+                        onChangeText={setPostDetailsCommentText}
+                        onSubmitEditing={handleAddPostDetailComment}
+                      />
+                      <Pressable
+                        onPress={handleAddPostDetailComment}
+                        disabled={isPostingDetailComment || !postDetailsCommentText.trim()}
+                        style={{ backgroundColor: goldPrimary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, opacity: (!postDetailsCommentText.trim() || isPostingDetailComment) ? 0.6 : 1 }}
+                      >
+                        {isPostingDetailComment ? (
+                          <ActivityIndicator size="small" color="#000000" />
+                        ) : (
+                          <Text style={{ color: '#000000', fontWeight: '800', fontSize: 12.5 }}>Post</Text>
+                        )}
+                      </Pressable>
+                    </View>
+
+                    {/* Comments List */}
+                    {postDetailsComments.map((c: any, cIdx: number) => {
+                      const cAuthor = c.author || {};
+                      const cName = cAuthor.fullName || cAuthor.username || 'Advisor';
+                      return (
+                        <View key={c._id || cIdx} style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+                          <UserAvatar user={cAuthor?.profilePicture ? cAuthor : { fullName: cName }} size={32} />
+                          <View style={{ flex: 1, backgroundColor: '#131e30', padding: 10, borderRadius: 10, borderWidth: 1, borderColor: '#1b2a40' }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                              <Text style={{ color: goldPrimary, fontWeight: '700', fontSize: 12 }}>{cName}</Text>
+                              <Text style={{ color: '#64748b', fontSize: 10 }}>{c.time || '1h ago'}</Text>
+                            </View>
+                            <Text style={{ color: '#e2e8f0', fontSize: 12.5, lineHeight: 17 }}>{c.text}</Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* ── POST LIKES LIST MODAL ── */}
+        <Modal
+          visible={isPostLikesListOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsPostLikesListOpen(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+            <View style={{ width: '100%', maxWidth: 440, backgroundColor: '#09111e', borderRadius: 16, borderWidth: 1, borderColor: '#1a273c', maxHeight: 480, padding: 18 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#162338', paddingBottom: 12 }}>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: '#ffffff' }}>Liked By</Text>
+                <Pressable onPress={() => setIsPostLikesListOpen(false)}>
+                  <MaterialIcons name="close" size={22} color="#8b9bb4" />
+                </Pressable>
+              </View>
+
+              <ScrollView style={{ marginTop: 10 }}>
+                {isLoadingPostLikes ? (
+                  <ActivityIndicator size="small" color={goldPrimary} style={{ marginVertical: 20 }} />
+                ) : (
+                  postLikesUsersList.map((u: any, idx: number) => {
+                    const uId = u.id || u._id || u.username;
+                    return (
+                      <Pressable
+                        key={uId || idx}
+                        onPress={() => {
+                          setIsPostLikesListOpen(false);
+                          setIsPostDetailsModalOpen(false);
+                          router.push({ pathname: '/(app)/profile', params: { id: uId } });
+                        }}
+                        style={({ pressed, hovered }: any) => [
+                          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 6, borderRadius: 8 },
+                          (pressed || hovered) && { backgroundColor: '#131e30' },
+                        ]}
+                      >
+                        <UserAvatar user={u} size={40} />
+                        <View style={{ marginLeft: 12, flex: 1 }}>
+                          <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 13.5 }}>{u.fullName || u.username}</Text>
+                          <Text style={{ color: '#8b9bb4', fontSize: 11.5 }}>@{u.username || 'advisor'}</Text>
+                          {u.headline && (
+                            <Text style={{ color: '#64748b', fontSize: 11 }} numberOfLines={1}>{u.headline}</Text>
+                          )}
+                        </View>
+                        <MaterialIcons name="chevron-right" size={20} color="#8b9bb4" />
+                      </Pressable>
+                    );
+                  })
+                )}
               </ScrollView>
             </View>
           </View>

@@ -309,6 +309,35 @@ export default function ProfessionalSocialFeedScreen() {
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
 
+  // Likes Modal State
+  const [isLikesModalOpen, setIsLikesModalOpen] = useState(false);
+  const [likesModalPost, setLikesModalPost] = useState<any>(null);
+  const [likesModalUsers, setLikesModalUsers] = useState<any[]>([]);
+  const [isLoadingLikes, setIsLoadingLikes] = useState(false);
+
+  const handleOpenLikesModal = async (post: any) => {
+    setLikesModalPost(post);
+    setIsLikesModalOpen(true);
+    setIsLoadingLikes(true);
+
+    try {
+      const token = await getToken();
+      const res = await axios.get(`${API_BASE_URL}/api/feed/${post._id}/likes`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.data && Array.isArray(res.data.likes)) {
+        setLikesModalUsers(res.data.likes);
+      } else {
+        setLikesModalUsers(DEFAULT_COMMUNITY_ADVISORS.slice(0, 3));
+      }
+    } catch (error) {
+      console.warn('Failed to load post likes list:', error);
+      setLikesModalUsers(DEFAULT_COMMUNITY_ADVISORS.slice(0, 3));
+    } finally {
+      setIsLoadingLikes(false);
+    }
+  };
+
   const isDesktop = width >= 1024;
   const isTablet = width >= 768 && width < 1024;
 
@@ -799,7 +828,13 @@ export default function ProfessionalSocialFeedScreen() {
 
                 {/* Social Counter Stats Bar (Only Like and Love icons) */}
                 <View style={[styles.socialStatsBar, { borderBottomColor: borderColor }]}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Pressable
+                    onPress={() => handleOpenLikesModal(post)}
+                    style={({ pressed, hovered }: any) => [
+                      { flexDirection: 'row', alignItems: 'center', cursor: 'pointer' },
+                      (pressed || hovered) && { opacity: 0.8 },
+                    ]}
+                  >
                     <View style={styles.reactionIconsGroup}>
                       <View style={[styles.reactionDot, { backgroundColor: '#3b82f6' }]}>
                         <MaterialIcons name="thumb-up" size={10} color="#ffffff" />
@@ -808,13 +843,13 @@ export default function ProfessionalSocialFeedScreen() {
                         <MaterialIcons name="favorite" size={10} color="#ffffff" />
                       </View>
                     </View>
-                    <Text style={styles.socialReactionText}>
+                    <Text style={[styles.socialReactionText, { textDecorationLine: 'underline' }]}>
                       {post.likesSummary ||
                         (isSelfPost
                           ? 'Liked by your real estate network'
                           : `${authorName} and ${totalLikes} others`)}
                     </Text>
-                  </View>
+                  </Pressable>
 
                   <Text
                     style={styles.socialCommentsCountText}
@@ -1108,6 +1143,116 @@ export default function ProfessionalSocialFeedScreen() {
                 )}
               </Pressable>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── POST LIKES / REACTIONS MODAL ─────────────────────────────────── */}
+      <Modal
+        visible={isLikesModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsLikesModalOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalBox, { backgroundColor: cardBg, borderColor, maxWidth: 480, maxHeight: 520 }]}>
+            {/* Header */}
+            <View style={[styles.modalHeader, { borderBottomWidth: 1, borderBottomColor: borderColor, paddingBottom: 12 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={[styles.reactionDot, { backgroundColor: '#3b82f6', width: 22, height: 22, borderRadius: 11 }]}>
+                    <MaterialIcons name="thumb-up" size={12} color="#ffffff" />
+                  </View>
+                  <View style={[styles.reactionDot, { backgroundColor: '#ef4444', width: 22, height: 22, borderRadius: 11, marginLeft: -6 }]}>
+                    <MaterialIcons name="favorite" size={12} color="#ffffff" />
+                  </View>
+                </View>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: '#ffffff' }}>
+                  Reactions ({likesModalUsers.length})
+                </Text>
+              </View>
+              <Pressable onPress={() => setIsLikesModalOpen(false)} style={{ padding: 4 }}>
+                <MaterialIcons name="close" size={22} color="#8b9bb4" />
+              </Pressable>
+            </View>
+
+            {/* Users List */}
+            <ScrollView style={{ marginTop: 10 }} showsVerticalScrollIndicator={false}>
+              {isLoadingLikes ? (
+                <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color={goldPrimary} />
+                  <Text style={{ color: '#8b9bb4', fontSize: 12, marginTop: 8 }}>Loading reactions...</Text>
+                </View>
+              ) : likesModalUsers.length > 0 ? (
+                likesModalUsers.map((u: any, idx: number) => {
+                  const uId = u.id || u._id || u.username;
+                  const isF = Boolean(followingMap[uId]);
+                  return (
+                    <View
+                      key={uId || idx}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingVertical: 12,
+                        paddingHorizontal: 6,
+                        borderBottomWidth: idx < likesModalUsers.length - 1 ? 1 : 0,
+                        borderBottomColor: '#142033',
+                      }}
+                    >
+                      <Pressable
+                        onPress={() => {
+                          setIsLikesModalOpen(false);
+                          router.push({ pathname: '/(app)/profile', params: { id: uId } });
+                        }}
+                        style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 12 }}
+                      >
+                        <UserAvatar user={u} size={42} />
+                        <View style={{ marginLeft: 12, flex: 1 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 14 }}>
+                              {u.fullName}
+                            </Text>
+                            <MaterialIcons name="verified" size={14} color="#0095f6" />
+                          </View>
+                          <Text style={{ color: '#8b9bb4', fontSize: 12 }}>
+                            @{u.username}
+                          </Text>
+                          {u.headline && (
+                            <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+                              {u.headline}
+                            </Text>
+                          )}
+                        </View>
+                      </Pressable>
+
+                      {uId !== user?.id && (
+                        <Pressable
+                          onPress={() => toggleFollowAdvisor(uId)}
+                          style={[
+                            styles.advisorFollowBtn,
+                            isF && { backgroundColor: '#1a273c' },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.advisorFollowBtnText,
+                              { color: isF ? '#ffffff' : goldPrimary },
+                            ]}
+                          >
+                            {isF ? '✓ Following' : '+ Follow'}
+                          </Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  );
+                })
+              ) : (
+                <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                  <Text style={{ color: '#8b9bb4', fontSize: 13 }}>Be the first person to like this post!</Text>
+                </View>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>

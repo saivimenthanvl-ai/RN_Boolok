@@ -145,6 +145,117 @@ router.get('/user/:userId', authMiddleware, async (req, res) => {
 const demoPostComments = new Map();
 const demoPostLikes = new Map();
 
+// ── GET /api/feed/:id/likes (Get all users who liked a post) ────────────────
+router.get('/:id/likes', authMiddleware, async (req, res) => {
+    try {
+        const viewerId = getAuthenticatedUserId(req);
+        const { id } = req.params;
+
+        let likedUsers = [];
+
+        if (mongoose.Types.ObjectId.isValid(id)) {
+            const post = await Post.findById(id).populate('likes', 'fullName username profilePicture headline location');
+            if (post && Array.isArray(post.likes)) {
+                likedUsers = post.likes.map((u) => ({
+                    id: u._id || u.id,
+                    _id: u._id || u.id,
+                    fullName: u.fullName || u.username || 'Boolok Advisor',
+                    username: u.username || 'member',
+                    headline: u.headline || 'Certified Real Estate Advisor @ Boolok Network',
+                    profilePicture: u.profilePicture || null,
+                    location: u.location || 'Global Real Estate Network',
+                    isFollowing: false,
+                }));
+            }
+        }
+
+        if (likedUsers.length === 0) {
+            const demoUsers = [
+                {
+                    id: 'the_akshtr_estate',
+                    _id: 'the_akshtr_estate',
+                    fullName: 'Akshat Commercials',
+                    username: 'the_akshtr_estate',
+                    headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Network',
+                    profilePicture: null,
+                    location: 'Chennai, Tamil Nadu',
+                    isFollowing: false,
+                },
+                {
+                    id: 'logeshwarana',
+                    _id: 'logeshwarana',
+                    fullName: 'Logeshwaran Ashok',
+                    username: 'logeshwarana',
+                    headline: 'Architectural Consultant & Real Estate Lead',
+                    profilePicture: null,
+                    location: 'Coimbatore, Tamil Nadu',
+                    isFollowing: false,
+                },
+                {
+                    id: 'bavadharini_rs',
+                    _id: 'bavadharini_rs',
+                    fullName: 'Bavadharini RS',
+                    username: 'bavadharini_rs',
+                    headline: 'Interior Designer & Modern Living Specialist',
+                    profilePicture: null,
+                    location: 'Chennai, Tamil Nadu',
+                    isFollowing: false,
+                },
+                {
+                    id: 'shreekutti',
+                    _id: 'shreekutti',
+                    fullName: 'Shreekutti Realty',
+                    username: 'shreekutti',
+                    headline: 'Tech Park Campus Acquisitions Lead @ Boolok Realty',
+                    profilePicture: null,
+                    location: 'Bangalore, Karnataka',
+                    isFollowing: false,
+                },
+            ];
+
+            const currentLikes = demoPostLikes.get(id) || ['u1', 'u2'];
+            likedUsers = demoUsers.slice(0, Math.max(1, currentLikes.length));
+        }
+
+        return res.status(200).json({ likes: likedUsers, totalLikes: likedUsers.length });
+    } catch (error) {
+        console.error('GET POST LIKES ERROR:', error);
+        return res.status(500).json({ message: 'Failed to fetch post likes.', error: error.message });
+    }
+});
+
+// ── GET /api/feed/:id/details (Get full post details including comments and likes)
+router.get('/:id/details', authMiddleware, async (req, res) => {
+    try {
+        const viewerId = getAuthenticatedUserId(req);
+        const { id } = req.params;
+
+        if (mongoose.Types.ObjectId.isValid(id)) {
+            const post = await Post.findById(id)
+                .populate('author', 'fullName username profilePicture headline')
+                .populate('likes', 'fullName username profilePicture headline')
+                .populate('comments.user', 'fullName username profilePicture headline');
+
+            if (post) {
+                return res.status(200).json({ post });
+            }
+        }
+
+        const currentLikes = demoPostLikes.get(id) || ['u1', 'u2'];
+        const currentComments = demoPostComments.get(id) || [];
+        return res.status(200).json({
+            post: {
+                _id: id,
+                likes: currentLikes,
+                comments: currentComments,
+            },
+        });
+    } catch (error) {
+        console.error('GET POST DETAILS ERROR:', error);
+        return res.status(500).json({ message: 'Failed to fetch post details.', error: error.message });
+    }
+});
+
 // Like / unlike toggle
 router.put('/:id/like', authMiddleware, async (req, res) => {
     try {
