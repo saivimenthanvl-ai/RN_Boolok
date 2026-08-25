@@ -302,8 +302,8 @@ export default function ProfessionalUserProfileScreen() {
   const { theme } = useTheme();
   const { width } = useWindowDimensions();
 
-  const isSelf = !id || id === viewer?.id || id === 'self';
-  const targetId = id || viewer?.id;
+  const isSelf = !id || id === 'self' || id === viewer?.id || id === viewer?._id || (Boolean(viewer?.username) && String(id).toLowerCase() === String(viewer?.username).toLowerCase());
+  const targetId = isSelf ? (viewer?.id || viewer?._id || 'self') : String(id);
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -854,7 +854,19 @@ const PROFILE_ILLUSTRATIONS = [
     data?.user ||
     (isSelf
       ? viewer || defaultFallbackUser
-      : defaultFallbackUser);
+      : {
+          id: String(id || 'member'),
+          _id: String(id || 'member'),
+          fullName: typeof id === 'string' ? id.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Advisor',
+          username: String(id || 'member'),
+          headline: 'Certified Real Estate Advisor @ Boolok Network',
+          location: 'Chennai, Tamil Nadu · Prime Assets',
+          bio: 'Real estate professional and certified portfolio advisor on the Boolok AI network.',
+          profilePicture: null,
+          coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
+          closedDeals: '0',
+          mutuals: '',
+        });
   const postCount = data?.postCount !== undefined ? data.postCount : (data?.posts?.length || 1);
   const reelCount = data?.reelCount !== undefined ? data.reelCount : 1;
   const followerCount = followerCountState;

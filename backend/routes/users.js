@@ -76,17 +76,173 @@ router.get('/search', authMiddleware, async (req, res) => {
   }
 });
 
+const COMMUNITY_MEMBERS = [
+  {
+    username: 'the_akshtr_estate',
+    aliases: ['agent-4', 'akshat_commercials', 'akshat', 'the_akshtr_estate'],
+    fullName: 'Akshat Commercials',
+    email: 'akshat.commercials@boolok.ai',
+    headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Network',
+    location: 'Chennai, Tamil Nadu · Prime Assets',
+    bio: 'Specializing in Grade-A IT SEZ parks, commercial lease syndications, and institutional asset acquisitions on OMR Chennai.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'aswin.realty',
+    aliases: ['agent-2', 'aswin_realty', 'aswin'],
+    fullName: 'Aswin Real Estate',
+    email: 'aswin.realty@boolok.ai',
+    headline: 'Principal Real Estate Broker & Multi-Family Asset Advisor',
+    location: 'Chennai, Tamil Nadu · Luxury & Commercial Assets',
+    bio: 'Expert commercial multi-family portfolio manager with deep market analytics on cap rates and returns.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'prasanth_properties',
+    aliases: ['agent-1', 'prasanth', 'prasanth_properties'],
+    fullName: 'Prasanth Properties',
+    email: 'prasanth.properties@boolok.ai',
+    headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
+    location: 'Miami, Florida · Coastal Estates',
+    bio: 'Luxury real estate advisory focused on ultra-prime beachfront residences and waterfront villas.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'ig_vicky16',
+    aliases: ['agent-3', 'vicky_luxury', 'ig_vicky16', 'vicky'],
+    fullName: 'Vicky Luxury Living',
+    email: 'vicky.luxury@boolok.ai',
+    headline: 'Prime Architectural Estates & Beverly Hills Luxury Specialist',
+    location: 'Beverly Hills, California · Ultra Luxury',
+    bio: 'Curating custom luxury properties, penthouses, and architectural landmarks for high net worth clients.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'shreekutti',
+    aliases: ['shreekutti'],
+    fullName: 'shreekutti',
+    email: 'shreekutti@boolok.ai',
+    headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Realty',
+    location: 'Bangalore, Karnataka · Tech Parks',
+    bio: 'Specialized in commercial land development and Grade-A tech hub transactions across South India.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'logeshwarana',
+    aliases: ['logeshwarana', 'logeshwaran_ashok'],
+    fullName: 'logeshwarana',
+    email: 'logeshwarana@boolok.ai',
+    headline: 'Architectural Consultant & Real Estate Lead',
+    location: 'Coimbatore, Tamil Nadu · Industrial & Retail',
+    bio: 'Focused on precision cap-rate calculations, commercial yield optimization, and real estate investment portfolios.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'ajmal',
+    aliases: ['ajmal'],
+    fullName: 'ajmal',
+    email: 'ajmal@boolok.ai',
+    headline: 'Luxury Living & High-End Residential Broker',
+    location: 'Dubai & Kochi · Luxury Villas',
+    bio: 'Connecting international investors to premier waterfront villas and bespoke residential developments.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'bavadharini_rs',
+    aliases: ['bavadharini_rs', 'bavadharini'],
+    fullName: 'Bavadharini RS',
+    email: 'bavadharini@boolok.ai',
+    headline: 'Interior Designer & Modern Living Specialist',
+    location: 'Chennai, Tamil Nadu · Modern Living',
+    bio: 'Bespoke high-end interior architecture, penthouse makeovers, and custom luxury styling.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+  {
+    username: 'yashwanth_realty',
+    aliases: ['yashwanth_realty', 'cinemahub.live', 'cinemahub', 'yashwanth'],
+    fullName: 'Yashwanth Realty',
+    email: 'yashwanth.realty@boolok.ai',
+    headline: 'Prime Commercial Hubs & Institutional Realty Lead',
+    location: 'Chennai & Bangalore · Commercial Hubs',
+    bio: 'Acquiring prime commercial buildings, corporate hubs, and investment estates across South India.',
+    closedDeals: '0',
+    profilePicture: null,
+  },
+];
+
+async function resolveOrSeedUser(id) {
+  let profileUser = null;
+  const lookup = (id || '').toString().trim().toLowerCase();
+
+  if (mongoose.Types.ObjectId.isValid(lookup)) {
+    profileUser = await User.findById(lookup)
+      .populate('followers', 'fullName username profilePicture headline location')
+      .populate('following', 'fullName username profilePicture headline location');
+  }
+
+  if (!profileUser) {
+    profileUser = await User.findOne({ username: lookup })
+      .populate('followers', 'fullName username profilePicture headline location')
+      .populate('following', 'fullName username profilePicture headline location');
+  }
+
+  if (!profileUser) {
+    const memberDef = COMMUNITY_MEMBERS.find(
+      (m) => m.username.toLowerCase() === lookup || m.aliases.map((a) => a.toLowerCase()).includes(lookup)
+    );
+
+    if (memberDef) {
+      let existing = await User.findOne({
+        $or: [{ username: memberDef.username }, { email: memberDef.email }],
+      });
+
+      if (!existing) {
+        existing = await User.create({
+          fullName: memberDef.fullName,
+          username: memberDef.username,
+          email: memberDef.email,
+          password: '$2a$10$BoolokDefaultPasswordHash2026.SeededUser',
+          headline: memberDef.headline,
+          location: memberDef.location,
+          bio: memberDef.bio,
+          closedDeals: '0',
+          profilePicture: null,
+          followers: [],
+          following: [],
+        });
+      }
+
+      profileUser = await User.findById(existing._id)
+        .populate('followers', 'fullName username profilePicture headline location')
+        .populate('following', 'fullName username profilePicture headline location');
+    }
+  }
+
+  return profileUser;
+}
+
 // ── GET /api/users/suggested ───────────────────────────────────────────────
 router.get('/suggested', authMiddleware, async (req, res) => {
   try {
     const viewerId = getAuthenticatedUserId(req);
+
+    // Auto-seed community members into MongoDB
+    await Promise.allSettled(COMMUNITY_MEMBERS.map((m) => resolveOrSeedUser(m.username)));
+
     const query = viewerId ? { _id: { $ne: viewerId } } : {};
 
     const users = await User.find(query)
-      .populate('followers', 'fullName username')
+      .populate('followers', 'fullName username profilePicture')
       .select('fullName username profilePicture bio headline location followers following')
-      .sort({ createdAt: -1 })
-      .limit(8);
+      .limit(10);
 
     const suggested = users.map((u) => {
       const sanitized = sanitizeUserProfile(u, viewerId);
@@ -226,159 +382,6 @@ router.put('/profile', authMiddleware, async (req, res) => {
     return res.status(500).json({ message: 'Failed to update profile.', error: error.message });
   }
 });
-
-const COMMUNITY_MEMBERS = [
-  {
-    username: 'the_akshtr_estate',
-    aliases: ['agent-4', 'akshat_commercials', 'akshat', 'the_akshtr_estate'],
-    fullName: 'Akshat Commercials',
-    email: 'akshat.commercials@boolok.ai',
-    headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Network',
-    location: 'Chennai, Tamil Nadu · Prime Assets',
-    bio: 'Specializing in Grade-A IT SEZ parks, commercial lease syndications, and institutional asset acquisitions on OMR Chennai.',
-    closedDeals: '0',
-    profilePicture: null,
-  },
-  {
-    username: 'aswin.realty',
-    aliases: ['agent-2', 'aswin_realty', 'aswin'],
-    fullName: 'Aswin Real Estate',
-    email: 'aswin.realty@boolok.ai',
-    headline: 'Principal Real Estate Broker & Multi-Family Asset Advisor',
-    location: 'Chennai, Tamil Nadu · Luxury & Commercial Assets',
-    bio: 'Expert commercial multi-family portfolio manager with deep market analytics on cap rates and returns.',
-    closedDeals: '0',
-    profilePicture: null,
-  },
-  {
-    username: 'prasanth_properties',
-    aliases: ['agent-1', 'prasanth', 'prasanth_properties'],
-    fullName: 'Prasanth Properties',
-    email: 'prasanth.properties@boolok.ai',
-    headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
-    location: 'Miami, Florida · Coastal Estates',
-    bio: 'Luxury real estate advisory focused on ultra-prime beachfront residences and waterfront villas.',
-    closedDeals: '0',
-    profilePicture: null,
-  },
-  {
-    username: 'ig_vicky16',
-    aliases: ['agent-3', 'vicky_luxury', 'ig_vicky16', 'vicky'],
-    fullName: 'Vicky Luxury Living',
-    email: 'vicky.luxury@boolok.ai',
-    headline: 'Prime Architectural Estates & Beverly Hills Luxury Specialist',
-    location: 'Beverly Hills, California · Ultra Luxury',
-    bio: 'Curating custom luxury properties, penthouses, and architectural landmarks for high net worth clients.',
-    closedDeals: '0',
-    profilePicture: null,
-  },
-  {
-    username: 'shreekutti',
-    aliases: ['shreekutti'],
-    fullName: 'shreekutti',
-    email: 'shreekutti@boolok.ai',
-    headline: 'Tech Park Campus Acquisitions Lead @ Boolok Realty',
-    location: 'Bangalore, Karnataka · Tech Parks',
-    bio: 'Specialized in commercial land development and Grade-A tech hub transactions across South India.',
-    closedDeals: '0',
-    profilePicture: null,
-  },
-  {
-    username: 'logeshwarana',
-    aliases: ['logeshwarana', 'logeshwaran_ashok'],
-    fullName: 'logeshwarana',
-    email: 'logeshwarana@boolok.ai',
-    headline: 'Real Estate Asset Analyst & Valuation Specialist',
-    location: 'Coimbatore, Tamil Nadu · Industrial & Retail',
-    bio: 'Focused on precision cap-rate calculations, commercial yield optimization, and real estate investment portfolios.',
-    closedDeals: '0',
-    profilePicture: null,
-  },
-  {
-    username: 'ajmal',
-    aliases: ['ajmal'],
-    fullName: 'ajmal',
-    email: 'ajmal@boolok.ai',
-    headline: 'Luxury Living & High-End Residential Broker',
-    location: 'Dubai & Kochi · Luxury Villas',
-    bio: 'Connecting international investors to premier waterfront villas and bespoke residential developments.',
-    closedDeals: '0',
-    profilePicture: null,
-  },
-  {
-    username: 'cinemahub.live',
-    aliases: ['cinemahub.live', 'cinemahub'],
-    fullName: 'cinemahub.live',
-    email: 'cinemahub@boolok.ai',
-    headline: 'Media Studio & Film Production Estate Specialist',
-    location: 'Mumbai & Chennai · Studio Properties',
-    bio: 'Acquiring prime production lots, sound stages, and expansive filming estates across India.',
-    closedDeals: '0',
-    profilePicture: null,
-  },
-  {
-    username: 'bavadharini_rs',
-    aliases: ['bavadharini_rs', 'bavadharini'],
-    fullName: 'Bavadharini RS',
-    email: 'bavadharini@boolok.ai',
-    headline: 'Interior Designer & Modern Living Specialist',
-    location: 'Chennai, Tamil Nadu · Modern Living',
-    bio: 'Bespoke high-end interior architecture, penthouse makeovers, and custom luxury styling.',
-    closedDeals: '0',
-    profilePicture: null,
-  },
-];
-
-async function resolveOrSeedUser(id) {
-  let profileUser = null;
-  const lookup = (id || '').toString().trim().toLowerCase();
-
-  if (mongoose.Types.ObjectId.isValid(lookup)) {
-    profileUser = await User.findById(lookup)
-      .populate('followers', 'fullName username profilePicture headline location')
-      .populate('following', 'fullName username profilePicture headline location');
-  }
-
-  if (!profileUser) {
-    profileUser = await User.findOne({ username: lookup })
-      .populate('followers', 'fullName username profilePicture headline location')
-      .populate('following', 'fullName username profilePicture headline location');
-  }
-
-  if (!profileUser) {
-    const memberDef = COMMUNITY_MEMBERS.find(
-      (m) => m.username.toLowerCase() === lookup || m.aliases.map((a) => a.toLowerCase()).includes(lookup)
-    );
-
-    if (memberDef) {
-      let existing = await User.findOne({
-        $or: [{ username: memberDef.username }, { email: memberDef.email }],
-      });
-
-      if (!existing) {
-        existing = await User.create({
-          fullName: memberDef.fullName,
-          username: memberDef.username,
-          email: memberDef.email,
-          password: '$2a$10$BoolokDefaultPasswordHash2026.SeededUser',
-          headline: memberDef.headline,
-          location: memberDef.location,
-          bio: memberDef.bio,
-          closedDeals: '0',
-          profilePicture: null,
-          followers: [],
-          following: [],
-        });
-      }
-
-      profileUser = await User.findById(existing._id)
-        .populate('followers', 'fullName username profilePicture headline location')
-        .populate('following', 'fullName username profilePicture headline location');
-    }
-  }
-
-  return profileUser;
-}
 
 // ── GET /api/users/:id (Get profile by ID or username) ────────────────────
 router.get('/:id', authMiddleware, async (req, res) => {

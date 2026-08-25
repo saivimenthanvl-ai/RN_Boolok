@@ -194,7 +194,7 @@ const DUMMY_REAL_ESTATE_POSTS = [
       },
       {
         _id: 'c4',
-        author: { fullName: 'cinemahub.live', username: 'cinemahub.live', profilePicture: null },
+        author: { fullName: 'yashwanth_realty', username: 'yashwanth_realty', profilePicture: null },
         text: 'Spectacular location and panoramic backdrop.',
         time: '45m ago',
       },
@@ -228,6 +228,63 @@ const DUMMY_REAL_ESTATE_POSTS = [
   },
 ];
 
+const DEFAULT_COMMUNITY_ADVISORS = [
+  {
+    id: 'shreekutti',
+    _id: 'shreekutti',
+    fullName: 'shreekutti',
+    username: 'shreekutti',
+    headline: 'Tech Park Campus Acquisitions Lead @ Boolok Realty',
+    followerCount: 0,
+    profilePicture: null,
+  },
+  {
+    id: 'logeshwarana',
+    _id: 'logeshwarana',
+    fullName: 'logeshwarana',
+    username: 'logeshwarana',
+    headline: 'Architectural Consultant & Real Estate Lead',
+    followerCount: 0,
+    profilePicture: null,
+  },
+  {
+    id: 'ajmal',
+    _id: 'ajmal',
+    fullName: 'ajmal',
+    username: 'ajmal',
+    headline: 'Luxury Living & High-End Residential Broker',
+    followerCount: 0,
+    profilePicture: null,
+  },
+  {
+    id: 'bavadharini_rs',
+    _id: 'bavadharini_rs',
+    fullName: 'Bavadharini RS',
+    username: 'bavadharini_rs',
+    headline: 'Interior Designer & Modern Living Specialist',
+    followerCount: 0,
+    profilePicture: null,
+  },
+  {
+    id: 'the_akshtr_estate',
+    _id: 'the_akshtr_estate',
+    fullName: 'Akshat Commercials',
+    username: 'the_akshtr_estate',
+    headline: 'Commercial Property & Tech Park Portfolio Lead',
+    followerCount: 0,
+    profilePicture: null,
+  },
+  {
+    id: 'prasanth_properties',
+    _id: 'prasanth_properties',
+    fullName: 'Prasanth Properties',
+    username: 'prasanth_properties',
+    headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
+    followerCount: 0,
+    profilePicture: null,
+  },
+];
+
 export default function ProfessionalSocialFeedScreen() {
   const { user } = useAuth();
   const { theme } = useTheme();
@@ -237,7 +294,7 @@ export default function ProfessionalSocialFeedScreen() {
   const [loading, setLoading] = useState(true);
   const [newsList, setNewsList] = useState(DEFAULT_REAL_ESTATE_NEWS);
   const [showAllNews, setShowAllNews] = useState(false);
-  const [suggestedUsers, setSuggestedUsers] = useState<any[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<any[]>(DEFAULT_COMMUNITY_ADVISORS);
 
   // Follow State
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
@@ -847,7 +904,7 @@ export default function ProfessionalSocialFeedScreen() {
 
                     {/* Existing Comments with Named Profiles */}
                     {commentsList.map((c: any, cIdx: number) => {
-                      const fallbackNames = ['shreekutti', 'logeshwarana', 'ajmal', 'cinemahub.live'];
+                      const fallbackNames = ['shreekutti', 'logeshwarana', 'ajmal', 'yashwanth_realty'];
                       const fallbackName = fallbackNames[cIdx % fallbackNames.length];
                       const cAuthor = c.author || {};
                       const rawName = cAuthor.fullName || cAuthor.username || (typeof c.author === 'string' ? c.author : '');
