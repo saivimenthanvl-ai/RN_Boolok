@@ -43,8 +43,8 @@ export default function RootLayout() {
           const styleEl = document.createElement('style');
           styleEl.id = 'poppins-global-style';
           styleEl.innerHTML = `
-            * {
-              font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+            html, body, input, textarea, button {
+              font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             }
           `;
           document.head.appendChild(styleEl);
