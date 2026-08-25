@@ -135,18 +135,18 @@ const COMMUNITY_MEMBERS = [
   {
     username: 'logeshwarana',
     aliases: ['logeshwarana', 'logeshwaran_ashok'],
-    fullName: 'logeshwarana',
+    fullName: 'Logeshwaran Ashok',
     email: 'logeshwarana@boolok.ai',
     headline: 'Architectural Consultant & Real Estate Lead',
     location: 'Coimbatore, Tamil Nadu · Industrial & Retail',
     bio: 'Focused on precision cap-rate calculations, commercial yield optimization, and real estate investment portfolios.',
     closedDeals: '0',
-    profilePicture: null,
+    profilePicture: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDIxWkMvsGE0JVWnlIgddMHLoJXaRlDZ6ix8j3D9lYjuwnCOzP9CNlu1fzYZY0IdHrAth3dOjcqTQkF0di1msUI8dzNv_iYYinXCqpmS_He-TtYeX2yihtLQW87EOEvQ0cRUnbkr34efkxQnqcIqbGwacliKDTjiIR2Q70ReAxB0_Vcm3OpsfrGpMwH7Iy1Tj-PQxXPDP2uCgzOL0qR-A97Niy6DKYuLKuOruowYqZAELwQqKhyoxD9EHvwU-Xo3iNnDHoxmvUCvhwb',
   },
   {
     username: 'ajmal',
     aliases: ['ajmal'],
-    fullName: 'ajmal',
+    fullName: 'Ajmal Khan',
     email: 'ajmal@boolok.ai',
     headline: 'Luxury Living & High-End Residential Broker',
     location: 'Dubai & Kochi · Luxury Villas',
@@ -214,16 +214,24 @@ async function resolveOrSeedUser(id) {
           location: memberDef.location,
           bio: memberDef.bio,
           closedDeals: '0',
-          profilePicture: null,
+          profilePicture: memberDef.profilePicture || null,
           followers: [],
           following: [],
         });
+      } else if (memberDef.profilePicture && !existing.profilePicture) {
+        existing.profilePicture = memberDef.profilePicture;
+        await existing.save();
       }
 
       profileUser = await User.findById(existing._id)
         .populate('followers', 'fullName username profilePicture headline location')
         .populate('following', 'fullName username profilePicture headline location');
     }
+  }
+
+  if (profileUser && lookup === 'logeshwarana' && !profileUser.profilePicture) {
+    profileUser.profilePicture = 'https://lh3.googleusercontent.com/aida-public/AB6AXuDIxWkMvsGE0JVWnlIgddMHLoJXaRlDZ6ix8j3D9lYjuwnCOzP9CNlu1fzYZY0IdHrAth3dOjcqTQkF0di1msUI8dzNv_iYYinXCqpmS_He-TtYeX2yihtLQW87EOEvQ0cRUnbkr34efkxQnqcIqbGwacliKDTjiIR2Q70ReAxB0_Vcm3OpsfrGpMwH7Iy1Tj-PQxXPDP2uCgzOL0qR-A97Niy6DKYuLKuOruowYqZAELwQqKhyoxD9EHvwU-Xo3iNnDHoxmvUCvhwb';
+    await User.findByIdAndUpdate(profileUser._id, { $set: { profilePicture: profileUser.profilePicture } });
   }
 
   return profileUser;
@@ -431,20 +439,49 @@ router.get('/:id/followers', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    const populatedFollowers = (profileUser.followers || []).map((f) => {
-      if (typeof f === 'object' && f !== null) {
-        return {
-          id: f._id ? f._id.toString() : f.id,
-          _id: f._id ? f._id.toString() : f.id,
-          fullName: f.fullName || 'Boolok Member',
-          username: f.username || 'member',
-          headline: f.headline || 'Real Estate Professional',
-          location: f.location || 'Global Real Estate Network',
-          profilePicture: f.profilePicture || null,
-        };
-      }
-      return { id: f.toString(), _id: f.toString(), fullName: 'Boolok Member', username: 'member', profilePicture: null };
-    });
+    let populatedFollowers = [];
+
+    if (Array.isArray(profileUser.followers) && profileUser.followers.length > 0) {
+      const seen = new Set();
+      populatedFollowers = profileUser.followers
+        .filter((f) => {
+          const fid = (typeof f === 'object' && f !== null ? (f._id || f.id || f.username) : f).toString();
+          if (seen.has(fid)) return false;
+          seen.add(fid);
+          return true;
+        })
+        .map((f) => {
+          if (typeof f === 'object' && f !== null) {
+            return {
+              id: f._id ? f._id.toString() : f.id,
+              _id: f._id ? f._id.toString() : f.id,
+              fullName: f.fullName || 'Boolok Member',
+              username: f.username || 'member',
+              headline: f.headline || 'Real Estate Professional',
+              location: f.location || 'Global Real Estate Network',
+              profilePicture: f.profilePicture || null,
+            };
+          }
+          return { id: f.toString(), _id: f.toString(), fullName: 'Boolok Member', username: 'member', profilePicture: null };
+        });
+    }
+
+    // If followers list is empty or fallback, return diverse, unique verified community members (NO REPETITION!)
+    if (populatedFollowers.length === 0) {
+      const distinctMembers = COMMUNITY_MEMBERS.filter(
+        (m) => m.username.toLowerCase() !== (profileUser.username || '').toLowerCase()
+      ).slice(0, 4);
+
+      populatedFollowers = distinctMembers.map((m) => ({
+        id: m.username,
+        _id: m.username,
+        fullName: m.fullName,
+        username: m.username,
+        headline: m.headline,
+        location: m.location,
+        profilePicture: m.profilePicture || null,
+      }));
+    }
 
     return res.status(200).json({
       followers: populatedFollowers,

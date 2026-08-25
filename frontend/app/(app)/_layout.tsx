@@ -326,15 +326,17 @@ export default function AppLayout() {
       <View style={styles.mainContent}>
         {/* INLINED HEADER TO PREVENT FOCUS LOSS */}
         <View style={[styles.header, {
-          paddingHorizontal: isWide ? spacing.xl : spacing.md,
+          paddingHorizontal: isWide ? spacing.lg : spacing.md,
           borderBottomColor: theme.outlineVariant,
           backgroundColor: isDark ? 'rgba(10, 15, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)',
           paddingTop: insets.top,
           height: 80 + insets.top,
           zIndex: 100,
         }]}>
-          <View style={{ flexShrink: 1, marginRight: 8 }}>
-            <Text style={[typography.headlineSm, { color: theme.onSurface }]} numberOfLines={1}>Welcome back, {user?.fullName?.split(' ')[0] || 'Agent'}</Text>
+          <View style={{ flexShrink: 0, minWidth: 160, marginRight: spacing.md }}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: theme.onSurface }} numberOfLines={1}>
+              Welcome back, {user?.fullName?.split(' ')[0] || 'Sai'}
+            </Text>
             <Text style={{ fontSize: 12, color: theme.onSurfaceVariant, fontWeight: '500' }}>Real Estate Intelligence</Text>
           </View>
 

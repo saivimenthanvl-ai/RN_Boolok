@@ -37,8 +37,17 @@ export default function RootLayout() {
           link.id = linkId;
           link.rel = 'stylesheet';
           link.href =
-            'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap';
+            'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap';
           document.head.appendChild(link);
+
+          const styleEl = document.createElement('style');
+          styleEl.id = 'poppins-global-style';
+          styleEl.innerHTML = `
+            * {
+              font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+            }
+          `;
+          document.head.appendChild(styleEl);
         }
       } catch (e) {
         // ignore web font link error

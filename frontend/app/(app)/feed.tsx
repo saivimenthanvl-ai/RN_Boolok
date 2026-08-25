@@ -241,11 +241,11 @@ const DEFAULT_COMMUNITY_ADVISORS = [
   {
     id: 'logeshwarana',
     _id: 'logeshwarana',
-    fullName: 'logeshwarana',
+    fullName: 'Logeshwaran Ashok',
     username: 'logeshwarana',
     headline: 'Architectural Consultant & Real Estate Lead',
     followerCount: 0,
-    profilePicture: null,
+    profilePicture: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDIxWkMvsGE0JVWnlIgddMHLoJXaRlDZ6ix8j3D9lYjuwnCOzP9CNlu1fzYZY0IdHrAth3dOjcqTQkF0di1msUI8dzNv_iYYinXCqpmS_He-TtYeX2yihtLQW87EOEvQ0cRUnbkr34efkxQnqcIqbGwacliKDTjiIR2Q70ReAxB0_Vcm3OpsfrGpMwH7Iy1Tj-PQxXPDP2uCgzOL0qR-A97Niy6DKYuLKuOruowYqZAELwQqKhyoxD9EHvwU-Xo3iNnDHoxmvUCvhwb',
   },
   {
     id: 'ajmal',
