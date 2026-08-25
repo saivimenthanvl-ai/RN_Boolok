@@ -13,12 +13,20 @@ const USER_KEY = 'userData';
 
 export type AuthUser = {
   id: string;
+  _id?: string;
   fullName: string;
   username?: string | null;
   email: string;
   profilePicture?: string | null;
+  coverImage?: string | null;
+  headline?: string | null;
+  location?: string | null;
+  bio?: string | null;
+  closedDeals?: string | null;
   goal?: string | null;
   role?: string | null;
+  followers?: any[];
+  following?: any[];
 };
 
 type AuthContextType = {

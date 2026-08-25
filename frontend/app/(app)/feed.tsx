@@ -23,6 +23,7 @@ import LoadingScreen from '../../components/LoadingScreen';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import BoolokLogo from '../../components/BoolokLogo';
+import { API_BASE_URL } from '../../lib/api';
 
 // ── Shared follow tracker ───────────────────────────────────────────────────
 const GLOBAL_FOLLOWED_USERS = new Set<string>();
@@ -73,49 +74,6 @@ const DEFAULT_REAL_ESTATE_NEWS = [
   },
 ];
 
-// ── Master Verified Real Estate Network ─────────────────────────────────────
-const SUGGESTED_ADVISORS = [
-  {
-    id: 'shreekutti',
-    fullName: 'shreekutti',
-    username: 'shreekutti',
-    title: 'Architecture & Residential Specialist',
-    subtitle: 'Followed by lyra_orphe...',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-  },
-  {
-    id: 'cinemahub.live',
-    fullName: 'cinemahub.live',
-    username: 'cinemahub.live',
-    title: 'Studio & Prime Commercial Spaces',
-    subtitle: 'Suggested for you',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
-  },
-  {
-    id: 'bavadharini_rs',
-    fullName: 'Bavadharini RS',
-    username: 'bavadharini_rs',
-    title: 'Interior Designer & Modern Living Specialist',
-    subtitle: 'Followed by thiru.yashhh',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-  },
-  {
-    id: 'ajmal',
-    fullName: 'Mohammed Ajmal',
-    username: 'ajmal',
-    title: 'Urban Living & Scenic Properties Advisor',
-    subtitle: 'Followed by logeshwarana',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-  },
-  {
-    id: 'logeshwarana',
-    fullName: 'Logeshwaran Ashok',
-    username: 'logeshwarana',
-    title: 'Architectural Consultant & Real Estate Lead',
-    subtitle: 'Architectural Consultant & Real Estate Lead',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-  },
-];
 
 // ── Default Professional Real Estate Posts ──────────────────────────────────
 const DUMMY_REAL_ESTATE_POSTS = [
@@ -223,6 +181,7 @@ export default function ProfessionalSocialFeedScreen() {
   const [loading, setLoading] = useState(true);
   const [newsList, setNewsList] = useState(DEFAULT_REAL_ESTATE_NEWS);
   const [showAllNews, setShowAllNews] = useState(false);
+  const [suggestedUsers, setSuggestedUsers] = useState<any[]>([]);
 
   // Follow State
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
@@ -250,11 +209,14 @@ export default function ProfessionalSocialFeedScreen() {
   const fetchPostsAndNews = async () => {
     try {
       const token = await getToken();
-      const [feedRes, newsRes] = await Promise.allSettled([
-        axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/feed`, {
-          headers: { Authorization: `Bearer ${token}` },
+      const [feedRes, newsRes, suggestedRes] = await Promise.allSettled([
+        axios.get(`${API_BASE_URL}/api/feed`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         }),
-        axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/feed/news`),
+        axios.get(`${API_BASE_URL}/api/feed/news`),
+        axios.get(`${API_BASE_URL}/api/users/suggested`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }),
       ]);
 
       if (feedRes.status === 'fulfilled' && Array.isArray(feedRes.value.data?.posts)) {
@@ -272,11 +234,37 @@ export default function ProfessionalSocialFeedScreen() {
       if (newsRes.status === 'fulfilled' && Array.isArray(newsRes.value.data?.news)) {
         setNewsList(newsRes.value.data.news);
       }
+
+      if (suggestedRes.status === 'fulfilled' && Array.isArray(suggestedRes.value.data?.suggested)) {
+        setSuggestedUsers(suggestedRes.value.data.suggested);
+        const map: Record<string, boolean> = {};
+        suggestedRes.value.data.suggested.forEach((u: any) => {
+          if (u.isFollowing) map[u.id || u._id] = true;
+        });
+        setFollowingMap((prev) => ({ ...prev, ...map }));
+      }
     } catch (error) {
       console.error('Feed fetch error:', error);
       setPosts(DUMMY_REAL_ESTATE_POSTS);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleFollowAdvisor = async (targetId: string) => {
+    const isCurrentlyFollowing = Boolean(followingMap[targetId]);
+    const nextState = !isCurrentlyFollowing;
+    setFollowingMap((prev) => ({ ...prev, [targetId]: nextState }));
+
+    try {
+      const token = await getToken();
+      await axios.post(
+        `${API_BASE_URL}/api/users/${targetId}/follow`,
+        {},
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+    } catch (error) {
+      console.warn('Failed to update follow in database');
     }
   };
 
@@ -396,30 +384,6 @@ export default function ProfessionalSocialFeedScreen() {
     setIsPublishing(false);
     setIsCreateModalOpen(false);
     alertMsg('Property post published successfully to Boolok Real Estate Network!');
-  };
-
-  const toggleFollowAdvisor = async (advisorId: string) => {
-    const isCurrentlyFollowing = Boolean(followingMap[advisorId]);
-    const nextState = !isCurrentlyFollowing;
-
-    setFollowingMap((prev) => ({ ...prev, [advisorId]: nextState }));
-
-    if (nextState) {
-      GLOBAL_FOLLOWED_USERS.add(advisorId);
-    } else {
-      GLOBAL_FOLLOWED_USERS.delete(advisorId);
-    }
-
-    try {
-      const token = await getToken();
-      await axios.post(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/users/${advisorId}/follow`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-    } catch (error) {
-      console.log('Follow state updated.');
-    }
   };
 
   const alertMsg = (msg: string) => {
@@ -930,46 +894,60 @@ export default function ProfessionalSocialFeedScreen() {
             <View style={[styles.card, { backgroundColor: cardBg, borderColor, marginTop: 12 }]}>
               <Text style={styles.advisorsHeading}>Suggested for you</Text>
 
-              {SUGGESTED_ADVISORS.map((adv) => {
-                const isF = Boolean(followingMap[adv.id]);
-                return (
-                  <View key={adv.id} style={styles.advisorRow}>
-                    <Pressable
-                      onPress={() =>
-                        router.push({ pathname: '/(app)/profile', params: { id: adv.id } })
-                      }
-                      style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
-                    >
-                      <Image source={{ uri: adv.avatar }} style={styles.advisorAvatar} />
-                      <View style={{ marginLeft: 10, flex: 1 }}>
-                        <Text style={styles.advisorName} numberOfLines={1}>
-                          {adv.fullName}
-                        </Text>
-                        <Text style={styles.advisorSubtitle} numberOfLines={1}>
-                          {adv.subtitle}
-                        </Text>
-                      </View>
-                    </Pressable>
+              {suggestedUsers.length > 0 ? (
+                suggestedUsers.map((adv) => {
+                  const advId = adv.id || adv._id;
+                  const isF = Boolean(followingMap[advId]);
+                  const initial = (adv.fullName || adv.username || 'U')[0]?.toUpperCase();
+                  return (
+                    <View key={advId} style={styles.advisorRow}>
+                      <Pressable
+                        onPress={() =>
+                          router.push({ pathname: '/(app)/profile', params: { id: advId } })
+                        }
+                        style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                      >
+                        {adv.profilePicture ? (
+                          <Image source={{ uri: adv.profilePicture }} style={styles.advisorAvatar} />
+                        ) : (
+                          <View style={[styles.advisorAvatar, { backgroundColor: '#1a273c', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#daa520' }]}>
+                            <Text style={{ color: '#daa520', fontWeight: '800', fontSize: 14 }}>{initial}</Text>
+                          </View>
+                        )}
+                        <View style={{ marginLeft: 10, flex: 1 }}>
+                          <Text style={styles.advisorName} numberOfLines={1}>
+                            {adv.fullName}
+                          </Text>
+                          <Text style={styles.advisorSubtitle} numberOfLines={1}>
+                            @{adv.username} · {adv.followerCount || 0} followers
+                          </Text>
+                        </View>
+                      </Pressable>
 
-                    <Pressable
-                      onPress={() => toggleFollowAdvisor(adv.id)}
-                      style={[
-                        styles.advisorFollowBtn,
-                        isF && { backgroundColor: '#1a273c' },
-                      ]}
-                    >
-                      <Text
+                      <Pressable
+                        onPress={() => toggleFollowAdvisor(advId)}
                         style={[
-                          styles.advisorFollowBtnText,
-                          { color: isF ? '#ffffff' : goldPrimary },
+                          styles.advisorFollowBtn,
+                          isF && { backgroundColor: '#1a273c' },
                         ]}
                       >
-                        {isF ? '✓ Following' : '+ Follow'}
-                      </Text>
-                    </Pressable>
-                  </View>
-                );
-              })}
+                        <Text
+                          style={[
+                            styles.advisorFollowBtnText,
+                            { color: isF ? '#ffffff' : goldPrimary },
+                          ]}
+                        >
+                          {isF ? '✓ Following' : '+ Follow'}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  );
+                })
+              ) : (
+                <View style={{ paddingVertical: 12 }}>
+                  <Text style={{ color: '#8b9bb4', fontSize: 12 }}>Invite real estate colleagues to grow your network.</Text>
+                </View>
+              )}
             </View>
 
             {/* Footer legal & branding */}

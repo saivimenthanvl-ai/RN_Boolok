@@ -10,6 +10,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { spacing, typography, radius } from '../../constants/theme';
 import BoolokLogo from '../../components/BoolokLogo';
+import axios from 'axios';
+import { API_BASE_URL } from '../../lib/api';
 
 const MD_BREAKPOINT = 768;
 
@@ -207,28 +209,72 @@ export default function AppLayout() {
   );
 
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const handleGlobalSearch = () => {
-    if (!headerSearchQuery.trim()) return;
-    if (Platform.OS === 'web') {
-      window.alert(`Global Search: ${headerSearchQuery}`);
-    } else {
-      Alert.alert('Global Search', `Searching for: ${headerSearchQuery}`);
+  // Live Notifications
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/users/notifications`);
+      setNotifications(res.data?.notifications || []);
+      setUnreadCount(res.data?.unreadCount || 0);
+    } catch (e) {
+      // ignore
     }
   };
 
-  const DUMMY_RESULTS = [
-    '3BR Luxury Condo Downtown',
-    'Waterfront Villa under 2M',
-    'Kyoto Forest Estate',
-    'Client: John Doe Investments',
-    'Regulation Z Compliance Update',
-    'New York Zoning Laws 2026'
-  ];
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const filteredResults = headerSearchQuery
-    ? DUMMY_RESULTS.filter(r => r.toLowerCase().includes(headerSearchQuery.toLowerCase()))
-    : [];
+  const handleToggleNotifications = async () => {
+    const nextState = !showNotifications;
+    setShowNotifications(nextState);
+    if (nextState && unreadCount > 0) {
+      try {
+        await axios.put(`${API_BASE_URL}/api/users/notifications/read-all`);
+        setUnreadCount(0);
+      } catch (e) {}
+    }
+  };
+
+  // Debounced real user search
+  useEffect(() => {
+    if (!headerSearchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/users/search?q=${encodeURIComponent(headerSearchQuery.trim())}`);
+        setSearchResults(res.data?.results || []);
+      } catch (e) {
+        console.warn('Search error:', e);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [headerSearchQuery]);
+
+  const handleSelectUser = (targetUser: any) => {
+    setHeaderSearchQuery('');
+    setSearchResults([]);
+    router.push({ pathname: '/(app)/profile', params: { id: targetUser.id || targetUser._id } } as any);
+  };
+
+  const handleGlobalSearch = () => {
+    if (searchResults.length > 0) {
+      handleSelectUser(searchResults[0]);
+    }
+  };
 
   const BottomNav = () => {
     const insets = useSafeAreaInsets();
@@ -284,67 +330,152 @@ export default function AppLayout() {
           borderBottomColor: theme.outlineVariant,
           backgroundColor: isDark ? 'rgba(10, 15, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)',
           paddingTop: insets.top,
-          height: 80 + insets.top
+          height: 80 + insets.top,
+          zIndex: 100,
         }]}>
           <View style={{ flexShrink: 1, marginRight: 8 }}>
             <Text style={[typography.headlineSm, { color: theme.onSurface }]} numberOfLines={1}>Welcome back, {user?.fullName?.split(' ')[0] || 'Agent'}</Text>
-            <Text style={{ fontSize: 12, color: theme.onSurfaceVariant, fontWeight: '500' }}>June 27, 2026</Text>
+            <Text style={{ fontSize: 12, color: theme.onSurfaceVariant, fontWeight: '500' }}>Real Estate Intelligence</Text>
           </View>
 
           {isWide && (
-            <View style={{ position: 'relative', flex: 1, maxWidth: 600, marginHorizontal: spacing.xl, zIndex: 50 }}>
+            <View style={{ position: 'relative', flex: 1, maxWidth: 600, marginHorizontal: spacing.xl, zIndex: 100 }}>
               <View style={[styles.searchBar, { backgroundColor: theme.surfaceContainerLowest, borderColor: theme.outlineVariant }]}>
                 <MaterialIcons name="search" size={20} color={theme.outline} />
                 <TextInput
                   style={{ color: theme.onSurface, marginLeft: 8, fontSize: 14, flex: 1, height: '100%', outlineStyle: 'none' } as any}
-                  placeholder="Global search properties, clients, or laws..."
+                  placeholder="Search agents, brokers, or clients..."
                   placeholderTextColor={theme.outline}
                   value={headerSearchQuery}
                   onChangeText={setHeaderSearchQuery}
                   onSubmitEditing={handleGlobalSearch}
                 />
+                {isSearching && <Text style={{ fontSize: 11, color: theme.primary, marginRight: 8 }}>Searching...</Text>}
               </View>
 
-              {/* Autocomplete Dropdown */}
-              {headerSearchQuery.length > 0 && (
-                <View style={[styles.autocompleteDropdown, { backgroundColor: theme.surface, borderColor: theme.outlineVariant }]}>
-                  {filteredResults.length > 0 ? (
-                    filteredResults.map((result, idx) => (
-                      <Pressable
-                        key={idx}
-                        style={({ pressed, hovered }: any) => [
-                          styles.dropdownItem,
-                          (pressed || hovered) && { backgroundColor: theme.surfaceContainerLowest }
-                        ]}
-                        onPress={() => {
-                          setHeaderSearchQuery(result);
-                          if (Platform.OS === 'web') {
-                            window.alert(`Navigating to: ${result}`);
-                          } else {
-                            Alert.alert('Navigating', `Going to: ${result}`);
-                          }
-                          setHeaderSearchQuery('');
-                        }}
-                      >
-                        <MaterialIcons name="search" size={16} color={theme.onSurfaceVariant} style={{ marginRight: 8 }} />
-                        <Text style={{ color: theme.onSurface, fontSize: 14 }}>{result}</Text>
-                      </Pressable>
-                    ))
-                  ) : (
-                    <View style={styles.dropdownItem}>
-                      <Text style={{ color: theme.onSurfaceVariant, fontSize: 14 }}>No results found</Text>
+              {/* Real-time Autocomplete Dropdown */}
+              {headerSearchQuery.trim().length > 0 && (
+                <View style={[styles.autocompleteDropdown, { backgroundColor: isDark ? '#0c1626' : '#ffffff', borderColor: theme.outlineVariant, maxHeight: 360, zIndex: 999 }]}>
+                  {searchResults.length > 0 ? (
+                    searchResults.map((u: any, idx: number) => {
+                      const initial = (u.fullName || u.username || 'U')[0]?.toUpperCase();
+                      return (
+                        <Pressable
+                          key={u.id || u._id || idx}
+                          style={({ pressed, hovered }: any) => [
+                            styles.dropdownItem,
+                            { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: idx < searchResults.length - 1 ? 1 : 0, borderBottomColor: isDark ? '#1a273c' : '#f0f0f0' },
+                            (pressed || hovered) && { backgroundColor: isDark ? '#162338' : '#f8f9fa' }
+                          ]}
+                          onPress={() => handleSelectUser(u)}
+                        >
+                          {u.profilePicture ? (
+                            <Image source={{ uri: u.profilePicture }} style={{ width: 34, height: 34, borderRadius: 17, marginRight: 10 }} />
+                          ) : (
+                            <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: isDark ? '#1e293b' : '#e2e8f0', justifyContent: 'center', alignItems: 'center', marginRight: 10, borderWidth: 1, borderColor: '#daa520' }}>
+                              <Text style={{ color: '#daa520', fontWeight: '700', fontSize: 14 }}>{initial}</Text>
+                            </View>
+                          )}
+                          <View style={{ flex: 1 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                              <Text style={{ color: theme.onSurface, fontSize: 14, fontWeight: '700' }}>{u.fullName}</Text>
+                              <MaterialIcons name="verified" size={14} color="#daa520" style={{ marginLeft: 4 }} />
+                            </View>
+                            <Text style={{ color: theme.onSurfaceVariant, fontSize: 11 }}>@{u.username} · {u.followerCount || 0} followers</Text>
+                          </View>
+                          <MaterialIcons name="chevron-right" size={18} color={theme.outline} />
+                        </Pressable>
+                      );
+                    })
+                  ) : !isSearching ? (
+                    <View style={[styles.dropdownItem, { padding: 14 }]}>
+                      <Text style={{ color: theme.onSurfaceVariant, fontSize: 13 }}>No users found matching "{headerSearchQuery}"</Text>
                     </View>
-                  )}
+                  ) : null}
                 </View>
               )}
             </View>
           )}
 
           <View style={styles.headerActions}>
-            <Pressable style={styles.iconBtn}>
-              <MaterialIcons name="notifications" size={24} color={theme.onSurfaceVariant} />
-              <View style={[styles.notificationDot, { backgroundColor: theme.primary, borderColor: theme.surface }]} />
-            </Pressable>
+            <View style={{ position: 'relative' }}>
+              <Pressable onPress={handleToggleNotifications} style={styles.iconBtn}>
+                <MaterialIcons name="notifications" size={24} color={showNotifications ? theme.primary : theme.onSurfaceVariant} />
+                {unreadCount > 0 && (
+                  <View style={[styles.notificationDot, { backgroundColor: '#ef4444', borderColor: theme.surface, width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' }]}>
+                    <Text style={{ color: '#ffffff', fontSize: 9, fontWeight: '800' }}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                  </View>
+                )}
+              </Pressable>
+
+              {/* Notifications Dropdown */}
+              {showNotifications && (
+                <View style={{
+                  position: 'absolute',
+                  top: 48,
+                  right: 0,
+                  width: 320,
+                  maxHeight: 400,
+                  backgroundColor: isDark ? '#0c1626' : '#ffffff',
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: theme.outlineVariant,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.35,
+                  shadowRadius: 16,
+                  elevation: 10,
+                  zIndex: 9999,
+                  overflow: 'hidden',
+                }}>
+                  <View style={{ padding: 14, borderBottomWidth: 1, borderBottomColor: isDark ? '#1a273c' : '#f0f0f0', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ color: theme.onSurface, fontWeight: '800', fontSize: 14 }}>Notifications</Text>
+                    <Text style={{ color: theme.onSurfaceVariant, fontSize: 11 }}>Real-time updates</Text>
+                  </View>
+                  <ScrollView style={{ maxHeight: 320 }}>
+                    {notifications.length > 0 ? (
+                      notifications.map((n: any, idx: number) => {
+                        const sender = n.sender || {};
+                        const initial = (sender.fullName || sender.username || 'U')[0]?.toUpperCase();
+                        return (
+                          <Pressable
+                            key={n._id || idx}
+                            style={({ pressed, hovered }: any) => [
+                              { padding: 12, borderBottomWidth: 1, borderBottomColor: isDark ? '#142033' : '#f5f5f5', flexDirection: 'row', alignItems: 'center' },
+                              !n.read && { backgroundColor: isDark ? 'rgba(218, 165, 32, 0.08)' : 'rgba(218, 165, 32, 0.05)' },
+                              (pressed || hovered) && { backgroundColor: isDark ? '#162338' : '#f8f9fa' },
+                            ]}
+                            onPress={() => {
+                              setShowNotifications(false);
+                              if (sender._id || sender.id) {
+                                router.push({ pathname: '/(app)/profile', params: { id: sender._id || sender.id } } as any);
+                              }
+                            }}
+                          >
+                            {sender.profilePicture ? (
+                              <Image source={{ uri: sender.profilePicture }} style={{ width: 32, height: 32, borderRadius: 16, marginRight: 10 }} />
+                            ) : (
+                              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#daa520', justifyContent: 'center', alignItems: 'center', marginRight: 10 }}>
+                                <Text style={{ color: '#000000', fontWeight: '800', fontSize: 13 }}>{initial}</Text>
+                              </View>
+                            )}
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ color: theme.onSurface, fontSize: 12, lineHeight: 16 }}>{n.message}</Text>
+                              <Text style={{ color: theme.outline, fontSize: 10, marginTop: 2 }}>{new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                            </View>
+                          </Pressable>
+                        );
+                      })
+                    ) : (
+                      <View style={{ padding: 24, alignItems: 'center' }}>
+                        <MaterialIcons name="notifications-none" size={32} color={theme.outline} style={{ marginBottom: 6 }} />
+                        <Text style={{ color: theme.onSurfaceVariant, fontSize: 12 }}>No new notifications</Text>
+                      </View>
+                    )}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
 
             <Pressable onPress={toggleTheme} style={styles.iconBtn}>
               <Animated.View style={animatedIconStyle}>

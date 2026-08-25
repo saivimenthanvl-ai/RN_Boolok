@@ -45,6 +45,22 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    headline: {
+      type: String,
+      default: 'Real Estate Professional & Boolok Member',
+    },
+    location: {
+      type: String,
+      default: 'Global Real Estate Network',
+    },
+    coverImage: {
+      type: String,
+      default: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
+    },
+    closedDeals: {
+      type: String,
+      default: '$0M+',
+    },
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     goal: {

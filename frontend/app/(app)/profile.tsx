@@ -31,219 +31,19 @@ import { API_BASE_URL } from '../../lib/api';
 // ── Shared follow tracker ───────────────────────────────────────────────────
 const GLOBAL_FOLLOWED_USERS = new Set<string>();
 
-// ── Master Verified Real Estate Agents Directory ────────────────────────────
-const KNOWN_AGENTS: Record<string, any> = {
-  'agent-1': {
-    id: 'agent-1',
-    fullName: 'Prasanth Properties',
-    username: 'prasanth_properties',
-    headline: 'Luxury Waterfront Specialist | Miami & Coastal Trophy Estates | CRE Advisory',
-    location: 'Miami Beach, Florida · Global Asset Network',
-    bio: 'Specializing in prime ultra-luxury coastal properties, deep-water mega-yacht estates, and turnkey oceanfront villas. Over $320M in closed transactions across South Florida and the Caribbean.',
-    profilePicture: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=250',
-    coverImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
-    followerCount: 88400,
-    followingCount: 380,
-    mutuals: 'Followed by Logeshwaran Ashok, Bavadharini RS, ajmal and cinemahub.live',
-    posts: [
-      {
-        _id: 'p-101',
-        title: 'Miami Oceanfront Villa',
-        content: 'Stunning modern beachfront villa with private infinity pool and direct access to crystal waters. Turnkey luxury investment ready for immediate handover! 🏖️🔑',
-        mediaUrl: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
-        price: '$12,500,000',
-        location: 'Miami Beach, FL',
-        specs: '6 Beds · 7 Baths · 8,200 sqft',
-        likes: ['u1', 'u2', 'u3', 'u4', 'u5'],
-        comments: [{ text: 'Incredible architecture and prime location!' }],
-      },
-    ],
-    reels: [
-      {
-        _id: 'r-101',
-        title: 'Miami Oceanfront Villa Walkthrough',
-        location: 'Miami Beach, FL',
-        aiMatch: 98,
-        insight: 'Direct ocean frontage and deep-water dock capability pre-verified.',
-        likes: 2400,
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-        thumbnail: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
-      },
-    ],
-  },
-  'shreekutti': {
-    id: 'shreekutti',
-    fullName: 'shreekutti',
-    username: 'shreekutti',
-    headline: 'Senior Residential Architect & Luxury Villa Broker | Coastal Developments',
-    location: 'Chennai, Tamil Nadu · South India Coast',
-    bio: 'Architectural consultant and prime residential specialist. Focusing on contemporary minimalist villas, sustainable coastal homes, and turnkey vacation estates.',
-    profilePicture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=250',
-    coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-    followerCount: 34200,
-    followingCount: 210,
-    mutuals: 'Followed by Logeshwaran Ashok, Bavadharini RS, ajmal and cinemahub.live',
-    posts: [
-      {
-        _id: 'p-shreekutti-1',
-        title: 'Modern Minimalist Coastal Villa',
-        content: 'Charming coastal retreat with open-concept living, floor-to-ceiling glass, and private sunlit pool patio. 🌿🏡',
-        mediaUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
-        price: '₹8.5 Crore',
-        location: 'ECR Coastal Corridor, Chennai',
-        specs: '4 Beds · 5 Baths · 5,600 sqft',
-        likes: ['u1', 'u2', 'u3', 'u4', 'u5', 'u6', 'u7', 'u8', 'u9', 'u10'],
-        comments: [{ text: 'Love the aesthetic!' }],
-      },
-    ],
-    reels: [],
-  },
-  'cinemahub.live': {
-    id: 'cinemahub.live',
-    fullName: 'cinemahub.live',
-    username: 'cinemahub.live',
-    headline: 'Commercial Studio & Film Location Advisor | High-Ceiling Soundstage Spaces',
-    location: 'Mumbai & Chennai · Media Real Estate',
-    bio: 'Exclusive broker for commercial film production lots, acoustically engineered studios, and high-density creative hubs.',
-    profilePicture: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=250',
-    coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
-    followerCount: 51200,
-    followingCount: 89,
-    mutuals: 'Followed by Logeshwaran Ashok, Bavadharini RS, ajmal and cinemahub.live',
-    posts: [
-      {
-        _id: 'p-cinema-1',
-        title: 'Prime Soundstage & Media Park',
-        content: 'Acoustically treated studio space with 32ft high ceilings, green room suites, and dedicated power sub-station. 🎥🏢',
-        mediaUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200',
-        price: '₹35 Crore',
-        location: 'Film City Tech Corridor',
-        specs: '45,000 sqft · 24/7 Redundant Power',
-        likes: ['u1', 'u2', 'u3'],
-        comments: [],
-      },
-    ],
-    reels: [],
-  },
-  'bavadharini_rs': {
-    id: 'bavadharini_rs',
-    fullName: 'Bavadharini RS',
-    username: 'bavadharini_rs',
-    headline: 'Principal Interior Architect & Penthouse Specialist | Bespoke Living',
-    location: 'Bangalore & Chennai · Ultra-Luxury Spaces',
-    bio: 'Award-winning interior architecture lead crafting bespoke luxury residences, custom penthouses, and executive clubhouses. Recognized in Top 40 Under 40 Designers.',
-    profilePicture: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=250',
-    coverImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
-    followerCount: 62400,
-    followingCount: 195,
-    mutuals: 'Followed by Logeshwaran Ashok, Bavadharini RS, ajmal and cinemahub.live',
-    posts: [
-      {
-        _id: 'p-bava-1',
-        title: 'Bespoke Penthouse Makeover',
-        content: 'Bespoke custom kitchen & dining makeover completed for our luxury penthouse client. Italian Calacatta marble, smart wine cellar, and panoramic skyline lounge. ✨🍽️',
-        mediaUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
-        price: '₹14 Crore',
-        location: 'Skyline Penthouse Suites',
-        specs: '5 Beds · 6 Baths · 7,100 sqft',
-        likes: ['u1', 'u2', 'u3', 'u4', 'u5', 'u6', 'u7', 'u8', 'u9', 'u10'],
-        comments: [{ text: 'Stunning cabinetry and craftsmanship!' }],
-      },
-    ],
-    reels: [],
-  },
-  'ajmal': {
-    id: 'ajmal',
-    fullName: 'Mohammed Ajmal',
-    username: 'ajmal',
-    headline: 'Urban Real Estate Portfolio Consultant | Scenic Estates & Multi-Family Assets',
-    location: 'Hyderabad & Chennai · Residential Advisory',
-    bio: 'Advising private family offices on high-yield multi-family acquisitions, gated garden villas, and strategic urban land banks.',
-    profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=250',
-    coverImage: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1200',
-    followerCount: 41800,
-    followingCount: 140,
-    mutuals: 'Followed by Logeshwaran Ashok, Bavadharini RS, ajmal and cinemahub.live',
-    posts: [
-      {
-        _id: 'p-ajmal-1',
-        title: 'Gated Scenic Garden Villa',
-        content: 'Peaceful garden villa surrounded by lush greenery, private pavilion terrace, and automated security system. 🍃🌸',
-        mediaUrl: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
-        price: '₹6.2 Crore',
-        location: 'Jubilee Hills Extension',
-        specs: '4 Beds · 4 Baths · 4,800 sqft',
-        likes: ['u1', 'u2', 'u3', 'u4'],
-        comments: [],
-      },
-    ],
-    reels: [],
-  },
-  'logeshwarana': {
-    id: 'logeshwarana',
-    fullName: 'Logeshwaran Ashok',
-    username: 'logeshwarana',
-    headline: 'Architectural Consultant & Real Estate Portfolio Lead | Commercial Tech Parks',
-    location: 'Chennai, Tamil Nadu · Commercial & Institutional CRE',
-    bio: 'Lead Architectural Consultant overseeing 1.4M+ sqft of commercial office developments, LEED Gold certified corporate campuses, and REIT-ready assets.',
-    profilePicture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=250',
-    coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
-    followerCount: 92300,
-    followingCount: 310,
-    mutuals: 'Followed by Logeshwaran Ashok, Bavadharini RS, ajmal and cinemahub.live',
-    posts: [
-      {
-        _id: 'p-logesh-1',
-        title: 'Grade-A Tech Park Blueprint',
-        content: 'New commercial development blueprint ready for institutional acquisition. LEED Platinum certified, 100% power redundancy, high floor efficiency. 🏢✨',
-        mediaUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
-        price: '₹120 Crore',
-        location: 'OMR Cyber Hub, Chennai',
-        specs: '120,000 sqft · 8.4% Cap Rate',
-        likes: ['u1', 'u2', 'u3', 'u4', 'u5', 'u6', 'u7', 'u8', 'u9', 'u10'],
-        comments: [{ text: 'Top tier institutional planning!' }],
-      },
-    ],
-    reels: [
-      {
-        _id: 'r-logesh-1',
-        title: 'Kyoto Forest Retreat',
-        location: 'Kyoto, Japan',
-        aiMatch: 95,
-        insight: 'Thermal zoning optimized. High potential for eco-luxury cabins or a private wellness estate.',
-        likes: 920,
-        thumbnail: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200',
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-      },
-      {
-        _id: 'r-logesh-2',
-        title: 'Uluwatu Cliffside',
-        location: 'Bali, Indonesia',
-        aiMatch: 92,
-        insight: 'Tourism growth in this sector is up 14% YoY. Zoning allows for luxury boutique resort development.',
-        likes: 1800,
-        thumbnail: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200',
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-      },
-      {
-        _id: 'r-logesh-3',
-        title: 'Margaret River Vineyard',
-        location: 'Western Australia',
-        aiMatch: 98,
-        insight: 'Soil analysis indicates 92% suitability for premium Cabernet Sauvignon. Water rights pre-verified for 50 years.',
-        likes: 2400,
-        thumbnail: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1200',
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      },
-    ],
-  },
+// ── Default Fallback Profile Data ──────────────────────────────────────────
+const defaultFallbackUser = {
+  id: 'self',
+  fullName: 'Sai Vimenthan',
+  username: 'saivimenthanvl',
+  headline: 'Principal Real Estate Broker & Portfolio Advisor',
+  location: 'Global Real Estate Network',
+  bio: 'Real estate professional and advisor on the Boolok AI network.',
+  profilePicture: null,
+  coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
+  closedDeals: '$0M+',
+  mutuals: '',
 };
-
-// Aliases
-KNOWN_AGENTS['Bavadharini RS'] = KNOWN_AGENTS['bavadharini_rs'];
-KNOWN_AGENTS['Ajmal'] = KNOWN_AGENTS['ajmal'];
-KNOWN_AGENTS['Logeshwaran Ashok'] = KNOWN_AGENTS['logeshwarana'];
-KNOWN_AGENTS['Logeshwaran A'] = KNOWN_AGENTS['logeshwarana'];
 
 const ProfileReelItem = ({ reel }: { reel: any }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -552,17 +352,28 @@ export default function ProfessionalUserProfileScreen() {
   ]);
 
   const defaultFallbackUser = {
-    id: viewer?.id || 'self',
-    fullName: viewer?.fullName || 'Sai Vimenthan',
-    username: viewer?.username || 'saivimenthanvl',
-    headline: 'Principal Real Estate Broker & Portfolio Lead | Commercial Office & Luxury Waterfront Assets',
-    location: 'Chennai, Tamil Nadu · Luxury & Commercial Assets',
-    bio: 'Principal Broker overseeing premium residential estates, commercial office syndication, and institutional real estate acquisitions. Specialized in turnkey acquisitions and AI-driven valuation models.',
-    profilePicture: viewer?.profilePicture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=250',
-    coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-    connections: '500+',
-    mutuals: 'Followed by Logeshwaran Ashok, Bavadharini RS and 24 other certified brokers you know',
+    id: viewer?.id || viewer?._id || 'self',
+    _id: viewer?.id || viewer?._id || 'self',
+    fullName: viewer?.fullName || 'Real Estate Professional',
+    username: viewer?.username || 'member',
+    headline: viewer?.headline || 'Real Estate Professional & Boolok Member',
+    location: viewer?.location || 'Global Real Estate Network',
+    bio: viewer?.bio || 'Real estate professional and advisor on the Boolok AI network.',
+    profilePicture: viewer?.profilePicture || null,
+    coverImage: viewer?.coverImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
+    closedDeals: viewer?.closedDeals || '$0M+',
+    mutuals: '',
   };
+
+  // Edit profile modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editFullName, setEditFullName] = useState('');
+  const [editHeadline, setEditHeadline] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editBio, setEditBio] = useState('');
+  const [editClosedDeals, setEditClosedDeals] = useState('');
+  const [editAvatarUrl, setEditAvatarUrl] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   useEffect(() => {
     if (viewer?.username && isSelf) {
@@ -571,115 +382,106 @@ export default function ProfessionalUserProfileScreen() {
   }, [viewer?.username, isSelf]);
 
   useEffect(() => {
-    if (targetId) {
-      fetchProfile(targetId);
+    const activeId = targetId || viewer?.id || viewer?._id;
+    if (activeId && activeId !== 'self') {
+      fetchProfile(activeId);
     } else {
       setData({
         user: defaultFallbackUser,
-        postCount: 1,
-        reelCount: 1,
-        followerCount: 88070,
-        followingCount: GLOBAL_FOLLOWED_USERS.size,
+        postCount: 0,
+        reelCount: 0,
+        followerCount: 0,
+        followingCount: 0,
         isFollowing: false,
         isSelf: true,
-        posts: [
-          {
-            _id: 'sai-main-post',
-            title: 'Luxury Modern French Manor Estate',
-            content: 'Stunning luxury modern estate featuring private driveway, manicured gardens, expansive outdoor terraces, and state-of-the-art smart automation. 🏡✨ Asking: $8.9M.',
-            mediaUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
-            price: '$8,900,000',
-            location: 'Beverly Hills / Coastal Corridor',
-            specs: '6 Beds · 8 Baths · 9,400 sqft',
-            likes: ['u1', 'u2', 'u3'],
-            comments: [{ text: 'Gorgeous estate with prime architectural character!' }],
-          },
-        ],
-        reels: userReels,
+        posts: [],
+        reels: [],
       });
-      setFollowerCountState(88070);
+      setFollowerCountState(0);
       setLoading(false);
     }
-  }, [targetId, viewer?.id]);
+  }, [targetId, viewer?.id, viewer?._id]);
 
   const getToken = async () =>
     Platform.OS === 'web' ? localStorage.getItem('userToken') : await SecureStore.getItemAsync('userToken');
 
   const fetchProfile = async (userId: string) => {
     setLoading(true);
-    const isTargetFollowed = GLOBAL_FOLLOWED_USERS.has(userId);
-
-    if (KNOWN_AGENTS[userId]) {
-      const agent = KNOWN_AGENTS[userId];
-      setData({
-        user: {
-          id: agent.id,
-          fullName: agent.fullName,
-          username: agent.username,
-          headline: agent.headline,
-          location: agent.location,
-          bio: agent.bio,
-          profilePicture: agent.profilePicture,
-          coverImage: agent.coverImage,
-          connections: agent.connections,
-          mutuals: agent.mutuals,
-        },
-        postCount: agent.posts.length,
-        reelCount: (agent.reels || []).length,
-        followerCount: agent.followerCount + (isTargetFollowed ? 1 : 0),
-        followingCount: agent.followingCount,
-        isFollowing: isTargetFollowed,
-        isSelf: false,
-        posts: agent.posts,
-        reels: agent.reels || [],
-      });
-      setFollowerCountState(agent.followerCount + (isTargetFollowed ? 1 : 0));
-      setIsFollowingState(isTargetFollowed);
-      setLoading(false);
-      return;
-    }
-
     try {
       const token = await getToken();
       const res = await axios.get(`${API_BASE_URL}/api/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      setData(res.data);
-      const isF = isTargetFollowed || Boolean(res.data?.isFollowing);
-      setFollowerCountState((res.data?.followerCount || 88070) + (isF ? 1 : 0));
-      setIsFollowingState(isF);
+      if (res.data) {
+        setData(res.data);
+        setFollowerCountState(res.data.followerCount || 0);
+        setIsFollowingState(Boolean(res.data.isFollowing));
 
-      if (res.data?.user?.username && isSelf) {
-        setUsernameInput(res.data.user.username);
+        if (res.data.user?.username && isSelf) {
+          setUsernameInput(res.data.user.username);
+        }
       }
-    } catch (error) {
-      console.error('Failed to load profile:', error);
+    } catch (error: any) {
+      console.warn('Failed to load profile from backend:', error.message);
       setData({
         user: defaultFallbackUser,
-        postCount: 1,
-        reelCount: 1,
-        followerCount: 88070,
-        followingCount: GLOBAL_FOLLOWED_USERS.size,
+        postCount: 0,
+        reelCount: 0,
+        followerCount: 0,
+        followingCount: 0,
         isFollowing: false,
-        isSelf: true,
-        posts: [
-          {
-            _id: 'sai-main-post',
-            title: 'Luxury Modern French Manor Estate',
-            content: 'Stunning luxury modern estate featuring private driveway, manicured gardens, expansive outdoor terraces, and state-of-the-art smart automation. 🏡✨ Asking: $8.9M.',
-            mediaUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
-            price: '$8,900,000',
-            location: 'Beverly Hills / Coastal Corridor',
-            specs: '6 Beds · 8 Baths · 9,400 sqft',
-            likes: ['u1', 'u2', 'u3'],
-            comments: [{ text: 'Gorgeous estate with prime architectural character!' }],
-          },
-        ],
-        reels: userReels,
+        isSelf: isSelf,
+        posts: [],
+        reels: [],
       });
-      setFollowerCountState(88070);
+      setFollowerCountState(0);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenEditModal = () => {
+    const curr = data?.user || defaultFallbackUser;
+    setEditFullName(curr.fullName || '');
+    setEditHeadline(curr.headline || '');
+    setEditLocation(curr.location || '');
+    setEditBio(curr.bio || '');
+    setEditClosedDeals(curr.closedDeals || '$0M+');
+    setEditAvatarUrl(curr.profilePicture || '');
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveFullProfile = async () => {
+    if (!editFullName.trim()) {
+      alertMsg('Full Name is required.');
+      return;
+    }
+    setIsSavingProfile(true);
+    try {
+      const token = await getToken();
+      const res = await axios.put(
+        `${API_BASE_URL}/api/users/profile`,
+        {
+          fullName: editFullName.trim(),
+          headline: editHeadline.trim(),
+          location: editLocation.trim(),
+          bio: editBio.trim(),
+          closedDeals: editClosedDeals.trim(),
+          profilePicture: editAvatarUrl.trim() || null,
+        },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      if (res.data?.user) {
+        setData((prev: any) => ({ ...prev, user: res.data.user }));
+        await updateUser(res.data.user);
+        setIsEditModalOpen(false);
+        alertMsg('Profile successfully updated in database!');
+      }
+    } catch (error: any) {
+      console.error('Failed to update profile:', error);
+      alertMsg(error.response?.data?.message || 'Failed to update profile.');
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
@@ -889,7 +691,7 @@ export default function ProfessionalUserProfileScreen() {
     data?.user ||
     (isSelf
       ? viewer || defaultFallbackUser
-      : (KNOWN_AGENTS[id || ''] || defaultFallbackUser));
+      : defaultFallbackUser);
   const postCount = data?.postCount !== undefined ? data.postCount : (data?.posts?.length || 1);
   const reelCount = data?.reelCount !== undefined ? data.reelCount : 1;
   const followerCount = followerCountState;
@@ -956,21 +758,34 @@ export default function ProfessionalUserProfileScreen() {
             {/* Top Row: Avatar on Left, Organization Badge on Right */}
             <View style={styles.avatarRow}>
               {/* Overlapping Avatar */}
-              <View style={styles.avatarWrapper}>
-                <Image
-                  source={{
-                    uri:
-                      profileUser.profilePicture ||
-                      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=250',
-                  }}
-                  style={styles.avatarImage}
-                />
-                <View style={styles.avatarVerifiedBadge}>
-                  <MaterialIcons name="verified" size={20} color="#0095f6" />
-                </View>
-              </View>
+              <Pressable
+                onPress={isSelf ? handleOpenEditModal : undefined}
+                style={styles.avatarWrapper}
+              >
+                {profileUser.profilePicture ? (
+                  <Image
+                    source={{ uri: profileUser.profilePicture }}
+                    style={styles.avatarImage}
+                  />
+                ) : (
+                  <View style={[styles.avatarImage, { backgroundColor: '#1a273c', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#daa520' }]}>
+                    <Text style={{ fontSize: 36, fontWeight: '800', color: '#daa520' }}>
+                      {(profileUser.fullName || profileUser.username || 'U')[0]?.toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                {isSelf ? (
+                  <View style={[styles.avatarVerifiedBadge, { backgroundColor: '#daa520', borderRadius: 12, padding: 3 }]}>
+                    <MaterialIcons name="edit" size={14} color="#000000" />
+                  </View>
+                ) : (
+                  <View style={styles.avatarVerifiedBadge}>
+                    <MaterialIcons name="verified" size={20} color="#0095f6" />
+                  </View>
+                )}
+              </Pressable>
 
-              {/* Right Side Affiliation & Logo Badge (Matches Screenshot 2) */}
+              {/* Right Side Affiliation & Logo Badge */}
               <View style={styles.affiliationBox}>
                 <View style={styles.affiliationLogoCircle}>
                   <BoolokLogo size={18} color="#ffffff" />
@@ -989,7 +804,7 @@ export default function ProfessionalUserProfileScreen() {
                   {profileUser.fullName || (isSelf ? viewer?.fullName || 'Sai Vimenthan' : 'Advisor')}
                 </Text>
                 <MaterialIcons name="verified" size={20} color="#0095f6" />
-                <Text style={styles.profileDegree}>· 1st (Principal Broker)</Text>
+                <Text style={styles.profileDegree}>· 1st (Verified Member)</Text>
               </View>
 
               {/* Editable Username for Self */}
@@ -1032,12 +847,12 @@ export default function ProfessionalUserProfileScreen() {
               <View style={styles.locationContactRow}>
                 <Text style={styles.locationText}>{defaultLocation}</Text>
                 <Text style={styles.locationDot}>·</Text>
-                <Pressable onPress={() => alertMsg(`Email: client-desk@boolok.com\nPhone: +1 (800) 555-BOOLOK`)}>
+                <Pressable onPress={() => alertMsg(`Member: ${profileUser.fullName}\nUsername: @${profileUser.username}\nNetwork: Boolok Global Real Estate`)}>
                   <Text style={styles.contactInfoText}>Contact info</Text>
                 </Pressable>
               </View>
 
-              {/* Followers & Transaction Metrics (Connections removed) */}
+              {/* Real Followers & Transaction Metrics */}
               <View style={styles.metricsRow}>
                 <Text style={styles.followersMetric}>
                   <Text style={{ fontWeight: '800', color: '#ffffff' }}>
@@ -1047,7 +862,7 @@ export default function ProfessionalUserProfileScreen() {
                 </Text>
                 <Text style={styles.metricsDot}>·</Text>
                 <Text style={styles.volumeMetric}>
-                  <Text style={{ fontWeight: '800', color: goldPrimary }}>$180M+</Text> Closed Deals
+                  <Text style={{ fontWeight: '800', color: goldPrimary }}>{profileUser.closedDeals || '$0M+'}</Text> Closed Deals
                 </Text>
               </View>
 
@@ -1055,7 +870,7 @@ export default function ProfessionalUserProfileScreen() {
               <View style={styles.mutualsRow}>
                 <MaterialIcons name="people" size={16} color="#8b9bb4" />
                 <Text style={styles.mutualsText}>
-                  Followed by Logeshwaran Ashok, Bavadharini RS, ajmal and cinemahub.live
+                  {profileUser.mutuals || (followerCount > 0 ? `${followerCount} followers in Boolok Network` : 'New Member in Boolok Network')}
                 </Text>
               </View>
 
@@ -1106,12 +921,22 @@ export default function ProfessionalUserProfileScreen() {
                 ) : (
                   <>
                     <Pressable
-                      onPress={() => setCreateType('post')}
+                      onPress={handleOpenEditModal}
                       style={[styles.primaryCtaBtn, { backgroundColor: goldPrimary }]}
                     >
-                      <MaterialIcons name="add" size={18} color="#000000" />
+                      <MaterialIcons name="edit" size={18} color="#000000" />
                       <Text style={[styles.primaryCtaText, { color: '#000000' }]}>
-                        Create New Listing
+                        Edit Profile
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() => setCreateType('post')}
+                      style={[styles.secondaryCtaBtn, { borderColor: goldPrimary }]}
+                    >
+                      <MaterialIcons name="add" size={18} color={goldPrimary} />
+                      <Text style={[styles.secondaryCtaText, { color: goldPrimary }]}>
+                        Create Listing
                       </Text>
                     </Pressable>
 
@@ -1120,7 +945,7 @@ export default function ProfessionalUserProfileScreen() {
                       style={[styles.secondaryCtaBtn, { borderColor: '#8b9bb4' }]}
                     >
                       <Text style={[styles.secondaryCtaText, { color: '#ffffff' }]}>
-                        Share Portfolio PDF
+                        Share Portfolio
                       </Text>
                     </Pressable>
                   </>
@@ -1428,6 +1253,107 @@ export default function ProfessionalUserProfileScreen() {
             </View>
           )}
         </View>
+
+        {/* EDIT PROFILE MODAL */}
+        <Modal
+          visible={isEditModalOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsEditModalOpen(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+            <View style={{ width: '100%', maxWidth: 550, backgroundColor: '#0c1626', borderRadius: 16, borderWidth: 1, borderColor: '#1a273c', padding: 24, maxHeight: '90%' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <Text style={{ fontSize: 18, fontWeight: '800', color: '#ffffff' }}>Edit Real Estate Profile</Text>
+                <Pressable onPress={() => setIsEditModalOpen(false)}>
+                  <MaterialIcons name="close" size={24} color="#8b9bb4" />
+                </Pressable>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Full Name */}
+                <Text style={{ color: '#8b9bb4', fontSize: 12, fontWeight: '700', marginBottom: 6 }}>FULL NAME</Text>
+                <TextInput
+                  style={{ backgroundColor: '#070e1a', color: '#ffffff', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#1a273c', marginBottom: 16, fontSize: 14 }}
+                  value={editFullName}
+                  onChangeText={setEditFullName}
+                  placeholder="e.g. Logeshwaran Ashok"
+                  placeholderTextColor="#475569"
+                />
+
+                {/* Profile Picture URL */}
+                <Text style={{ color: '#8b9bb4', fontSize: 12, fontWeight: '700', marginBottom: 6 }}>AVATAR PHOTO URL (OR LEAVE BLANK FOR INITIALS)</Text>
+                <TextInput
+                  style={{ backgroundColor: '#070e1a', color: '#ffffff', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#1a273c', marginBottom: 16, fontSize: 14 }}
+                  value={editAvatarUrl}
+                  onChangeText={setEditAvatarUrl}
+                  placeholder="https://... (Direct Image URL or leave blank)"
+                  placeholderTextColor="#475569"
+                />
+
+                {/* Headline */}
+                <Text style={{ color: '#8b9bb4', fontSize: 12, fontWeight: '700', marginBottom: 6 }}>PROFESSIONAL HEADLINE</Text>
+                <TextInput
+                  style={{ backgroundColor: '#070e1a', color: '#ffffff', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#1a273c', marginBottom: 16, fontSize: 14 }}
+                  value={editHeadline}
+                  onChangeText={setEditHeadline}
+                  placeholder="e.g. Senior Broker & Commercial Real Estate Specialist"
+                  placeholderTextColor="#475569"
+                />
+
+                {/* Location */}
+                <Text style={{ color: '#8b9bb4', fontSize: 12, fontWeight: '700', marginBottom: 6 }}>LOCATION</Text>
+                <TextInput
+                  style={{ backgroundColor: '#070e1a', color: '#ffffff', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#1a273c', marginBottom: 16, fontSize: 14 }}
+                  value={editLocation}
+                  onChangeText={setEditLocation}
+                  placeholder="e.g. Chennai, Tamil Nadu · South India"
+                  placeholderTextColor="#475569"
+                />
+
+                {/* Closed Deals Volume */}
+                <Text style={{ color: '#8b9bb4', fontSize: 12, fontWeight: '700', marginBottom: 6 }}>CLOSED DEALS VOLUME</Text>
+                <TextInput
+                  style={{ backgroundColor: '#070e1a', color: '#ffffff', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#1a273c', marginBottom: 16, fontSize: 14 }}
+                  value={editClosedDeals}
+                  onChangeText={setEditClosedDeals}
+                  placeholder="e.g. $45M+ or ₹120 Crore"
+                  placeholderTextColor="#475569"
+                />
+
+                {/* Bio */}
+                <Text style={{ color: '#8b9bb4', fontSize: 12, fontWeight: '700', marginBottom: 6 }}>ABOUT & BIO</Text>
+                <TextInput
+                  style={{ backgroundColor: '#070e1a', color: '#ffffff', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#1a273c', marginBottom: 24, fontSize: 14, minHeight: 80 }}
+                  value={editBio}
+                  onChangeText={setEditBio}
+                  multiline
+                  placeholder="Briefly describe your real estate advisory experience..."
+                  placeholderTextColor="#475569"
+                />
+
+                {/* Buttons */}
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <Pressable
+                    onPress={() => setIsEditModalOpen(false)}
+                    style={{ flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: '#1a273c', alignItems: 'center' }}
+                  >
+                    <Text style={{ color: '#8b9bb4', fontWeight: '700' }}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handleSaveFullProfile}
+                    disabled={isSavingProfile}
+                    style={{ flex: 1, backgroundColor: '#daa520', paddingVertical: 12, borderRadius: 8, alignItems: 'center' }}
+                  >
+                    <Text style={{ color: '#000000', fontWeight: '800' }}>
+                      {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </View>
     </ScrollView>
   );
