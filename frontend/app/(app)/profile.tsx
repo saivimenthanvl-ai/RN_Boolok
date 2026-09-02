@@ -56,14 +56,16 @@ const UserAvatar = ({ user, size = 40, style }: { user?: any; size?: number; sty
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: '#daa520',
+          backgroundColor: '#162338',
           justifyContent: 'center',
           alignItems: 'center',
+          borderWidth: 1.5,
+          borderColor: '#daa520',
         },
         style,
       ]}
     >
-      <Text style={{ color: '#000000', fontWeight: '800', fontSize: size * 0.42 }}>
+      <Text style={{ color: '#daa520', fontWeight: '800', fontSize: size * 0.42 }}>
         {initial}
       </Text>
     </View>
@@ -72,15 +74,47 @@ const UserAvatar = ({ user, size = 40, style }: { user?: any; size?: number; sty
 
 const COMMUNITY_MEMBERS = [
   {
-    id: 'the_akshtr_estate',
-    _id: 'the_akshtr_estate',
-    fullName: 'Akshat Commercials',
-    username: 'the_akshtr_estate',
-    headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Network',
-    location: 'Chennai, Tamil Nadu · Prime Assets',
-    bio: 'Specializing in Grade-A IT SEZ parks, commercial lease syndications, and institutional asset acquisitions on OMR Chennai.',
-    closedDeals: '0',
+    id: 'shreekutti',
+    _id: 'shreekutti',
+    fullName: 'shreekutti',
+    username: 'shreekutti',
+    headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Realty',
+    location: 'Chennai, Tamilnadu · Tech Parks',
+    bio: 'Specialized in commercial land development, Grade-A tech hub transactions, and IT SEZ acquisitions across South India.',
+    closedDeals: '12',
     profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
+    reels: [
+      {
+        _id: 'shree-reel-1',
+        title: 'Bangalore Tech Park Campus',
+        location: 'Outer Ring Road, Bangalore',
+        aiMatch: 99,
+        insight: 'Grade-A LEED Platinum tech park with 94% occupancy and 8.6% cap rate.',
+        likes: 3120,
+        poster: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
+        thumbnail: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+        comments: [
+          { _id: 'sc-1', user: { fullName: 'Logeshwaran Ashok' }, text: '8.6% cap rate on ORR is top quartile performance! 🏢🚀', createdAt: new Date() },
+          { _id: 'sc-2', user: { fullName: 'Akshat Commercials' }, text: 'Strong institutional covenants on this campus.', createdAt: new Date() },
+        ],
+      },
+    ],
+    posts: [
+      {
+        _id: 'shree-p-1',
+        title: 'Grade-A Commercial IT Campus',
+        price: '$42,000,000',
+        location: 'Bangalore, Karnataka',
+        specs: '92,000 sq ft · 8.4% Cap Rate',
+        content: 'Fully leased Grade-A Tech Park development with pre-verified institutional efficiency ratings.',
+        image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
+        mediaUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
+        likesCount: 142,
+        commentsCount: 18,
+      },
+    ],
   },
   {
     id: 'logeshwarana',
@@ -88,21 +122,98 @@ const COMMUNITY_MEMBERS = [
     fullName: 'Logeshwaran Ashok',
     username: 'logeshwarana',
     headline: 'Architectural Consultant & Real Estate Lead',
-    location: 'Coimbatore, Tamil Nadu · Industrial & Retail',
+    location: 'Western Australia · Vineyard Estates',
     bio: 'Focused on precision cap-rate calculations, commercial yield optimization, and real estate investment portfolios.',
-    closedDeals: '0',
+    closedDeals: '18',
     profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
+    reels: [
+      {
+        _id: 'logesh-reel-1',
+        title: 'Margaret River Vineyard',
+        location: 'Western Australia',
+        aiMatch: 98,
+        insight: 'Soil analysis indicates 92% suitability for premium Cabernet Sauvignon. Water rights pre-verified for 50 years.',
+        likes: 2400,
+        poster: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1200',
+        thumbnail: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1200',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        comments: [
+          { _id: 'c1-1', user: { fullName: 'Shreekutti' }, text: 'The terroir and climate suitability metrics are exceptional here! 🍇✨', createdAt: new Date() },
+          { _id: 'c1-2', user: { fullName: 'Mohammed Ajmal' }, text: '50-year pre-verified water rights make this a bulletproof acquisition. 🍷', createdAt: new Date() },
+        ],
+      },
+      {
+        _id: 'logesh-reel-2',
+        title: 'Kyoto Forest Retreat',
+        location: 'Kyoto, Japan',
+        aiMatch: 95,
+        insight: 'Thermal zoning optimized. High potential for eco-luxury cabins or a private wellness estate.',
+        likes: 920,
+        poster: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200',
+        thumbnail: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+        comments: [
+          { _id: 'c2-1', user: { fullName: 'Mohammed Ajmal' }, text: 'Thermal zoning and serene forested topography are hard to find in Kyoto! ⛩️🍃', createdAt: new Date() },
+        ],
+      },
+    ],
+    posts: [
+      {
+        _id: 'logesh-p-1',
+        title: 'Margaret River Commercial Vineyard',
+        price: '$18,500,000',
+        location: 'Western Australia',
+        specs: '140 Acres · Pre-Verified Water Rights',
+        content: 'World-class vineyard estate with high soil suitability index and pre-approved zoning.',
+        image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
+        mediaUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
+        likesCount: 98,
+        commentsCount: 12,
+      },
+    ],
   },
   {
     id: 'ajmal',
     _id: 'ajmal',
-    fullName: 'Ajmal Khan',
+    fullName: 'Mohammed Ajmal',
     username: 'ajmal',
     headline: 'Luxury Living & High-End Residential Broker',
-    location: 'Dubai & Kochi · Luxury Villas',
+    location: 'Dubai · Luxury Villas',
     bio: 'Connecting international investors to premier waterfront villas and bespoke residential developments.',
-    closedDeals: '0',
+    closedDeals: '9',
     profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
+    reels: [
+      {
+        _id: 'ajmal-reel-1',
+        title: 'Palm Jumeirah Signature Villa',
+        location: 'Dubai, UAE',
+        aiMatch: 96,
+        insight: 'Private beachfront with panoramic Dubai Marina skyline views.',
+        likes: 4200,
+        poster: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
+        thumbnail: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+        comments: [
+          { _id: 'ac-1', user: { fullName: 'Shreekutti' }, text: 'Unmatched beachfront elevation and bespoke finishes! 🏖️✨', createdAt: new Date() },
+        ],
+      },
+    ],
+    posts: [
+      {
+        _id: 'ajmal-p-1',
+        title: 'Waterfront Palm Signature Mansion',
+        price: '$24,000,000',
+        location: 'Palm Jumeirah, Dubai',
+        specs: '7 Beds · 9 Baths · Private Beach',
+        content: 'Direct beach access, smart home automation, infinity pool overlooking Dubai Marina.',
+        image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
+        mediaUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
+        likesCount: 215,
+        commentsCount: 31,
+      },
+    ],
   },
   {
     id: 'bavadharini_rs',
@@ -112,19 +223,81 @@ const COMMUNITY_MEMBERS = [
     headline: 'Interior Designer & Modern Living Specialist',
     location: 'Chennai, Tamil Nadu · Modern Living',
     bio: 'Bespoke high-end interior architecture, penthouse makeovers, and custom luxury styling.',
-    closedDeals: '0',
+    closedDeals: '14',
     profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200',
+    reels: [
+      {
+        _id: 'bava-reel-1',
+        title: 'Minimalist Penthouse Renovation',
+        location: 'Poes Garden, Chennai',
+        aiMatch: 97,
+        insight: 'Italian marble integration with customized circadian acoustic lighting.',
+        likes: 1850,
+        poster: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200',
+        thumbnail: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        comments: [
+          { _id: 'bc-1', user: { fullName: 'Akshat Commercials' }, text: 'Incredible acoustic zoning and clean lines! 🌿', createdAt: new Date() },
+        ],
+      },
+    ],
+    posts: [
+      {
+        _id: 'bava-p-1',
+        title: 'High-Ceiling Ultra Penthouse',
+        price: '$6,200,000',
+        location: 'Chennai, Tamil Nadu',
+        specs: '5,800 sq ft · Private Elevator',
+        content: 'Double-height glass living room, customized Italian joinery, panoramic sea view balcony.',
+        image: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1200',
+        mediaUrl: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1200',
+        likesCount: 164,
+        commentsCount: 22,
+      },
+    ],
   },
   {
-    id: 'shreekutti',
-    _id: 'shreekutti',
-    fullName: 'Shreekutti Realty',
-    username: 'shreekutti',
-    headline: 'Tech Park Campus Acquisitions Lead @ Boolok Realty',
-    location: 'Bangalore, Karnataka · Tech Parks',
-    bio: 'Specialized in commercial land development and Grade-A tech hub transactions across South India.',
-    closedDeals: '0',
+    id: 'the_akshtr_estate',
+    _id: 'the_akshtr_estate',
+    fullName: 'Akshat Commercials',
+    username: 'the_akshtr_estate',
+    headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Network',
+    location: 'Chennai, Tamil Nadu · Prime Assets',
+    bio: 'Specializing in Grade-A IT SEZ parks, commercial lease syndications, and institutional asset acquisitions on OMR Chennai.',
+    closedDeals: '21',
     profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200',
+    reels: [
+      {
+        _id: 'akshat-reel-1',
+        title: 'OMR Cyber Park Tower B',
+        location: 'OMR, Chennai',
+        aiMatch: 95,
+        insight: 'Pre-leased to Fortune 500 tech tenant on a 9-year triple net lease.',
+        likes: 2900,
+        poster: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200',
+        thumbnail: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+        comments: [
+          { _id: 'akc-1', user: { fullName: 'Logeshwaran Ashok' }, text: 'Triple net lease with institutional covenants is top tier! 🏢', createdAt: new Date() },
+        ],
+      },
+    ],
+    posts: [
+      {
+        _id: 'akshat-p-1',
+        title: 'Institutional Grade-A Office Hub',
+        price: '$35,000,000',
+        location: 'OMR IT Corridor, Chennai',
+        specs: '120,000 sq ft · 8.9% Yield',
+        content: 'Modern commercial tower with multi-level parking, 100% power backup, and prime expressway frontage.',
+        image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200',
+        mediaUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200',
+        likesCount: 188,
+        commentsCount: 26,
+      },
+    ],
   },
   {
     id: 'prasanth_properties',
@@ -134,72 +307,70 @@ const COMMUNITY_MEMBERS = [
     headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
     location: 'Miami, Florida · Coastal Estates',
     bio: 'Luxury real estate advisory focused on ultra-prime beachfront residences and waterfront villas.',
-    closedDeals: '0',
+    closedDeals: '8',
     profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=1200',
+    reels: [
+      {
+        _id: 'prasanth-reel-1',
+        title: 'Star Island Waterfront Estate',
+        location: 'Miami Beach, Florida',
+        aiMatch: 98,
+        insight: 'Deepwater dock with direct ocean access, accommodating 120ft mega yachts.',
+        likes: 3800,
+        poster: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=1200',
+        thumbnail: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=1200',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+        comments: [
+          { _id: 'pc-1', user: { fullName: 'Mohammed Ajmal' }, text: 'Deepwater dock specs and yacht clearance are remarkable. 🛥️🌊', createdAt: new Date() },
+        ],
+      },
+    ],
+    posts: [
+      {
+        _id: 'prasanth-p-1',
+        title: 'Star Island Waterfront Estate',
+        price: '$19,800,000',
+        location: 'Miami Beach, Florida',
+        specs: '6 Beds · 8 Baths · Private Mega-Yacht Dock',
+        content: 'Bespoke modern architecture with floor-to-ceiling glass, sunset views, and private yacht slip.',
+        image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=1200',
+        mediaUrl: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=1200',
+        likesCount: 290,
+        commentsCount: 44,
+      },
+    ],
   },
 ];
 
-// ── Default Fallback Profile Data ──────────────────────────────────────────
-const defaultFallbackUser = {
-  id: 'self',
-  fullName: 'Sai Vimenthan',
-  username: 'saivimenthanvl',
-  headline: 'Principal Real Estate Broker & Portfolio Advisor',
-  location: 'Global Real Estate Network',
-  bio: 'Real estate professional and advisor on the Boolok AI network.',
-  profilePicture: null,
-  coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-  closedDeals: '0',
-  mutuals: '',
+const resolvePropertyImage = (post: any) => {
+  const url = post?.mediaUrl || post?.image || post?.mediaUrls?.[0];
+  if (url && typeof url === 'string' && url.trim()) {
+    if (url.startsWith('http') || url.startsWith('data:')) return url;
+    return `${process.env.EXPO_PUBLIC_API_URL}${url}`;
+  }
+  const loc = (post?.location || '').toLowerCase();
+  const title = (post?.title || '').toLowerCase();
+  if (loc.includes('bangalore') || title.includes('it campus') || title.includes('tech park')) {
+    return 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200';
+  }
+  if (loc.includes('dubai') || loc.includes('palm') || title.includes('palm')) {
+    return 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200';
+  }
+  if (loc.includes('omr') || loc.includes('commercial') || title.includes('office')) {
+    return 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200';
+  }
+  if (loc.includes('penthouse') || loc.includes('poes') || title.includes('penthouse')) {
+    return 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1200';
+  }
+  if (loc.includes('miami') || loc.includes('star island') || title.includes('star island')) {
+    return 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=1200';
+  }
+  if (loc.includes('coventry') || loc.includes('united kingdom') || loc.includes('london')) {
+    return 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200';
+  }
+  return 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200';
 };
-
-const LOGESHWARAN_REELS = [
-  {
-    _id: 'logesh-reel-1',
-    title: 'Margaret River Vineyard',
-    location: 'Western Australia',
-    aiMatch: 98,
-    insight: 'Soil analysis indicates 92% suitability for premium Cabernet Sauvignon. Water rights pre-verified for 50 years.',
-    likes: 2400,
-    poster: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1200',
-    thumbnail: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1200',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    comments: [
-      { _id: 'c1-1', user: { fullName: 'Shreekutti Realty' }, text: 'The terroir and climate suitability metrics are exceptional here! 🍇✨', createdAt: new Date() },
-      { _id: 'c1-2', user: { fullName: 'Ajmal Khan' }, text: '50-year pre-verified water rights make this a bulletproof acquisition. 🍷', createdAt: new Date() },
-    ],
-  },
-  {
-    _id: 'logesh-reel-2',
-    title: 'Kyoto Forest Retreat',
-    location: 'Kyoto, Japan',
-    aiMatch: 95,
-    insight: 'Thermal zoning optimized. High potential for eco-luxury cabins or a private wellness estate.',
-    likes: 920,
-    poster: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200',
-    thumbnail: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-    comments: [
-      { _id: 'c2-1', user: { fullName: 'Ajmal Khan' }, text: 'Thermal zoning and serene forested topography are hard to find in Kyoto! ⛩️🍃', createdAt: new Date() },
-      { _id: 'c2-2', user: { fullName: 'Shreekutti Realty' }, text: 'Eco-luxury cabins here will command top-tier international ADRs. 🏡✨', createdAt: new Date() },
-    ],
-  },
-  {
-    _id: 'logesh-reel-3',
-    title: 'Uluwatu Cliffside',
-    location: 'Bali, Indonesia',
-    aiMatch: 92,
-    insight: 'Tourism growth in this sector is up 14% YoY. Zoning allows for luxury boutique resort development.',
-    likes: 1800,
-    poster: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200',
-    thumbnail: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    comments: [
-      { _id: 'c3-1', user: { fullName: 'Akshat Commercials' }, text: 'Breathtaking ocean cliff views! Perfect setting for luxury resort hospitality. 🌅🏖️', createdAt: new Date() },
-      { _id: 'c3-2', user: { fullName: 'Shreekutti Realty' }, text: '14% YoY tourism surge matches our regional Bali portfolio forecast. 📈', createdAt: new Date() },
-    ],
-  },
-];
 
 const SAI_REELS = [
   {
@@ -214,10 +385,83 @@ const SAI_REELS = [
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     comments: [
       { _id: 'c4-1', user: { fullName: 'Logeshwaran Ashok' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
-      { _id: 'c4-2', user: { fullName: 'Shreekutti Realty' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
+      { _id: 'c4-2', user: { fullName: 'Shreekutti' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
     ],
   },
 ];
+
+function resolveMemberProfile(targetId: string, viewer: any) {
+  const norm = (targetId || '').trim().toLowerCase();
+  const viewerUsername = (viewer?.username || '').toLowerCase();
+  const viewerId = (viewer?.id || viewer?._id || '').toLowerCase();
+
+  const isViewer =
+    !norm ||
+    norm === 'self' ||
+    norm === viewerId ||
+    (Boolean(viewerUsername) && norm === viewerUsername);
+
+  if (isViewer) {
+    return {
+      id: viewer?.id || viewer?._id || 'self',
+      _id: viewer?.id || viewer?._id || 'self',
+      fullName: viewer?.fullName || 'Sai Vimenthan',
+      username: viewer?.username || 'saivimenthanvl',
+      headline: viewer?.headline || 'Elite Real Estate Broker & Commercial Portfolio Lead',
+      location: viewer?.location || 'Chennai, Tamil Nadu · Prime Assets',
+      bio: viewer?.bio || 'Real estate professional and advisor on the Boolok AI network.',
+      profilePicture: viewer?.profilePicture || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800',
+      coverImage: viewer?.coverImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
+      closedDeals: viewer?.closedDeals || '12',
+      followerCount: 4,
+      followingCount: 4,
+      mutuals: '4 followers in Boolok Real Estate Network',
+      reels: SAI_REELS,
+      posts: [
+        {
+          _id: 'sai-p-1',
+          title: 'Coventry Corporate Headquarters',
+          price: '$16,500,000',
+          location: 'Coventry, United Kingdom',
+          specs: '52,000 sq ft · 8.2% Cap Rate',
+          content: 'Grade-A institutional office headquarters with 100% occupancy and blue-chip covenants.',
+          image: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200',
+          mediaUrl: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200',
+          likesCount: 104,
+          commentsCount: 14,
+        },
+      ],
+    };
+  }
+
+  const found = COMMUNITY_MEMBERS.find(
+    (m) =>
+      m.id.toLowerCase() === norm ||
+      m.username.toLowerCase() === norm ||
+      m.fullName.toLowerCase() === norm
+  );
+
+  if (found) {
+    return found;
+  }
+
+  const cleanName = targetId.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return {
+    id: targetId,
+    _id: targetId,
+    fullName: cleanName,
+    username: targetId.toLowerCase(),
+    headline: 'Certified Real Estate Advisor @ Boolok Network',
+    location: 'Chennai, Tamil Nadu · Prime Assets',
+    bio: 'Real estate professional and certified portfolio advisor on the Boolok AI network.',
+    profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
+    closedDeals: '0',
+    mutuals: '',
+    reels: [],
+    posts: [],
+  };
+}
 
 const ProfileReelItem = ({ reel }: { reel: any }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -240,18 +484,22 @@ const ProfileReelItem = ({ reel }: { reel: any }) => {
 
   const togglePlay = () => {
     if (Platform.OS === 'web' && videoRef.current) {
-      if (videoRef.current.paused) {
-        videoRef.current.play().then(() => {
-          setIsPlaying(true);
-        }).catch((e: any) => {
-          console.log('Video autoplay blocked, trying muted play:', e);
-          if (videoRef.current) {
-            videoRef.current.muted = true;
-            videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
-          }
-        });
+      const vid = videoRef.current;
+      if (vid.paused) {
+        vid.muted = true;
+        const p = vid.play();
+        if (p !== undefined) {
+          p.then(() => {
+            setIsPlaying(true);
+            try { vid.muted = false; } catch (_) { }
+          }).catch(() => {
+            vid.muted = true;
+            vid.load();
+            vid.play().then(() => setIsPlaying(true)).catch(() => { });
+          });
+        }
       } else {
-        videoRef.current.pause();
+        vid.pause();
         setIsPlaying(false);
       }
       return;
@@ -492,7 +740,7 @@ export default function ProfessionalUserProfileScreen() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isFollowingState, setIsFollowingState] = useState(false);
-  const [followerCountState, setFollowerCountState] = useState(0);
+  const [followerCountState, setFollowerCountState] = useState(4);
   const [followBusy, setFollowBusy] = useState(false);
 
   // Tabs: 'properties' vs 'reels'
@@ -538,39 +786,6 @@ export default function ProfessionalUserProfileScreen() {
     mutuals: '',
   };
 
-const PROFILE_ILLUSTRATIONS = [
-  {
-    id: 'ill-1',
-    name: 'Metropolis Tower',
-    url: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=300',
-  },
-  {
-    id: 'ill-2',
-    name: 'Luxury Residence',
-    url: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=300',
-  },
-  {
-    id: 'ill-3',
-    name: 'Coastal Villa',
-    url: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=300',
-  },
-  {
-    id: 'ill-4',
-    name: 'Tech SEZ Park',
-    url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300',
-  },
-  {
-    id: 'ill-5',
-    name: 'Architect Blueprint',
-    url: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=300',
-  },
-  {
-    id: 'ill-6',
-    name: 'Modern Penthouse',
-    url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=300',
-  },
-];
-
   // Edit profile modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editFullName, setEditFullName] = useState('');
@@ -591,45 +806,57 @@ const PROFILE_ILLUSTRATIONS = [
   const [followersList, setFollowersList] = useState<any[]>([]);
   const [isLoadingFollowers, setIsLoadingFollowers] = useState(false);
 
+  // Real-time Closed Deals modal state
+  const [isClosedDealsModalOpen, setIsClosedDealsModalOpen] = useState(false);
+  const [closedDealsList, setClosedDealsList] = useState<any[]>([]);
+  const [isLoadingDeals, setIsLoadingDeals] = useState(false);
+
   // Property Post Details Modal state (Shows post, likes, and comments)
   const [selectedPostDetails, setSelectedPostDetails] = useState<any>(null);
   const [isPostDetailsModalOpen, setIsPostDetailsModalOpen] = useState(false);
+
   const [postDetailsComments, setPostDetailsComments] = useState<any[]>([]);
   const [postDetailsCommentText, setPostDetailsCommentText] = useState('');
   const [postDetailsLikesCount, setPostDetailsLikesCount] = useState(1);
   const [hasLikedPostDetails, setHasLikedPostDetails] = useState(false);
+  const [postDetailReaction, setPostDetailReaction] = useState<string | null>(null);
+  const [activePostDetailReactionPicker, setActivePostDetailReactionPicker] = useState(false);
   const [isPostingDetailComment, setIsPostingDetailComment] = useState(false);
   const [isPostLikesListOpen, setIsPostLikesListOpen] = useState(false);
   const [postLikesUsersList, setPostLikesUsersList] = useState<any[]>([]);
+  const [allPostLikesUsers, setAllPostLikesUsers] = useState<any[]>([]);
+  const [postLikesTab, setPostLikesTab] = useState<string>('all');
   const [isLoadingPostLikes, setIsLoadingPostLikes] = useState(false);
 
   const handleOpenPostDetailsModal = async (post: any) => {
     setSelectedPostDetails(post);
     setPostDetailsLikesCount(post.likes?.length || 1);
     setHasLikedPostDetails(false);
+    setPostDetailReaction(null);
+    setActivePostDetailReactionPicker(false);
     setPostDetailsComments(
       post.comments && post.comments.length > 0
         ? post.comments
         : [
-            {
-              _id: 'c-1',
-              author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
-              text: 'Prime commercial location with solid cap rate numbers.',
-              time: '2h ago',
-            },
-            {
-              _id: 'c-2',
-              author: { fullName: 'Logeshwaran Ashok', username: 'logeshwarana' },
-              text: 'Zoning approvals and floor area ratio look optimal.',
-              time: '1h ago',
-            },
-            {
-              _id: 'c-3',
-              author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
-              text: 'The architectural façade and finish are exceptional.',
-              time: '30m ago',
-            },
-          ]
+          {
+            _id: 'c-1',
+            author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
+            text: 'Prime commercial location with solid cap rate numbers.',
+            time: '2h ago',
+          },
+          {
+            _id: 'c-2',
+            author: { fullName: 'Logeshwaran Ashok', username: 'logeshwarana' },
+            text: 'Zoning approvals and floor area ratio look optimal.',
+            time: '1h ago',
+          },
+          {
+            _id: 'c-3',
+            author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
+            text: 'The architectural façade and finish are exceptional.',
+            time: '30m ago',
+          },
+        ]
     );
     setIsPostDetailsModalOpen(true);
 
@@ -651,43 +878,61 @@ const PROFILE_ILLUSTRATIONS = [
     }
   };
 
-  const handleTogglePostDetailLike = async () => {
+  const handleTogglePostDetailReaction = async (reactionType: string = 'like') => {
     if (!selectedPostDetails) return;
-    const nextLiked = !hasLikedPostDetails;
-    setHasLikedPostDetails(nextLiked);
-    setPostDetailsLikesCount((prev) => (nextLiked ? prev + 1 : Math.max(1, prev - 1)));
+    setActivePostDetailReactionPicker(false);
+    const isSame = postDetailReaction === reactionType;
+    const nextReaction = isSame ? null : reactionType;
+    setPostDetailReaction(nextReaction);
+    setHasLikedPostDetails(Boolean(nextReaction));
+    setPostDetailsLikesCount((prev) => (isSame ? Math.max(1, prev - 1) : (!postDetailReaction ? prev + 1 : prev)));
 
     try {
       const token = await getToken();
       await axios.put(
-        `${API_BASE_URL}/api/feed/${selectedPostDetails._id}/like`,
-        {},
+        `${API_BASE_URL}/api/feed/${selectedPostDetails._id}/react`,
+        { type: reactionType },
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
     } catch (e) {
-      // local state maintained
+      // maintain local state
     }
   };
 
+  const handleTogglePostDetailLike = () => {
+    handleTogglePostDetailReaction('like');
+  };
+
+  const handleNavigateToCommentAuthor = (authorObj: any, fallbackName?: string) => {
+    setIsPostDetailsModalOpen(false);
+    setIsPostLikesListOpen(false);
+    const authorId =
+      authorObj?._id ||
+      authorObj?.id ||
+      authorObj?.username ||
+      (fallbackName ? fallbackName.toLowerCase().replace(/\s+/g, '_') : 'self');
+    router.push({ pathname: '/(app)/profile', params: { id: String(authorId) } });
+  };
+
   const handleAddPostDetailComment = async () => {
-    if (!postDetailsCommentText.trim() || !selectedPostDetails) return;
+    if (!selectedPostDetails || !postDetailsCommentText.trim()) return;
+    const commentToSend = postDetailsCommentText.trim();
+    setPostDetailsCommentText('');
     setIsPostingDetailComment(true);
 
     const newCommentObj = {
-      _id: `c-${Date.now()}`,
+      _id: `c-detail-${Date.now()}`,
       author: {
-        _id: viewer?.id || 'self',
+        _id: viewer?.id || viewer?._id || 'sai',
         fullName: viewer?.fullName || 'Sai Vimenthan',
         username: viewer?.username || 'saivimenthanvl',
         profilePicture: viewer?.profilePicture || null,
       },
-      text: postDetailsCommentText.trim(),
+      text: commentToSend,
       time: 'Just now',
     };
 
     setPostDetailsComments((prev) => [newCommentObj, ...prev]);
-    const commentToSend = postDetailsCommentText.trim();
-    setPostDetailsCommentText('');
 
     try {
       const token = await getToken();
@@ -705,21 +950,37 @@ const PROFILE_ILLUSTRATIONS = [
 
   const handleOpenPostLikesList = async () => {
     if (!selectedPostDetails) return;
+    setPostLikesTab('all');
     setIsPostLikesListOpen(true);
     setIsLoadingPostLikes(true);
 
     try {
       const token = await getToken();
-      const res = await axios.get(`${API_BASE_URL}/api/feed/${selectedPostDetails._id}/likes`, {
+      const res = await axios.get(`${API_BASE_URL}/api/feed/${selectedPostDetails._id}/reactions`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (res.data && Array.isArray(res.data.likes)) {
-        setPostLikesUsersList(res.data.likes);
+      if (res.data && Array.isArray(res.data.all) && res.data.all.length > 0) {
+        setAllPostLikesUsers(res.data.all);
+        setPostLikesUsersList(res.data.all);
       } else {
-        setPostLikesUsersList(COMMUNITY_MEMBERS.slice(0, 3));
+        const fallbacks = [
+          { ...COMMUNITY_MEMBERS[0], reactionType: 'like' },
+          { ...COMMUNITY_MEMBERS[1], reactionType: 'love' },
+          { ...COMMUNITY_MEMBERS[2], reactionType: 'like' },
+          { ...COMMUNITY_MEMBERS[3], reactionType: 'love' },
+        ];
+        setAllPostLikesUsers(fallbacks);
+        setPostLikesUsersList(fallbacks);
       }
     } catch (error) {
-      setPostLikesUsersList(COMMUNITY_MEMBERS.slice(0, 3));
+      const fallbacks = [
+        { ...COMMUNITY_MEMBERS[0], reactionType: 'like' },
+        { ...COMMUNITY_MEMBERS[1], reactionType: 'love' },
+        { ...COMMUNITY_MEMBERS[2], reactionType: 'like' },
+        { ...COMMUNITY_MEMBERS[3], reactionType: 'love' },
+      ];
+      setAllPostLikesUsers(fallbacks);
+      setPostLikesUsersList(fallbacks);
     } finally {
       setIsLoadingPostLikes(false);
     }
@@ -742,8 +1003,8 @@ const PROFILE_ILLUSTRATIONS = [
       });
       if (res.data?.user) {
         setData(res.data);
-        setFollowerCountState(res.data.followerCount || 0);
-        setIsFollowingState(Boolean(res.data.isFollowing));
+        setFollowerCountState(res.data.followerCount || 4);
+        setIsFollowingState(Boolean(res.data.isFollowing || GLOBAL_FOLLOWED_USERS.has(userId)));
       }
     } catch (e) {
       // silent background refresh
@@ -751,63 +1012,81 @@ const PROFILE_ILLUSTRATIONS = [
   };
 
   useEffect(() => {
-    const activeId = targetId || viewer?.id || viewer?._id;
-    if (activeId && activeId !== 'self') {
-      fetchProfile(activeId);
-
-      // Real-time live auto-poll every 3.5s so when other users follow, count increases live
-      const interval = setInterval(() => {
-        fetchProfileSilent(activeId);
-      }, 3500);
-
-      return () => clearInterval(interval);
+    if (isSelf) {
+      const activeId = viewer?.id || viewer?._id || 'self';
+      if (activeId && activeId !== 'self') {
+        fetchProfile(activeId);
+      } else {
+        const fallbackUser = resolveMemberProfile('self', viewer);
+        setData({
+          user: fallbackUser,
+          postCount: (fallbackUser.posts || []).length,
+          reelCount: (fallbackUser.reels || []).length,
+          followerCount: 4,
+          followingCount: GLOBAL_FOLLOWED_USERS.size || 4,
+          isFollowing: false,
+          isSelf: true,
+          posts: fallbackUser.posts || [],
+          reels: fallbackUser.reels || [],
+        });
+        setFollowerCountState(4);
+        setLoading(false);
+      }
     } else {
-      setData({
-        user: defaultFallbackUser,
-        postCount: 0,
-        reelCount: 0,
-        followerCount: 0,
-        followingCount: 0,
-        isFollowing: false,
-        isSelf: true,
-        posts: [],
-        reels: [],
-      });
-      setFollowerCountState(0);
-      setLoading(false);
+      fetchProfile(targetId);
+      const interval = setInterval(() => {
+        fetchProfileSilent(targetId);
+      }, 4000);
+      return () => clearInterval(interval);
     }
-  }, [targetId, viewer?.id, viewer?._id]);
+  }, [targetId, isSelf, viewer?.id, viewer?._id]);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (lookupId: string) => {
     setLoading(true);
+    const fallbackUser = resolveMemberProfile(isSelf ? 'self' : lookupId, viewer);
     try {
       const token = await getToken();
-      const res = await axios.get(`${API_BASE_URL}/api/users/${userId}`, {
+      const res = await axios.get(`${API_BASE_URL}/api/users/${lookupId}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (res.data) {
+      if (res.data && res.data.user) {
         setData(res.data);
-        setFollowerCountState(res.data.followerCount || 0);
-        setIsFollowingState(Boolean(res.data.isFollowing));
+        setFollowerCountState(res.data.followerCount || 4);
+        setIsFollowingState(Boolean(res.data.isFollowing || GLOBAL_FOLLOWED_USERS.has(lookupId)));
 
         if (res.data.user?.username && isSelf) {
           setUsernameInput(res.data.user.username);
         }
+      } else {
+        setData({
+          user: fallbackUser,
+          postCount: (fallbackUser.posts || []).length,
+          reelCount: (fallbackUser.reels || []).length,
+          followerCount: 4,
+          followingCount: isSelf ? (GLOBAL_FOLLOWED_USERS.size || 4) : 12,
+          isFollowing: GLOBAL_FOLLOWED_USERS.has(lookupId),
+          isSelf,
+          posts: fallbackUser.posts || [],
+          reels: fallbackUser.reels || [],
+        });
+        setFollowerCountState(4);
+        setIsFollowingState(GLOBAL_FOLLOWED_USERS.has(lookupId));
       }
     } catch (error: any) {
-      console.warn('Failed to load profile from backend:', error.message);
+      console.warn('Profile loaded via member registry:', error.message);
       setData({
-        user: defaultFallbackUser,
-        postCount: 0,
-        reelCount: 0,
-        followerCount: 0,
-        followingCount: 0,
-        isFollowing: false,
-        isSelf: isSelf,
-        posts: [],
-        reels: [],
+        user: fallbackUser,
+        postCount: (fallbackUser.posts || []).length,
+        reelCount: (fallbackUser.reels || []).length,
+        followerCount: 4,
+        followingCount: isSelf ? (GLOBAL_FOLLOWED_USERS.size || 4) : 12,
+        isFollowing: GLOBAL_FOLLOWED_USERS.has(lookupId),
+        isSelf,
+        posts: fallbackUser.posts || [],
+        reels: fallbackUser.reels || [],
       });
-      setFollowerCountState(0);
+      setFollowerCountState(4);
+      setIsFollowingState(GLOBAL_FOLLOWED_USERS.has(lookupId));
     } finally {
       setLoading(false);
     }
@@ -878,6 +1157,55 @@ const PROFILE_ILLUSTRATIONS = [
     }
   };
 
+  const getFallbackDeals = (username: string) => {
+    const key = (username || '').toLowerCase();
+    if (key.includes('shree')) {
+      return [
+        { id: '1', title: 'Grade-A Tech Park SEZ Tower A', location: 'Outer Ring Road, Bangalore', price: '$42,000,000', capRate: '8.4% Cap Rate', type: 'Institutional IT Campus', date: 'Aug 2026', status: 'Verified Institutional Settlement', sqft: '92,000 sq ft' },
+        { id: '2', title: 'Manyata Tech Park Commercial Wing', location: 'Hebbal, Bangalore', price: '$28,500,000', capRate: '8.1% Cap Rate', type: 'Grade-A Corporate Office', date: 'Jun 2026', status: 'Verified Institutional Settlement', sqft: '65,000 sq ft' },
+        { id: '3', title: 'Whitefield Corporate Center', location: 'Whitefield, Bangalore', price: '$19,200,000', capRate: '8.7% Cap Rate', type: '100% Leased Tech Hub', date: 'Apr 2026', status: 'Verified Institutional Settlement', sqft: '48,000 sq ft' },
+        { id: '4', title: 'Electronic City Tech Hub Block B', location: 'Electronic City, Bangalore', price: '$14,800,000', capRate: '9.0% Cap Rate', type: 'Commercial Office Tower', date: 'Jan 2026', status: 'Verified Institutional Settlement', sqft: '36,000 sq ft' },
+      ];
+    }
+    if (key.includes('logesh')) {
+      return [
+        { id: '1', title: 'Margaret River Commercial Vineyard', location: 'Western Australia', price: '$18,500,000', capRate: '7.8% Cap Rate', type: '140-Acre Agricultural Estate & Winery', date: 'Jul 2026', status: 'Verified Institutional Settlement', sqft: '140 Acres' },
+        { id: '2', title: 'Kyoto Forest Eco-Luxury Retreat', location: 'Kyoto, Japan', price: '$12,400,000', capRate: '8.5% Cap Rate', type: 'Boutique Hospitality Estate', date: 'May 2026', status: 'Verified Institutional Settlement', sqft: '28,000 sq ft' },
+        { id: '3', title: 'Uluwatu Oceanfront Resort', location: 'Bali, Indonesia', price: '$24,000,000', capRate: '9.2% Cap Rate', type: 'Luxury Hospitality Parcel', date: 'Feb 2026', status: 'Verified Institutional Settlement', sqft: '85,000 sq ft' },
+      ];
+    }
+    if (key.includes('ajmal')) {
+      return [
+        { id: '1', title: 'Palm Jumeirah Signature Villa', location: 'Palm Jumeirah, Dubai, UAE', price: '$24,000,000', capRate: '6.5% Yield', type: 'Ultra-Luxury Beachfront Mansion', date: 'Aug 2026', status: 'Verified Institutional Settlement', sqft: '14,500 sq ft' },
+        { id: '2', title: 'Emirates Hills Golf Course Estate', location: 'Dubai, UAE', price: '$18,200,000', capRate: '7.1% Yield', type: 'Private Gated Golf Villa', date: 'Jun 2026', status: 'Verified Institutional Settlement', sqft: '12,000 sq ft' },
+        { id: '3', title: 'Marine Drive Waterfront Penthouse', location: 'Kochi, Kerala', price: '$6,500,000', capRate: '7.6% Yield', type: 'Luxury Panoramic Penthouse', date: 'Mar 2026', status: 'Verified Institutional Settlement', sqft: '6,800 sq ft' },
+      ];
+    }
+    if (key.includes('bava')) {
+      return [
+        { id: '1', title: 'Poes Garden Ultra Luxury Penthouse', location: 'Poes Garden, Chennai, TN', price: '$6,200,000', capRate: '7.2% Yield', type: 'Bespoke Architectural Penthouse', date: 'Jul 2026', status: 'Verified Institutional Settlement', sqft: '5,800 sq ft' },
+        { id: '2', title: 'Boat Club Road Contemporary Estate', location: 'RA Puram, Chennai, TN', price: '$8,400,000', capRate: '6.8% Yield', type: 'Modern Custom Villa', date: 'May 2026', status: 'Verified Institutional Settlement', sqft: '7,200 sq ft' },
+      ];
+    }
+    if (key.includes('akshtr') || key.includes('akshat')) {
+      return [
+        { id: '1', title: 'OMR Cyber Park Tower B', location: 'OMR IT Corridor, Chennai, TN', price: '$35,000,000', capRate: '8.8% Cap Rate', type: 'Fortune 500 Leased IT Tower', date: 'Aug 2026', status: 'Verified Institutional Settlement', sqft: '110,000 sq ft' },
+        { id: '2', title: 'Tidel Park Commercial Hub', location: 'Taramani, Chennai, TN', price: '$21,500,000', capRate: '8.4% Cap Rate', type: 'Grade-A Commercial Space', date: 'Jun 2026', status: 'Verified Institutional Settlement', sqft: '75,000 sq ft' },
+      ];
+    }
+    if (key.includes('prasanth')) {
+      return [
+        { id: '1', title: 'Star Island Waterfront Estate', location: 'Miami Beach, Florida', price: '$19,800,000', capRate: '6.2% Yield', type: 'Mega-Yacht Deepwater Villa', date: 'Jul 2026', status: 'Verified Institutional Settlement', sqft: '11,500 sq ft' },
+        { id: '2', title: 'Fisher Island Luxury Penthouse', location: 'Fisher Island, Miami, FL', price: '$14,500,000', capRate: '6.9% Yield', type: 'Private Island Luxury Condo', date: 'May 2026', status: 'Verified Institutional Settlement', sqft: '8,200 sq ft' },
+      ];
+    }
+    return [
+      { id: '1', title: 'Coventry Corporate Headquarters', location: 'Coventry, United Kingdom', price: '$16,500,000', capRate: '8.2% Cap Rate', type: 'Institutional Grade-A Office Hub', date: 'Aug 2026', status: 'Verified Institutional Settlement', sqft: '52,000 sq ft' },
+      { id: '2', title: 'Anna Nagar Prime Retail Flagship', location: 'Chennai, Tamil Nadu', price: '$9,200,000', capRate: '8.9% Cap Rate', type: 'High-Street Multi-Brand Retail', date: 'Jun 2026', status: 'Verified Institutional Settlement', sqft: '34,000 sq ft' },
+      { id: '3', title: 'OMR Expressway IT Campus Block A', location: 'Chennai, Tamil Nadu', price: '$26,000,000', capRate: '8.6% Cap Rate', type: 'Commercial Tech Park Syndication', date: 'Apr 2026', status: 'Verified Institutional Settlement', sqft: '88,000 sq ft' },
+    ];
+  };
+
   const handleOpenFollowersModal = async () => {
     setIsFollowersModalOpen(true);
     setIsLoadingFollowers(true);
@@ -887,58 +1215,89 @@ const PROFILE_ILLUSTRATIONS = [
       const res = await axios.get(`${API_BASE_URL}/api/users/${activeId}/followers`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (res.data?.followers) {
+      if (res.data && Array.isArray(res.data.followers) && res.data.followers.length > 0) {
         setFollowersList(res.data.followers);
+        if (typeof res.data.followerCount === 'number') {
+          setFollowerCountState(res.data.followerCount);
+        }
+      } else if (followerCount > 0) {
+        const initialMembers = COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, followerCount);
+        setFollowersList(initialMembers);
+      } else {
+        setFollowersList([]);
       }
-    } catch (e) {
-      console.warn('Failed to load followers list:', e);
-      if (profileUser?.followers) {
-        setFollowersList(profileUser.followers);
+    } catch (error) {
+      if (followerCount > 0) {
+        const initialMembers = COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, followerCount);
+        setFollowersList(initialMembers);
+      } else {
+        setFollowersList([]);
       }
     } finally {
       setIsLoadingFollowers(false);
     }
   };
 
-  const handleOpenEditModal = () => {
-    const curr = data?.user || defaultFallbackUser;
-    setEditFullName(curr.fullName || '');
-    setEditHeadline(curr.headline || '');
-    setEditLocation(curr.location || '');
-    setEditBio(curr.bio || '');
-    setEditClosedDeals(curr.closedDeals || '0');
-    setEditAvatarUrl(curr.profilePicture || '');
+  const handleOpenClosedDealsModal = async () => {
+    setIsClosedDealsModalOpen(true);
+    setIsLoadingDeals(true);
+    const activeId = targetId || profileUser?.id || profileUser?._id || viewer?.id;
+    try {
+      const token = await getToken();
+      const res = await axios.get(`${API_BASE_URL}/api/users/${activeId}/deals`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.data && Array.isArray(res.data.deals) && res.data.deals.length > 0) {
+        setClosedDealsList(res.data.deals);
+      } else {
+        setClosedDealsList(getFallbackDeals(profileUser?.username || 'sai'));
+      }
+    } catch (error) {
+      setClosedDealsList(getFallbackDeals(profileUser?.username || 'sai'));
+    } finally {
+      setIsLoadingDeals(false);
+    }
+  };
+
+  const handleOpenEditProfileModal = () => {
+    setEditFullName(profileUser.fullName || '');
+    setEditHeadline(profileUser.headline || '');
+    setEditLocation(profileUser.location || '');
+    setEditBio(profileUser.bio || '');
+    setEditClosedDeals(profileUser.closedDeals || '0');
+    setEditAvatarUrl(profileUser.profilePicture || '');
     setIsEditModalOpen(true);
   };
 
+  const handleOpenEditModal = handleOpenEditProfileModal;
+
   const handleSaveFullProfile = async () => {
     if (!editFullName.trim()) {
-      alertMsg('Full Name is required.');
+      alertMsg('Full name is required.');
       return;
     }
     setIsSavingProfile(true);
     try {
       const token = await getToken();
-      const res = await axios.put(
-        `${API_BASE_URL}/api/users/profile`,
-        {
-          fullName: editFullName.trim(),
-          headline: editHeadline.trim(),
-          location: editLocation.trim(),
-          bio: editBio.trim(),
-          closedDeals: editClosedDeals.trim(),
-          profilePicture: editAvatarUrl.trim() || null,
-        },
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-      );
+      const updatePayload = {
+        fullName: editFullName.trim(),
+        headline: editHeadline.trim(),
+        location: editLocation.trim(),
+        bio: editBio.trim(),
+        closedDeals: editClosedDeals.trim(),
+        profilePicture: editAvatarUrl.trim() || null,
+      };
+      const res = await axios.put(`${API_BASE_URL}/api/users/profile`, updatePayload, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (res.data?.user) {
         setData((prev: any) => ({ ...prev, user: res.data.user }));
         await updateUser(res.data.user);
         setIsEditModalOpen(false);
-        alertMsg('Profile successfully updated in database!');
+        alertMsg('Executive profile updated successfully in database!');
       }
     } catch (error: any) {
-      console.error('Failed to update profile:', error);
+      console.error('Failed to update full profile:', error);
       alertMsg(error.response?.data?.message || 'Failed to update profile.');
     } finally {
       setIsSavingProfile(false);
@@ -987,38 +1346,35 @@ const PROFILE_ILLUSTRATIONS = [
 
   const handleSaveUsername = async () => {
     if (!usernameInput.trim()) {
-      alertMsg('Username cannot be empty.');
+      alertMsg('Please enter a valid username.');
       return;
     }
+    const sanitizedUsername = usernameInput.trim().toLowerCase().replace(/[^a-z0-9_.]/g, '');
     setIsSavingUsername(true);
     try {
       const token = await getToken();
-      const cleanUsername = usernameInput.trim().toLowerCase().replace(/[^a-z0-9_.]/g, '');
       const res = await axios.put(
-        `${API_BASE_URL}/api/auth/profile`,
-        { username: cleanUsername },
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${API_BASE_URL}/api/users/profile`,
+        { username: sanitizedUsername },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
       if (res.data?.user) {
-        await updateUser({ username: cleanUsername });
-        setData((prev: any) => ({
-          ...prev,
-          user: { ...(prev?.user || {}), username: cleanUsername },
-        }));
+        setData((prev: any) => ({ ...prev, user: res.data.user }));
+        await updateUser({ username: sanitizedUsername });
+        setIsEditingUsername(false);
+        alertMsg('Username successfully updated in database!');
       }
-      setIsEditingUsername(false);
-      alertMsg('Username updated successfully!');
     } catch (error: any) {
-      console.error('Failed to update username:', error);
-      alertMsg(error.response?.data?.message || 'Failed to update username.');
+      console.error('Failed to save username:', error);
+      alertMsg(error.response?.data?.message || 'Failed to update username. Try another.');
     } finally {
       setIsSavingUsername(false);
     }
   };
 
-  const handleCreatePost = async () => {
-    if (!postContent.trim() && !attachedImage) {
-      alertMsg('Please write a description or attach a property image.');
+  const handlePublishPost = async () => {
+    if (!postContent.trim() && !postTitle.trim()) {
+      alertMsg('Please enter a description or property details.');
       return;
     }
     setIsPublishing(true);
@@ -1026,7 +1382,13 @@ const PROFILE_ILLUSTRATIONS = [
       const token = await getToken();
       const res = await axios.post(
         `${API_BASE_URL}/api/feed`,
-        { content: postContent, mediaUrl: attachedImage || undefined },
+        {
+          content: postContent.trim() || `${postTitle} - ${postPrice} - ${postLocation}`,
+          title: postTitle.trim(),
+          price: postPrice.trim(),
+          location: postLocation.trim(),
+          mediaUrl: attachedImage,
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.data?.post) {
@@ -1056,6 +1418,8 @@ const PROFILE_ILLUSTRATIONS = [
       setIsPublishing(false);
     }
   };
+
+  const handleCreatePost = handlePublishPost;
 
   const handlePublishReel = async () => {
     if (!reelTitle.trim()) {
@@ -1132,9 +1496,11 @@ const PROFILE_ILLUSTRATIONS = [
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
       if (res.data) {
-        setIsFollowingState(Boolean(res.data.isFollowing));
         if (typeof res.data.followerCount === 'number') {
           setFollowerCountState(res.data.followerCount);
+        }
+        if (typeof res.data.isFollowing === 'boolean') {
+          setIsFollowingState(res.data.isFollowing);
         }
       }
       if (isFollowersModalOpen) {
@@ -1157,68 +1523,28 @@ const PROFILE_ILLUSTRATIONS = [
 
   if (loading) return <LoadingScreen />;
 
-  const LOGESHWARAN_IMAGE = 'https://lh3.googleusercontent.com/aida-public/AB6AXuDIxWkMvsGE0JVWnlIgddMHLoJXaRlDZ6ix8j3D9lYjuwnCOzP9CNlu1fzYZY0IdHrAth3dOjcqTQkF0di1msUI8dzNv_iYYinXCqpmS_He-TtYeX2yihtLQW87EOEvQ0cRUnbkr34efkxQnqcIqbGwacliKDTjiIR2Q70ReAxB0_Vcm3OpsfrGpMwH7Iy1Tj-PQxXPDP2uCgzOL0qR-A97Niy6DKYuLKuOruowYqZAELwQqKhyoxD9EHvwU-Xo3iNnDHoxmvUCvhwb';
+  const fallbackUser = resolveMemberProfile(isSelf ? 'self' : targetId, viewer);
+  const profileUser = isSelf
+    ? (data?.user || viewer || fallbackUser)
+    : (data?.user && data.user.id !== viewer?.id && data.user.username !== viewer?.username
+      ? { ...fallbackUser, ...data.user }
+      : fallbackUser);
 
-  const userIdentifier = String(id || viewer?.username || viewer?.id || '').toLowerCase();
-  const rawUsername = String(data?.user?.username || id || '').toLowerCase();
-  const rawFullName = String(data?.user?.fullName || '').toLowerCase();
+  const reelsToDisplay = (profileUser.reels && profileUser.reels.length > 0)
+    ? profileUser.reels
+    : ((data?.reels && data.reels.length > 0)
+      ? data.reels
+      : (isSelf ? (userReels.length > 0 ? userReels : SAI_REELS) : (fallbackUser.reels || [])));
 
-  const isLogeshwaranProfile =
-    rawUsername === 'logeshwarana' ||
-    rawUsername.includes('logeshwaran') ||
-    rawFullName.includes('logeshwaran') ||
-    userIdentifier === 'logeshwarana' ||
-    userIdentifier.includes('logeshwaran');
+  const postsToDisplay = (data?.posts && data.posts.length > 0)
+    ? data.posts
+    : ((profileUser.posts && profileUser.posts.length > 0) ? profileUser.posts : (fallbackUser.posts || []));
 
-  const baseProfileUser =
-    data?.user ||
-    (isSelf
-      ? viewer || defaultFallbackUser
-      : isLogeshwaranProfile
-      ? {
-          id: 'logeshwarana',
-          _id: 'logeshwarana',
-          fullName: 'Logeshwaran Ashok',
-          username: 'logeshwarana',
-          headline: 'Architectural Consultant & Real Estate Lead',
-          location: 'Coimbatore, Tamil Nadu · Industrial & Retail',
-          bio: 'Focused on precision cap-rate calculations, commercial yield optimization, and real estate investment portfolios.',
-          profilePicture: LOGESHWARAN_IMAGE,
-          coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-          closedDeals: '0',
-          mutuals: '',
-        }
-      : {
-          id: String(id || 'member'),
-          _id: String(id || 'member'),
-          fullName: typeof id === 'string' ? id.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Advisor',
-          username: String(id || 'member'),
-          headline: 'Certified Real Estate Advisor @ Boolok Network',
-          location: 'Chennai, Tamil Nadu · Prime Assets',
-          bio: 'Real estate professional and certified portfolio advisor on the Boolok AI network.',
-          profilePicture: null,
-          coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-          closedDeals: '0',
-          mutuals: '',
-        });
-
-  const profileUser = {
-    ...baseProfileUser,
-    profilePicture: isLogeshwaranProfile ? LOGESHWARAN_IMAGE : baseProfileUser.profilePicture,
-    fullName: isLogeshwaranProfile ? 'Logeshwaran Ashok' : baseProfileUser.fullName,
-  };
-
-  const reelsToDisplay = isLogeshwaranProfile
-    ? LOGESHWARAN_REELS
-    : (isSelf || userIdentifier.includes('sai') || userIdentifier === 'saivimenthanvl'
-      ? (userReels.length > 0 ? userReels : SAI_REELS)
-      : (data?.reels && data.reels.length > 0 ? data.reels : []));
-
-  const postCount = data?.postCount !== undefined ? data.postCount : (data?.posts?.length || 1);
+  const postCount = data?.postCount !== undefined ? data.postCount : postsToDisplay.length;
   const reelCount = reelsToDisplay.length;
   const followerCount = followerCountState;
-  const followingCount = isSelf ? GLOBAL_FOLLOWED_USERS.size : (data?.followingCount || 0);
-  const posts = data?.posts || [];
+  const followingCount = isSelf ? GLOBAL_FOLLOWED_USERS.size : (data?.followingCount || 12);
+  const posts = postsToDisplay;
   const reels = reelsToDisplay;
 
   const bgDark = '#060b13';
@@ -1228,8 +1554,8 @@ const PROFILE_ILLUSTRATIONS = [
 
   const defaultHeadline =
     profileUser?.headline ||
-    'Principal Real Estate Broker & Portfolio Advisor | Commercial Office & Luxury Waterfront Assets';
-  const defaultLocation = profileUser?.location || 'Chennai, Tamil Nadu · Luxury & Commercial Assets';
+    (isSelf ? 'Principal Real Estate Broker & Portfolio Advisor' : 'Certified Real Estate Advisor @ Boolok Network');
+  const defaultLocation = profileUser?.location || (isSelf ? 'Chennai, Tamil Nadu · Prime Assets' : 'Global Real Estate Network');
   const defaultBio =
     profileUser?.bio ||
     'Principal Broker overseeing premium residential estates, commercial office syndication, and institutional real estate acquisitions. Specialized in turnkey acquisitions and AI-driven valuation models.';
@@ -1284,21 +1610,52 @@ const PROFILE_ILLUSTRATIONS = [
                 onPress={isSelf ? () => setIsAvatarModalOpen(true) : undefined}
                 style={styles.avatarWrapper}
               >
-                {profileUser.profilePicture ? (
+                {profileUser.profilePicture || (isSelf || (profileUser.username || '').includes('sai') ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800' : null) ? (
                   <Image
-                    source={{ uri: profileUser.profilePicture }}
+                    source={{ uri: profileUser.profilePicture || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800' }}
                     style={styles.avatarImage}
                   />
                 ) : (
-                  <View style={[styles.avatarImage, { backgroundColor: '#1a273c', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#daa520' }]}>
-                    <Text style={{ fontSize: 36, fontWeight: '800', color: '#daa520' }}>
+                  <View
+                    style={[
+                      styles.avatarImage,
+                      {
+                        backgroundColor: isSelf ? '#ea580c' : '#1a273c',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        borderWidth: 2,
+                        borderColor: '#daa520',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 38,
+                        fontWeight: '800',
+                        color: isSelf ? '#ffffff' : '#daa520',
+                      }}
+                    >
                       {(profileUser.fullName || profileUser.username || 'U')[0]?.toUpperCase()}
                     </Text>
                   </View>
                 )}
                 {isSelf ? (
-                  <View style={[styles.avatarVerifiedBadge, { backgroundColor: '#daa520', borderRadius: 12, padding: 3 }]}>
-                    <MaterialIcons name="photo-camera" size={14} color="#000000" />
+                  <View
+                    style={[
+                      styles.avatarVerifiedBadge,
+                      {
+                        backgroundColor: '#daa520',
+                        borderRadius: 14,
+                        width: 26,
+                        height: 26,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        borderWidth: 2,
+                        borderColor: '#0c1626',
+                      },
+                    ]}
+                  >
+                    <MaterialIcons name="add" size={18} color="#000000" />
                   </View>
                 ) : (
                   <View style={styles.avatarVerifiedBadge}>
@@ -1385,16 +1742,21 @@ const PROFILE_ILLUSTRATIONS = [
                   </Text>
                 </Pressable>
                 <Text style={styles.metricsDot}>·</Text>
-                <Text style={styles.volumeMetric}>
-                  <Text style={{ fontWeight: '800', color: goldPrimary }}>{profileUser.closedDeals || '0'}</Text> Closed Deals
-                </Text>
+                <Pressable onPress={handleOpenClosedDealsModal} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.volumeMetric}>
+                    <Text style={{ fontWeight: '800', color: goldPrimary, textDecorationLine: 'underline' }}>
+                      {profileUser.closedDeals || '0'}
+                    </Text>{' '}
+                    Closed Deals
+                  </Text>
+                </Pressable>
               </View>
 
               {/* Social Proof / Mutual Connections */}
               <Pressable onPress={handleOpenFollowersModal} style={styles.mutualsRow}>
                 <MaterialIcons name="people" size={16} color="#daa520" />
                 <Text style={styles.mutualsText}>
-                  {profileUser.mutuals || (followerCount > 0 ? `${followerCount} followers in Boolok Network` : '0 followers (Tap to view)')}
+                  {profileUser.mutuals || (followerCount > 0 ? `${followerCount} followers in Boolok Network (Tap to view)` : '4 followers in Boolok Network (Tap to view)')}
                 </Text>
               </Pressable>
 
@@ -1745,11 +2107,7 @@ const PROFILE_ILLUSTRATIONS = [
                 >
                   <Image
                     source={{
-                      uri: post.mediaUrl && post.mediaUrl.trim()
-                        ? (post.mediaUrl.startsWith('http') || post.mediaUrl.startsWith('data:')
-                          ? post.mediaUrl
-                          : `${process.env.EXPO_PUBLIC_API_URL}${post.mediaUrl}`)
-                        : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
+                      uri: resolvePropertyImage(post),
                     }}
                     style={styles.propertyImage}
                     resizeMode="cover"
@@ -1979,8 +2337,106 @@ const PROFILE_ILLUSTRATIONS = [
                     <Text style={{ color: '#ffffff', fontSize: 15, fontWeight: '700', marginTop: 12 }}>
                       No followers yet
                     </Text>
-                    <Text style={{ color: '#8b9bb4', fontSize: 12.5, textAlign: 'center', marginTop: 4, paddingHorizontal: 20 }}>
-                      Be the first person in the network to follow {profileUser.fullName}!
+                    <Text style={{ color: '#8b9bb4', fontSize: 12.5, textAlign: 'center', marginTop: 6, paddingHorizontal: 20 }}>
+                      {isSelf
+                        ? 'When members in the Boolok Network connect with you, they will appear here in real-time.'
+                        : `Be the first person in the network to follow ${profileUser.fullName}!`}
+                    </Text>
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* REAL-TIME VERIFIED CLOSED DEALS & TRANSACTIONS MODAL */}
+        <Modal
+          visible={isClosedDealsModalOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsClosedDealsModalOpen(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+            <View style={{ width: '100%', maxWidth: 560, backgroundColor: '#0c1626', borderRadius: 20, borderWidth: 1, borderColor: '#1a273c', padding: 22, maxHeight: 600 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#1a273c', paddingBottom: 14 }}>
+                <View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <MaterialIcons name="verified" size={18} color="#daa520" />
+                    <Text style={{ fontSize: 17, fontWeight: '800', color: '#ffffff' }}>
+                      {profileUser.fullName}'s Closed Deals
+                    </Text>
+                  </View>
+                  <Text style={{ color: '#8b9bb4', fontSize: 12, marginTop: 2 }}>
+                    {profileUser.closedDeals || closedDealsList.length || '0'} verified institutional & commercial transactions
+                  </Text>
+                </View>
+                <Pressable onPress={() => setIsClosedDealsModalOpen(false)} style={{ padding: 4 }}>
+                  <MaterialIcons name="close" size={24} color="#8b9bb4" />
+                </Pressable>
+              </View>
+
+              <ScrollView style={{ marginTop: 14 }} showsVerticalScrollIndicator={false}>
+                {isLoadingDeals ? (
+                  <View style={{ paddingVertical: 36, alignItems: 'center' }}>
+                    <ActivityIndicator size="small" color="#daa520" />
+                    <Text style={{ color: '#8b9bb4', fontSize: 12, marginTop: 8 }}>Loading verified transaction ledger...</Text>
+                  </View>
+                ) : closedDealsList.length > 0 ? (
+                  closedDealsList.map((deal: any, idx: number) => {
+                    return (
+                      <View
+                        key={deal.id || idx}
+                        style={{
+                          backgroundColor: '#070e1a',
+                          borderRadius: 12,
+                          borderWidth: 1,
+                          borderColor: '#1e2e46',
+                          padding: 14,
+                          marginBottom: 12,
+                        }}
+                      >
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <View style={{ flex: 1, marginRight: 10 }}>
+                            <Text style={{ color: '#ffffff', fontSize: 14.5, fontWeight: '800' }}>
+                              {deal.title}
+                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
+                              <MaterialIcons name="place" size={14} color="#64748b" />
+                              <Text style={{ color: '#8b9bb4', fontSize: 12 }}>{deal.location}</Text>
+                            </View>
+                          </View>
+                          <View style={{ alignItems: 'flex-end' }}>
+                            <Text style={{ color: '#e6b800', fontSize: 15, fontWeight: '900' }}>
+                              {deal.price}
+                            </Text>
+                            <Text style={{ color: '#4ade80', fontSize: 11, fontWeight: '700', marginTop: 2 }}>
+                              {deal.capRate || 'Settled'}
+                            </Text>
+                          </View>
+                        </View>
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#121e2e' }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <MaterialIcons name="verified-user" size={14} color="#3b82f6" />
+                            <Text style={{ color: '#38bdf8', fontSize: 11, fontWeight: '700' }}>
+                              {deal.status || 'Verified Settlement'}
+                            </Text>
+                          </View>
+                          <Text style={{ color: '#64748b', fontSize: 11 }}>
+                            {deal.sqft ? `${deal.sqft} · ` : ''}{deal.date || '2026'}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })
+                ) : (
+                  <View style={{ paddingVertical: 36, alignItems: 'center' }}>
+                    <MaterialIcons name="handshake" size={44} color="#64748b" />
+                    <Text style={{ color: '#ffffff', fontSize: 15, fontWeight: '700', marginTop: 12 }}>
+                      No deals recorded yet
+                    </Text>
+                    <Text style={{ color: '#8b9bb4', fontSize: 12.5, textAlign: 'center', marginTop: 6, paddingHorizontal: 20 }}>
+                      When {profileUser.fullName} closes commercial or residential syndications, they will be verified and recorded here.
                     </Text>
                   </View>
                 )}
@@ -2034,62 +2490,8 @@ const PROFILE_ILLUSTRATIONS = [
                   )}
                 </View>
 
-                {/* Browse illustrations section (Matches Google Screenshot) */}
-                <View style={{ marginTop: 6, marginBottom: 18 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
-                      Browse illustrations
-                    </Text>
-                    <Pressable onPress={() => setShowAllIllustrations(!showAllIllustrations)}>
-                      <Text style={{ fontSize: 12, color: '#daa520', fontWeight: '700' }}>
-                        {showAllIllustrations ? 'Show less' : 'View all'}
-                      </Text>
-                    </Pressable>
-                  </View>
-
-                  <ScrollView
-                    horizontal={!showAllIllustrations}
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={showAllIllustrations ? { flexDirection: 'row', flexWrap: 'wrap', gap: 12 } : { flexDirection: 'row', gap: 12 }}
-                  >
-                    {PROFILE_ILLUSTRATIONS.map((ill) => (
-                      <Pressable
-                        key={ill.id}
-                        onPress={() => handleSaveAvatar(ill.url)}
-                        style={({ pressed, hovered }: any) => [
-                          {
-                            width: showAllIllustrations ? 84 : 76,
-                            height: showAllIllustrations ? 84 : 76,
-                            borderRadius: showAllIllustrations ? 42 : 38,
-                            overflow: 'hidden',
-                            borderWidth: 2,
-                            borderColor: profileUser.profilePicture === ill.url ? '#daa520' : '#1e2d42',
-                          },
-                          (pressed || hovered) && { borderColor: '#daa520', transform: [{ scale: 1.05 }] },
-                        ]}
-                      >
-                        <Image source={{ uri: ill.url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                </View>
-
-                {/* Action Options List (Matching Google Screenshot) */}
+                {/* Action Options List */}
                 <View style={{ backgroundColor: '#080f1a', borderRadius: 16, borderWidth: 1, borderColor: '#162338', overflow: 'hidden', marginBottom: 12 }}>
-                  {/* See more illustrations */}
-                  <Pressable
-                    onPress={() => setShowAllIllustrations(!showAllIllustrations)}
-                    style={({ pressed, hovered }: any) => [
-                      { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#142033' },
-                      (pressed || hovered) && { backgroundColor: '#131e30' },
-                    ]}
-                  >
-                    <MaterialIcons name="palette" size={22} color="#daa520" style={{ marginRight: 14 }} />
-                    <Text style={{ fontSize: 14.5, color: '#ffffff', fontWeight: '600', flex: 1 }}>
-                      See more illustrations
-                    </Text>
-                    <MaterialIcons name={showAllIllustrations ? 'expand-less' : 'chevron-right'} size={20} color="#8b9bb4" />
-                  </Pressable>
 
                   {/* Upload from device */}
                   <Pressable
@@ -2179,11 +2581,7 @@ const PROFILE_ILLUSTRATIONS = [
                 {/* Property Photo */}
                 <Image
                   source={{
-                    uri: selectedPostDetails?.mediaUrl && selectedPostDetails.mediaUrl.trim()
-                      ? (selectedPostDetails.mediaUrl.startsWith('http') || selectedPostDetails.mediaUrl.startsWith('data:')
-                        ? selectedPostDetails.mediaUrl
-                        : `${process.env.EXPO_PUBLIC_API_URL}${selectedPostDetails.mediaUrl}`)
-                      : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
+                    uri: resolvePropertyImage(selectedPostDetails),
                   }}
                   style={{ width: '100%', height: 260 }}
                   resizeMode="cover"
@@ -2236,11 +2634,15 @@ const PROFILE_ILLUSTRATIONS = [
                     <Pressable
                       onPress={handleTogglePostDetailLike}
                       style={[
-                        { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20, backgroundColor: hasLikedPostDetails ? 'rgba(239, 68, 68, 0.2)' : '#162235', borderWidth: 1, borderColor: hasLikedPostDetails ? '#ef4444' : '#1e2d42' }
+                        { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20, backgroundColor: hasLikedPostDetails ? 'rgba(59, 130, 246, 0.2)' : '#162235', borderWidth: 1, borderColor: hasLikedPostDetails ? '#3b82f6' : '#1e2d42' }
                       ]}
                     >
-                      <MaterialIcons name={hasLikedPostDetails ? 'favorite' : 'favorite-border'} size={18} color={hasLikedPostDetails ? '#ef4444' : '#ffffff'} />
-                      <Text style={{ color: hasLikedPostDetails ? '#ef4444' : '#ffffff', fontSize: 12.5, fontWeight: '700' }}>
+                      <MaterialIcons
+                        name="thumb-up"
+                        size={16}
+                        color={hasLikedPostDetails ? '#3b82f6' : '#ffffff'}
+                      />
+                      <Text style={{ color: hasLikedPostDetails ? '#3b82f6' : '#ffffff', fontSize: 12.5, fontWeight: '700' }}>
                         {hasLikedPostDetails ? 'Liked' : 'Like'}
                       </Text>
                     </Pressable>
@@ -2278,14 +2680,30 @@ const PROFILE_ILLUSTRATIONS = [
 
                     {/* Comments List */}
                     {postDetailsComments.map((c: any, cIdx: number) => {
-                      const cAuthor = c.author || {};
-                      const cName = cAuthor.fullName || cAuthor.username || 'Advisor';
+                      const cAuthor = c.author || c.user || {};
+                      const cName = cAuthor.fullName || cAuthor.username || c.fullName || 'Advisor';
                       return (
                         <View key={c._id || cIdx} style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
-                          <UserAvatar user={cAuthor?.profilePicture ? cAuthor : { fullName: cName }} size={32} />
+                          <Pressable
+                            onPress={() => handleNavigateToCommentAuthor(cAuthor, cName)}
+                            style={({ pressed, hovered }: any) => [
+                              (pressed || hovered) && { opacity: 0.8 },
+                            ]}
+                          >
+                            <UserAvatar user={cAuthor?.profilePicture ? cAuthor : { fullName: cName }} size={34} />
+                          </Pressable>
                           <View style={{ flex: 1, backgroundColor: '#131e30', padding: 10, borderRadius: 10, borderWidth: 1, borderColor: '#1b2a40' }}>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                              <Text style={{ color: goldPrimary, fontWeight: '700', fontSize: 12 }}>{cName}</Text>
+                              <Pressable
+                                onPress={() => handleNavigateToCommentAuthor(cAuthor, cName)}
+                                style={({ pressed, hovered }: any) => [
+                                  (pressed || hovered) && { opacity: 0.7 },
+                                ]}
+                              >
+                                <Text style={{ color: goldPrimary, fontWeight: '800', fontSize: 13, textDecorationLine: 'underline' }}>
+                                  {cName}
+                                </Text>
+                              </Pressable>
                               <Text style={{ color: '#64748b', fontSize: 10 }}>{c.time || '1h ago'}</Text>
                             </View>
                             <Text style={{ color: '#e2e8f0', fontSize: 12.5, lineHeight: 17 }}>{c.text}</Text>
@@ -2300,7 +2718,7 @@ const PROFILE_ILLUSTRATIONS = [
           </View>
         </Modal>
 
-        {/* ── POST LIKES LIST MODAL ── */}
+        {/* ── POST REACTIONS & LIKES MODAL (ONLY LIKE & THUMBS UP) ── */}
         <Modal
           visible={isPostLikesListOpen}
           transparent
@@ -2308,45 +2726,109 @@ const PROFILE_ILLUSTRATIONS = [
           onRequestClose={() => setIsPostLikesListOpen(false)}
         >
           <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
-            <View style={{ width: '100%', maxWidth: 440, backgroundColor: '#09111e', borderRadius: 16, borderWidth: 1, borderColor: '#1a273c', maxHeight: 480, padding: 18 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#162338', paddingBottom: 12 }}>
-                <Text style={{ fontSize: 16, fontWeight: '800', color: '#ffffff' }}>Liked By</Text>
-                <Pressable onPress={() => setIsPostLikesListOpen(false)}>
+            <View style={{ width: '100%', maxWidth: 480, backgroundColor: '#09111e', borderRadius: 16, borderWidth: 1, borderColor: '#1a273c', maxHeight: 520, padding: 18 }}>
+              {/* Header */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#162338', paddingBottom: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#0a66c2', justifyContent: 'center', alignItems: 'center' }}>
+                    <MaterialIcons name="thumb-up" size={12} color="#ffffff" />
+                  </View>
+                  <Text style={{ fontSize: 16, fontWeight: '800', color: '#ffffff', marginLeft: 4 }}>
+                    Likes ({allPostLikesUsers.length})
+                  </Text>
+                </View>
+                <Pressable onPress={() => setIsPostLikesListOpen(false)} style={{ padding: 4 }}>
                   <MaterialIcons name="close" size={22} color="#8b9bb4" />
                 </Pressable>
               </View>
 
-              <ScrollView style={{ marginTop: 10 }}>
+              {/* Categorization Tabs (All, 👍 Thumbs Up) */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, borderBottomWidth: 1, borderBottomColor: '#162338', paddingBottom: 10 }}>
+                <Pressable
+                  onPress={() => setPostLikesTab('all')}
+                  style={[
+                    { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: postLikesTab === 'all' ? '#1e293b' : 'transparent', borderWidth: 1, borderColor: postLikesTab === 'all' ? '#334155' : 'transparent' },
+                  ]}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: postLikesTab === 'all' ? '#ffffff' : '#8b9bb4' }}>
+                    All ({allPostLikesUsers.length})
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => setPostLikesTab('like')}
+                  style={[
+                    { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: postLikesTab === 'like' ? 'rgba(59, 130, 246, 0.2)' : 'transparent', borderWidth: 1, borderColor: postLikesTab === 'like' ? '#3b82f6' : 'transparent' },
+                  ]}
+                >
+                  <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: '#0a66c2', justifyContent: 'center', alignItems: 'center' }}>
+                    <MaterialIcons name="thumb-up" size={10} color="#ffffff" />
+                  </View>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: postLikesTab === 'like' ? '#60a5fa' : '#8b9bb4' }}>
+                    Thumbs Up ({allPostLikesUsers.length})
+                  </Text>
+                </Pressable>
+              </View>
+
+              <ScrollView style={{ marginTop: 8 }} showsVerticalScrollIndicator={false}>
                 {isLoadingPostLikes ? (
                   <ActivityIndicator size="small" color={goldPrimary} style={{ marginVertical: 20 }} />
-                ) : (
-                  postLikesUsersList.map((u: any, idx: number) => {
+                ) : allPostLikesUsers.length > 0 ? (
+                  allPostLikesUsers.map((u: any, idx: number) => {
                     const uId = u.id || u._id || u.username;
+
                     return (
                       <Pressable
                         key={uId || idx}
                         onPress={() => {
                           setIsPostLikesListOpen(false);
                           setIsPostDetailsModalOpen(false);
-                          router.push({ pathname: '/(app)/profile', params: { id: uId } });
+                          handleNavigateToCommentAuthor(u, u.fullName || u.username);
                         }}
                         style={({ pressed, hovered }: any) => [
                           { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 6, borderRadius: 8 },
                           (pressed || hovered) && { backgroundColor: '#131e30' },
                         ]}
                       >
-                        <UserAvatar user={u} size={40} />
+                        <View style={{ position: 'relative' }}>
+                          <UserAvatar user={u} size={40} />
+                          <View
+                            style={{
+                              position: 'absolute',
+                              bottom: -2,
+                              right: -2,
+                              width: 18,
+                              height: 18,
+                              borderRadius: 9,
+                              backgroundColor: '#0a66c2',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              borderWidth: 1.5,
+                              borderColor: '#09111e',
+                            }}
+                          >
+                            <MaterialIcons
+                              name="thumb-up"
+                              size={10}
+                              color="#ffffff"
+                            />
+                          </View>
+                        </View>
                         <View style={{ marginLeft: 12, flex: 1 }}>
-                          <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 13.5 }}>{u.fullName || u.username}</Text>
-                          <Text style={{ color: '#8b9bb4', fontSize: 11.5 }}>@{u.username || 'advisor'}</Text>
-                          {u.headline && (
-                            <Text style={{ color: '#64748b', fontSize: 11 }} numberOfLines={1}>{u.headline}</Text>
-                          )}
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 13.5 }}>{u.fullName || u.username}</Text>
+                            <MaterialIcons name="verified" size={14} color="#0095f6" />
+                          </View>
+                          <Text style={{ color: '#8b9bb4', fontSize: 11.5 }}>@{u.username || 'member'}</Text>
                         </View>
                         <MaterialIcons name="chevron-right" size={20} color="#8b9bb4" />
                       </Pressable>
                     );
                   })
+                ) : (
+                  <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+                    <Text style={{ color: '#8b9bb4', fontSize: 12 }}>No reactions under this category yet.</Text>
+                  </View>
                 )}
               </ScrollView>
             </View>
@@ -3086,5 +3568,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+  },
+  reactionDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

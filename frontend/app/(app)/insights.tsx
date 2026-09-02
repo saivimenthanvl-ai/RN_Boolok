@@ -225,27 +225,32 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
 
     if (isActive) {
       if (Platform.OS === 'web' && webVideoRef.current) {
-        webVideoRef.current.currentTime = 0;
-        webVideoRef.current.play().then(() => {
-          setIsPlaying(true);
-          // Play for 8 seconds (5-10s range), then seamless continuous loop
-          autoPlayTimerRef.current = setTimeout(() => {
-            if (webVideoRef.current) {
-              webVideoRef.current.currentTime = 0;
-              webVideoRef.current.play().catch((e: any) => console.log(e));
-            }
-          }, 8000);
-        }).catch((e: any) => {
-          console.log('Autoplay waiting for user gesture:', e);
-        });
-      } else {
+        const vid = webVideoRef.current;
+        vid.muted = true;
+        const p = vid.play();
+        if (p !== undefined) {
+          p.then(() => {
+            setIsPlaying(true);
+            // Engage for 8 seconds, then loop seamlessly
+            autoPlayTimerRef.current = setTimeout(() => {
+              if (webVideoRef.current) {
+                webVideoRef.current.currentTime = 0;
+                webVideoRef.current.play().catch(() => {});
+              }
+            }, 8000);
+          }).catch((e: any) => {
+            console.log('Autoplay waiting for user gesture:', e);
+            setIsPlaying(false);
+          });
+        }
+      } else if (player) {
         player.play();
         setIsPlaying(true);
       }
     } else {
       if (Platform.OS === 'web' && webVideoRef.current) {
         webVideoRef.current.pause();
-      } else {
+      } else if (player) {
         player.pause();
       }
       setIsPlaying(false);
@@ -260,28 +265,36 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
     if (e && e.stopPropagation) e.stopPropagation();
 
     if (Platform.OS === 'web' && webVideoRef.current) {
-      if (webVideoRef.current.paused) {
-        webVideoRef.current.muted = false;
-        webVideoRef.current.play().then(() => {
-          setIsPlaying(true);
-        }).catch(() => {
-          // If unmuted playback fails due to autoplay policy, play muted
-          webVideoRef.current.muted = true;
-          webVideoRef.current.play().then(() => setIsPlaying(true));
-        });
+      const vid = webVideoRef.current;
+      if (vid.paused) {
+        vid.muted = true; // start muted to guarantee browser playback permission
+        const p = vid.play();
+        if (p !== undefined) {
+          p.then(() => {
+            setIsPlaying(true);
+            // Optionally try unmuting once user has interacted
+            try { vid.muted = false; } catch (_) {}
+          }).catch(() => {
+            vid.muted = true;
+            vid.load();
+            vid.play().then(() => setIsPlaying(true)).catch(() => {});
+          });
+        }
       } else {
-        webVideoRef.current.pause();
+        vid.pause();
         setIsPlaying(false);
       }
       return;
     }
 
-    if (player.playing) {
-      player.pause();
-      setIsPlaying(false);
-    } else {
-      player.play();
-      setIsPlaying(true);
+    if (player) {
+      if (player.playing) {
+        player.pause();
+        setIsPlaying(false);
+      } else {
+        player.play();
+        setIsPlaying(true);
+      }
     }
   };
 
@@ -653,19 +666,55 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
 
             {/* Comments List */}
             <ScrollView style={{ flex: 1, marginVertical: 12 }} showsVerticalScrollIndicator={false}>
-              {comments.map((c, idx) => (
-                <View key={c._id || idx} style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
-                  <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center' }}>
-                    <Text style={{ color: '#000000', fontWeight: '800', fontSize: 14 }}>
-                      {(c.user?.fullName || 'U').charAt(0).toUpperCase()}
-                    </Text>
+              {comments.map((c, idx) => {
+                const cUser = c.user || c.author || {};
+                const cName = cUser.fullName || cUser.username || (typeof c.user === 'string' ? c.user : 'Advisor');
+                let targetId = cUser._id || cUser.id || cUser.username;
+                if (!targetId && cName) {
+                  const clean = cName.toLowerCase().trim();
+                  if (clean.includes('shree')) targetId = 'shreekutti';
+                  else if (clean.includes('logesh')) targetId = 'logeshwarana';
+                  else if (clean.includes('ajmal')) targetId = 'ajmal';
+                  else if (clean.includes('bava')) targetId = 'bavadharini_rs';
+                  else if (clean.includes('akshat')) targetId = 'the_akshtr_estate';
+                  else if (clean.includes('prasanth')) targetId = 'prasanth_properties';
+                  else if (clean.includes('sai')) targetId = 'sai';
+                  else targetId = clean.replace(/\s+/g, '_');
+                }
+
+                return (
+                  <View key={c._id || idx} style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
+                    <Pressable
+                      onPress={() => {
+                        setShowComments(false);
+                        if (targetId) {
+                          router.push({ pathname: '/(app)/profile', params: { id: targetId } });
+                        }
+                      }}
+                      style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center' }}
+                    >
+                      <Text style={{ color: '#000000', fontWeight: '800', fontSize: 14 }}>
+                        {(cName || 'U').charAt(0).toUpperCase()}
+                      </Text>
+                    </Pressable>
+                    <View style={{ flex: 1, backgroundColor: '#162235', borderRadius: 12, padding: 10 }}>
+                      <Pressable
+                        onPress={() => {
+                          setShowComments(false);
+                          if (targetId) {
+                            router.push({ pathname: '/(app)/profile', params: { id: targetId } });
+                          }
+                        }}
+                      >
+                        <Text style={{ color: theme.primary, fontWeight: '700', fontSize: 12.5, marginBottom: 2, textDecorationLine: 'underline' }}>
+                          {cName}
+                        </Text>
+                      </Pressable>
+                      <Text style={{ color: '#e2e8f0', fontSize: 13, lineHeight: 18 }}>{c.text}</Text>
+                    </View>
                   </View>
-                  <View style={{ flex: 1, backgroundColor: '#162235', borderRadius: 12, padding: 10 }}>
-                    <Text style={{ color: theme.primary, fontWeight: '700', fontSize: 12.5, marginBottom: 2 }}>{c.user?.fullName || 'User'}</Text>
-                    <Text style={{ color: '#e2e8f0', fontSize: 13, lineHeight: 18 }}>{c.text}</Text>
-                  </View>
-                </View>
-              ))}
+                );
+              })}
             </ScrollView>
 
             {/* Input Row */}

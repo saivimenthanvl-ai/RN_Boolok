@@ -149,9 +149,9 @@ const DUMMY_REAL_ESTATE_POSTS = [
       'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
       'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200',
     ],
-    likes: ['u1', 'u2'],
-    likesSummary: 'Liked by 2 real estate brokers',
-    likesCount: 2,
+    likes: ['shreekutti', 'logeshwarana', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'],
+    likesSummary: 'Liked by 6 real estate brokers',
+    likesCount: 6,
     commentsCount: 2,
     comments: [
       {
@@ -235,7 +235,7 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     fullName: 'shreekutti',
     username: 'shreekutti',
     headline: 'Tech Park Campus Acquisitions Lead @ Boolok Realty',
-    followerCount: 0,
+    followerCount: 4,
     profilePicture: null,
   },
   {
@@ -244,8 +244,8 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     fullName: 'Logeshwaran Ashok',
     username: 'logeshwarana',
     headline: 'Architectural Consultant & Real Estate Lead',
-    followerCount: 0,
-    profilePicture: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDIxWkMvsGE0JVWnlIgddMHLoJXaRlDZ6ix8j3D9lYjuwnCOzP9CNlu1fzYZY0IdHrAth3dOjcqTQkF0di1msUI8dzNv_iYYinXCqpmS_He-TtYeX2yihtLQW87EOEvQ0cRUnbkr34efkxQnqcIqbGwacliKDTjiIR2Q70ReAxB0_Vcm3OpsfrGpMwH7Iy1Tj-PQxXPDP2uCgzOL0qR-A97Niy6DKYuLKuOruowYqZAELwQqKhyoxD9EHvwU-Xo3iNnDHoxmvUCvhwb',
+    followerCount: 4,
+    profilePicture: null,
   },
   {
     id: 'ajmal',
@@ -253,7 +253,7 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     fullName: 'ajmal',
     username: 'ajmal',
     headline: 'Luxury Living & High-End Residential Broker',
-    followerCount: 0,
+    followerCount: 4,
     profilePicture: null,
   },
   {
@@ -262,7 +262,7 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     fullName: 'Bavadharini RS',
     username: 'bavadharini_rs',
     headline: 'Interior Designer & Modern Living Specialist',
-    followerCount: 0,
+    followerCount: 4,
     profilePicture: null,
   },
   {
@@ -271,7 +271,7 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     fullName: 'Akshat Commercials',
     username: 'the_akshtr_estate',
     headline: 'Commercial Property & Tech Park Portfolio Lead',
-    followerCount: 0,
+    followerCount: 4,
     profilePicture: null,
   },
   {
@@ -280,10 +280,21 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     fullName: 'Prasanth Properties',
     username: 'prasanth_properties',
     headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
-    followerCount: 0,
+    followerCount: 4,
     profilePicture: null,
   },
 ];
+
+const REACTION_TYPES = [
+  { key: 'like', label: 'Like', icon: 'thumb-up', color: '#3b82f6', bg: '#0a66c2' },
+  { key: 'celebrate', label: 'Celebrate', icon: 'sign-language', color: '#10b981', bg: '#059669' },
+];
+
+const getReactionMeta = (type: string | null) => {
+  if (!type) return { key: 'like', label: 'Like', icon: 'thumb-up-outline', color: '#8b9bb4', bg: '#1a273c' };
+  const found = REACTION_TYPES.find((r) => r.key === type);
+  return found || { key: type, label: 'Like', icon: 'thumb-up', color: '#3b82f6', bg: '#0a66c2' };
+};
 
 export default function ProfessionalSocialFeedScreen() {
   const { user } = useAuth();
@@ -309,30 +320,98 @@ export default function ProfessionalSocialFeedScreen() {
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
 
-  // Likes Modal State
+  // Likes / Reactions Modal State & Tabs
   const [isLikesModalOpen, setIsLikesModalOpen] = useState(false);
   const [likesModalPost, setLikesModalPost] = useState<any>(null);
   const [likesModalUsers, setLikesModalUsers] = useState<any[]>([]);
+  const [allReactionUsers, setAllReactionUsers] = useState<any[]>([]);
+  const [reactionTab, setReactionTab] = useState<string>('all');
+  const [reactionCounts, setReactionCounts] = useState<Record<string, number>>({ all: 6, like: 1, celebrate: 1, support: 1, love: 1, insightful: 1, funny: 1 });
   const [isLoadingLikes, setIsLoadingLikes] = useState(false);
+  const [activeReactionPickerPostId, setActiveReactionPickerPostId] = useState<string | null>(null);
+
+  // Real-time Network Followers & Connections State
+  const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
+  const [followersList, setFollowersList] = useState<any[]>(DEFAULT_COMMUNITY_ADVISORS);
+  const [isLoadingFollowers, setIsLoadingFollowers] = useState(false);
+
+  const handleOpenFollowersModal = async () => {
+    setIsFollowersModalOpen(true);
+    setIsLoadingFollowers(true);
+    try {
+      const token = await getToken();
+      const res = await axios.get(`${API_BASE_URL}/api/users/self/followers`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.data && Array.isArray(res.data.followers) && res.data.followers.length > 0) {
+        setFollowersList(res.data.followers);
+      } else {
+        setFollowersList(DEFAULT_COMMUNITY_ADVISORS);
+      }
+    } catch (e) {
+      setFollowersList(DEFAULT_COMMUNITY_ADVISORS);
+    } finally {
+      setIsLoadingFollowers(false);
+    }
+  };
 
   const handleOpenLikesModal = async (post: any) => {
-    setLikesModalPost(post);
+    // Look up freshest post from state to ensure accurate current like state
+    const currentPost = posts.find((p) => p._id === post._id) || post;
+    setLikesModalPost(currentPost);
+    setReactionTab('all');
     setIsLikesModalOpen(true);
     setIsLoadingLikes(true);
 
+    const viewerId = user?.id || user?._id || 'sai';
+    const isCurrentlyLiked = currentPost.currentUserReaction === 'like' || (Array.isArray(currentPost.likes) && currentPost.likes.includes(viewerId));
+    const viewerObj = {
+      id: viewerId,
+      _id: viewerId,
+      fullName: user?.fullName || 'Sai Vimenthan',
+      username: user?.username || 'saivimenthanvl',
+      headline: user?.headline || 'Elite Real Estate Broker & Commercial Portfolio Lead',
+      location: user?.location || 'Chennai, Tamil Nadu · Prime Assets',
+      profilePicture: user?.profilePicture || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800',
+      reactionType: 'like',
+    };
+
     try {
       const token = await getToken();
-      const res = await axios.get(`${API_BASE_URL}/api/feed/${post._id}/likes`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      const res = await axios.get(`${API_BASE_URL}/api/feed/${post._id}/reactions`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'x-user-id': String(viewerId),
+        },
       });
-      if (res.data && Array.isArray(res.data.likes)) {
-        setLikesModalUsers(res.data.likes);
+      let combined: any[] = [];
+      if (res.data && Array.isArray(res.data.all) && res.data.all.length > 0) {
+        combined = res.data.all.map((u: any) => ({ ...u, reactionType: 'like' }));
       } else {
-        setLikesModalUsers(DEFAULT_COMMUNITY_ADVISORS.slice(0, 3));
+        combined = DEFAULT_COMMUNITY_ADVISORS.map((u: any) => ({ ...u, reactionType: 'like' }));
       }
+
+      // If viewer has liked the post, ensure they are in the list
+      if (isCurrentlyLiked) {
+        const hasViewer = combined.some((u) => u.id === viewerId || u.username === user?.username);
+        if (!hasViewer) {
+          combined.unshift(viewerObj);
+        }
+      } else {
+        combined = combined.filter((u) => u.id !== viewerId && u.username !== user?.username);
+      }
+
+      setAllReactionUsers(combined);
+      setLikesModalUsers(combined);
+      setReactionCounts({ all: combined.length, like: combined.length });
     } catch (error) {
-      console.warn('Failed to load post likes list:', error);
-      setLikesModalUsers(DEFAULT_COMMUNITY_ADVISORS.slice(0, 3));
+      let fallbacks = DEFAULT_COMMUNITY_ADVISORS.map((u: any) => ({ ...u, reactionType: 'like' }));
+      if (isCurrentlyLiked) {
+        fallbacks.unshift(viewerObj);
+      }
+      setAllReactionUsers(fallbacks);
+      setLikesModalUsers(fallbacks);
+      setReactionCounts({ all: fallbacks.length, like: fallbacks.length });
     } finally {
       setIsLoadingLikes(false);
     }
@@ -352,6 +431,32 @@ export default function ProfessionalSocialFeedScreen() {
   const getToken = async () =>
     Platform.OS === 'web' ? localStorage.getItem('userToken') : await SecureStore.getItemAsync('userToken');
 
+  const getStoredLikedPosts = (): Record<string, boolean> => {
+    if (Platform.OS === 'web') {
+      try {
+        const val = localStorage.getItem('boolok_user_liked_posts');
+        return val ? JSON.parse(val) : {};
+      } catch (e) {
+        return {};
+      }
+    }
+    return {};
+  };
+
+  const saveStoredLikedPost = (postId: string, isLiked: boolean) => {
+    if (Platform.OS === 'web') {
+      try {
+        const map = getStoredLikedPosts();
+        if (isLiked) {
+          map[postId] = true;
+        } else {
+          delete map[postId];
+        }
+        localStorage.setItem('boolok_user_liked_posts', JSON.stringify(map));
+      } catch (e) {}
+    }
+  };
+
   const fetchPostsAndNews = async () => {
     try {
       const token = await getToken();
@@ -365,17 +470,47 @@ export default function ProfessionalSocialFeedScreen() {
         }),
       ]);
 
-      if (feedRes.status === 'fulfilled' && Array.isArray(feedRes.value.data?.posts)) {
-        const fetched = feedRes.value.data.posts;
-        // Merge user posts with default real estate listings
-        const merged = [
-          ...fetched,
-          ...DUMMY_REAL_ESTATE_POSTS.filter((dp) => !fetched.some((fp: any) => fp._id === dp._id)),
-        ];
-        setPosts(merged);
-      } else {
-        setPosts(DUMMY_REAL_ESTATE_POSTS);
-      }
+      const likedMap = getStoredLikedPosts();
+      const rawPosts =
+        feedRes.status === 'fulfilled' && Array.isArray(feedRes.value.data)
+          ? feedRes.value.data
+          : feedRes.status === 'fulfilled' && Array.isArray(feedRes.value.data?.posts)
+          ? feedRes.value.data.posts
+          : [];
+
+      const baseList = [
+        ...rawPosts,
+        ...DUMMY_REAL_ESTATE_POSTS.filter((dp) => !rawPosts.some((fp: any) => fp._id === dp._id)),
+      ];
+
+      const viewerId = user?.id || user?._id || 'sai';
+
+      const merged = baseList.map((p) => {
+        const isPersistedLiked = Boolean(likedMap[p._id]) || (Array.isArray(p.likes) && p.likes.includes(viewerId));
+        const baseLikes = Array.isArray(p.likes) ? p.likes : [];
+        const baseCount = typeof p.likesCount === 'number' ? p.likesCount : baseLikes.length;
+
+        if (isPersistedLiked) {
+          const nextLikes = baseLikes.includes(viewerId) ? baseLikes : [viewerId, ...baseLikes];
+          const nextCount = baseLikes.includes(viewerId) ? baseCount : baseCount + 1;
+          return {
+            ...p,
+            currentUserReaction: 'like',
+            likes: nextLikes,
+            likesCount: nextCount,
+            likesSummary: `Liked by you and ${Math.max(1, nextCount - 1)} other real estate brokers`,
+          };
+        }
+        return {
+          ...p,
+          currentUserReaction: null,
+          likes: baseLikes.filter((id: string) => id !== viewerId),
+          likesCount: baseLikes.includes(viewerId) ? Math.max(0, baseCount - 1) : baseCount,
+          likesSummary: `Liked by ${baseCount} real estate brokers`,
+        };
+      });
+
+      setPosts(merged);
 
       if (newsRes.status === 'fulfilled' && Array.isArray(newsRes.value.data?.news)) {
         setNewsList(newsRes.value.data.news);
@@ -402,44 +537,125 @@ export default function ProfessionalSocialFeedScreen() {
     const nextState = !isCurrentlyFollowing;
     setFollowingMap((prev) => ({ ...prev, [targetId]: nextState }));
 
+    setSuggestedUsers((prev) =>
+      prev.map((u) => {
+        const uId = u.id || u._id;
+        if (uId === targetId || u.username === targetId) {
+          const curr = u.followerCount || 0;
+          return {
+            ...u,
+            followerCount: nextState ? curr + 1 : Math.max(0, curr - 1),
+            isFollowing: nextState,
+          };
+        }
+        return u;
+      })
+    );
+
     try {
       const token = await getToken();
-      await axios.post(
+      const res = await axios.post(
         `${API_BASE_URL}/api/users/${targetId}/follow`,
         {},
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
+      if (res.data && typeof res.data.followerCount === 'number') {
+        setSuggestedUsers((prev) =>
+          prev.map((u) => {
+            const uId = u.id || u._id;
+            if (uId === targetId || u.username === targetId) {
+              return {
+                ...u,
+                followerCount: res.data.followerCount,
+                isFollowing: res.data.isFollowing,
+              };
+            }
+            return u;
+          })
+        );
+      }
     } catch (error) {
       console.warn('Failed to update follow in database');
     }
   };
 
-  const handleLike = async (postId: string) => {
+  const handleReaction = async (postId: string, reactionType: string = 'like') => {
+    setActiveReactionPickerPostId(null);
+    const viewerId = user?.id || user?._id || 'sai';
+
+    const viewerObj = {
+      id: viewerId,
+      _id: viewerId,
+      fullName: user?.fullName || 'Sai Vimenthan',
+      username: user?.username || 'saivimenthanvl',
+      headline: user?.headline || 'Elite Real Estate Broker & Commercial Portfolio Lead',
+      location: user?.location || 'Chennai, Tamil Nadu · Prime Assets',
+      profilePicture: user?.profilePicture || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800',
+      reactionType: 'like',
+    };
+
+    let willBeLiked = false;
+
     setPosts((prev) =>
       prev.map((p) => {
         if (p._id === postId) {
-          const isLiked = p.likes?.includes(user?.id || 'sai');
-          const nextLikes = isLiked
-            ? (p.likes || []).filter((id: string) => id !== (user?.id || 'sai'))
-            : [...(p.likes || []), user?.id || 'sai'];
+          const isCurrentlyLiked = p.currentUserReaction === 'like' || (Array.isArray(p.likes) && p.likes.includes(viewerId));
+          const nextReaction = isCurrentlyLiked ? null : 'like';
+          willBeLiked = Boolean(nextReaction);
+
+          let nextLikes = Array.isArray(p.likes) ? [...p.likes] : [];
+          if (nextReaction) {
+            if (!nextLikes.includes(viewerId)) nextLikes = [viewerId, ...nextLikes];
+          } else {
+            nextLikes = nextLikes.filter((id: string) => id !== viewerId);
+          }
+
+          const currentCount = typeof p.likesCount === 'number' ? p.likesCount : (p.likes?.length || 6);
+          const newCount = isCurrentlyLiked ? Math.max(0, currentCount - 1) : currentCount + 1;
+
           return {
             ...p,
+            currentUserReaction: nextReaction,
             likes: nextLikes,
-            likesCount: (p.likesCount || nextLikes.length) + (isLiked ? -1 : 1),
+            likesCount: newCount,
+            likesSummary: willBeLiked
+              ? `Liked by you and ${Math.max(1, newCount - 1)} other real estate brokers`
+              : `Liked by ${newCount} real estate brokers`,
           };
         }
         return p;
       })
     );
 
+    // Persist to local storage so modal close or re-renders NEVER reset the like button!
+    saveStoredLikedPost(postId, willBeLiked);
+
+    // Live update open reactions modal if active
+    setAllReactionUsers((prev) => {
+      const filtered = prev.filter((u) => u.id !== viewerId && u.username !== user?.username);
+      if (!willBeLiked) return filtered;
+      return [viewerObj, ...filtered];
+    });
+
     try {
       const token = await getToken();
-      await axios.put(`${process.env.EXPO_PUBLIC_API_URL}/api/feed/${postId}/like`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.put(
+        `${API_BASE_URL}/api/feed/${postId}/react`,
+        { type: 'like' },
+        {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            'x-user-id': String(viewerId),
+          },
+        }
+      );
     } catch (error) {
-      console.log('Like updated in live state.');
+      console.log('Reaction synchronized live in state.');
     }
+  };
+
+  const handleLike = (postId: string) => {
+    handleReaction(postId, 'like');
   };
 
   const handleAddComment = async (postId: string) => {
@@ -826,7 +1042,7 @@ export default function ProfessionalSocialFeedScreen() {
                   </View>
                 )}
 
-                {/* Social Counter Stats Bar (Only Like and Love icons) */}
+                {/* Social Counter Stats Bar (Only Like and Thumbs Up) */}
                 <View style={[styles.socialStatsBar, { borderBottomColor: borderColor }]}>
                   <Pressable
                     onPress={() => handleOpenLikesModal(post)}
@@ -836,14 +1052,11 @@ export default function ProfessionalSocialFeedScreen() {
                     ]}
                   >
                     <View style={styles.reactionIconsGroup}>
-                      <View style={[styles.reactionDot, { backgroundColor: '#3b82f6' }]}>
+                      <View style={[styles.reactionDot, { backgroundColor: '#0a66c2' }]}>
                         <MaterialIcons name="thumb-up" size={10} color="#ffffff" />
                       </View>
-                      <View style={[styles.reactionDot, { backgroundColor: '#ef4444', marginLeft: -4 }]}>
-                        <MaterialIcons name="favorite" size={10} color="#ffffff" />
-                      </View>
                     </View>
-                    <Text style={[styles.socialReactionText, { textDecorationLine: 'underline' }]}>
+                    <Text style={[styles.socialReactionText, { textDecorationLine: 'underline', marginLeft: 6 }]}>
                       {post.likesSummary ||
                         (isSelfPost
                           ? 'Liked by your real estate network'
@@ -861,26 +1074,35 @@ export default function ProfessionalSocialFeedScreen() {
                   </Text>
                 </View>
 
-                {/* Interactive Action Buttons (Like / Love, Comment, Repost, Send) */}
-                <View style={styles.postActionsBar}>
-                  <Pressable
-                    onPress={() => handleLike(post._id)}
-                    style={styles.postActionItem}
-                  >
-                    <MaterialCommunityIcons
-                      name={isLiked ? 'heart' : 'thumb-up-outline'}
-                      size={18}
-                      color={isLiked ? '#ef4444' : '#8b9bb4'}
-                    />
-                    <Text
-                      style={[
-                        styles.postActionItemText,
-                        isLiked && { color: '#ef4444', fontWeight: '700' },
-                      ]}
-                    >
-                      {isLiked ? 'Loved' : 'Like'}
-                    </Text>
-                  </Pressable>
+                {/* Interactive Action Buttons (Like / Thumbs Up, Comment, Repost, Send) */}
+                <View style={[styles.postActionsBar, { position: 'relative' }]}>
+                  {/* Primary Like / Thumbs Up Action Button */}
+                  {(() => {
+                    const isPostLiked = Boolean(
+                      post.currentUserReaction === 'like' ||
+                      (Array.isArray(post.likes) && post.likes.includes(user?.id || user?._id || 'sai'))
+                    );
+                    return (
+                      <Pressable
+                        onPress={() => handleReaction(post._id, 'like')}
+                        style={styles.postActionItem}
+                      >
+                        <MaterialIcons
+                          name="thumb-up"
+                          size={18}
+                          color={isPostLiked ? '#3b82f6' : '#8b9bb4'}
+                        />
+                        <Text
+                          style={[
+                            styles.postActionItemText,
+                            isPostLiked && { color: '#3b82f6', fontWeight: '800' },
+                          ]}
+                        >
+                          {isPostLiked ? 'Liked' : 'Like'}
+                        </Text>
+                      </Pressable>
+                    );
+                  })()}
 
                   <Pressable
                     onPress={() =>
@@ -946,11 +1168,46 @@ export default function ProfessionalSocialFeedScreen() {
                       const cName = (!rawName || rawName === 'Advisor' || rawName === 'Agent') ? fallbackName : rawName;
                       const commentBody = c.text || 'Clean zoning and strong cap rate numbers.';
 
+                      let targetUserId = cAuthor._id || cAuthor.id || cAuthor.username;
+                      if (!targetUserId && cName) {
+                        const clean = cName.toLowerCase().trim();
+                        if (clean.includes('shree')) targetUserId = 'shreekutti';
+                        else if (clean.includes('logesh')) targetUserId = 'logeshwarana';
+                        else if (clean.includes('ajmal')) targetUserId = 'ajmal';
+                        else if (clean.includes('bava')) targetUserId = 'bavadharini_rs';
+                        else if (clean.includes('akshat')) targetUserId = 'the_akshtr_estate';
+                        else if (clean.includes('prasanth')) targetUserId = 'prasanth_properties';
+                        else if (clean.includes('sai')) targetUserId = 'sai';
+                        else targetUserId = clean.replace(/\s+/g, '_');
+                      }
+
                       return (
                         <View key={c._id || cIdx} style={styles.commentItemBlock}>
-                          <UserAvatar user={cAuthor?.profilePicture ? cAuthor : { fullName: cName }} size={32} style={styles.commentItemAvatar} />
+                          <Pressable
+                            onPress={() => {
+                              if (targetUserId) {
+                                router.push({ pathname: '/(app)/profile', params: { id: targetUserId } });
+                              }
+                            }}
+                            style={({ pressed, hovered }: any) => [
+                              (pressed || hovered) && { opacity: 0.8 },
+                            ]}
+                          >
+                            <UserAvatar user={cAuthor?.profilePicture ? cAuthor : { fullName: cName }} size={32} style={styles.commentItemAvatar} />
+                          </Pressable>
                           <View style={styles.commentItemBubble}>
-                            <Text style={styles.commentItemAuthorName}>{cName}</Text>
+                            <Pressable
+                              onPress={() => {
+                                if (targetUserId) {
+                                  router.push({ pathname: '/(app)/profile', params: { id: targetUserId } });
+                                }
+                              }}
+                              style={({ pressed, hovered }: any) => [
+                                (pressed || hovered) && { opacity: 0.7 },
+                              ]}
+                            >
+                              <Text style={[styles.commentItemAuthorName, { textDecorationLine: 'underline' }]}>{cName}</Text>
+                            </Pressable>
                             <Text style={styles.commentItemText}>{commentBody}</Text>
                           </View>
                         </View>
@@ -1147,7 +1404,7 @@ export default function ProfessionalSocialFeedScreen() {
         </View>
       </Modal>
 
-      {/* ── POST LIKES / REACTIONS MODAL ─────────────────────────────────── */}
+      {/* ── POST LIKES / REACTIONS MODAL WITH REAL-TIME CATEGORIES (ALL, LIKES, LOVE) ── */}
       <Modal
         visible={isLikesModalOpen}
         transparent
@@ -1155,20 +1412,15 @@ export default function ProfessionalSocialFeedScreen() {
         onRequestClose={() => setIsLikesModalOpen(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={[styles.modalBox, { backgroundColor: cardBg, borderColor, maxWidth: 480, maxHeight: 520 }]}>
-            {/* Header */}
-            <View style={[styles.modalHeader, { borderBottomWidth: 1, borderBottomColor: borderColor, paddingBottom: 12 }]}>
+          <View style={[styles.modalBox, { backgroundColor: cardBg, borderColor, maxWidth: 500, maxHeight: 540 }]}>
+            {/* Modal Header */}
+            <View style={[styles.modalHeader, { borderBottomWidth: 1, borderBottomColor: borderColor, paddingBottom: 10 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={[styles.reactionDot, { backgroundColor: '#3b82f6', width: 22, height: 22, borderRadius: 11 }]}>
-                    <MaterialIcons name="thumb-up" size={12} color="#ffffff" />
-                  </View>
-                  <View style={[styles.reactionDot, { backgroundColor: '#ef4444', width: 22, height: 22, borderRadius: 11, marginLeft: -6 }]}>
-                    <MaterialIcons name="favorite" size={12} color="#ffffff" />
-                  </View>
+                <View style={[styles.reactionDot, { backgroundColor: '#0a66c2', width: 22, height: 22, borderRadius: 11 }]}>
+                  <MaterialIcons name="thumb-up" size={12} color="#ffffff" />
                 </View>
-                <Text style={{ fontSize: 16, fontWeight: '800', color: '#ffffff' }}>
-                  Reactions ({likesModalUsers.length})
+                <Text style={{ fontSize: 16, fontWeight: '800', color: '#ffffff', marginLeft: 4 }}>
+                  Likes ({allReactionUsers.length})
                 </Text>
               </View>
               <Pressable onPress={() => setIsLikesModalOpen(false)} style={{ padding: 4 }}>
@@ -1176,17 +1428,48 @@ export default function ProfessionalSocialFeedScreen() {
               </Pressable>
             </View>
 
-            {/* Users List */}
-            <ScrollView style={{ marginTop: 10 }} showsVerticalScrollIndicator={false}>
+            {/* Categorization Tabs (All, 👍 Thumbs Up) */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, borderBottomWidth: 1, borderBottomColor: '#162338', paddingBottom: 10 }}>
+              <Pressable
+                onPress={() => setReactionTab('all')}
+                style={[
+                  { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: reactionTab === 'all' ? '#1e293b' : 'transparent', borderWidth: 1, borderColor: reactionTab === 'all' ? '#334155' : 'transparent' },
+                ]}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '700', color: reactionTab === 'all' ? '#ffffff' : '#8b9bb4' }}>
+                  All ({allReactionUsers.length})
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setReactionTab('like')}
+                style={[
+                  { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: reactionTab === 'like' ? 'rgba(59, 130, 246, 0.2)' : 'transparent', borderWidth: 1, borderColor: reactionTab === 'like' ? '#3b82f6' : 'transparent' },
+                ]}
+              >
+                <View style={[styles.reactionDot, { backgroundColor: '#0a66c2', width: 18, height: 18, borderRadius: 9 }]}>
+                  <MaterialIcons name="thumb-up" size={10} color="#ffffff" />
+                </View>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: reactionTab === 'like' ? '#60a5fa' : '#8b9bb4' }}>
+                  Thumbs Up ({allReactionUsers.length})
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* Users List Filtered by Active Tab */}
+            <ScrollView style={{ marginTop: 8 }} showsVerticalScrollIndicator={false}>
               {isLoadingLikes ? (
                 <View style={{ paddingVertical: 32, alignItems: 'center' }}>
                   <ActivityIndicator size="small" color={goldPrimary} />
-                  <Text style={{ color: '#8b9bb4', fontSize: 12, marginTop: 8 }}>Loading reactions...</Text>
+                  <Text style={{ color: '#8b9bb4', fontSize: 12, marginTop: 8 }}>Loading real-time reactions...</Text>
                 </View>
-              ) : likesModalUsers.length > 0 ? (
-                likesModalUsers.map((u: any, idx: number) => {
+              ) : (reactionTab === 'all' ? allReactionUsers : allReactionUsers.filter((u) => u.reactionType === reactionTab)).length > 0 ? (
+                (reactionTab === 'all' ? allReactionUsers : allReactionUsers.filter((u) => u.reactionType === reactionTab)).map((u: any, idx: number) => {
                   const uId = u.id || u._id || u.username;
                   const isF = Boolean(followingMap[uId]);
+                  const uReaction = u.reactionType || 'like';
+                  const uReactionMeta = getReactionMeta(uReaction);
+
                   return (
                     <View
                       key={uId || idx}
@@ -1194,9 +1477,9 @@ export default function ProfessionalSocialFeedScreen() {
                         flexDirection: 'row',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        paddingVertical: 12,
+                        paddingVertical: 10,
                         paddingHorizontal: 6,
-                        borderBottomWidth: idx < likesModalUsers.length - 1 ? 1 : 0,
+                        borderBottomWidth: idx < allReactionUsers.length - 1 ? 1 : 0,
                         borderBottomColor: '#142033',
                       }}
                     >
@@ -1207,7 +1490,30 @@ export default function ProfessionalSocialFeedScreen() {
                         }}
                         style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 12 }}
                       >
-                        <UserAvatar user={u} size={42} />
+                        <View style={{ position: 'relative' }}>
+                          <UserAvatar user={u} size={42} />
+                          <View
+                            style={{
+                              position: 'absolute',
+                              bottom: -2,
+                              right: -2,
+                              width: 18,
+                              height: 18,
+                              borderRadius: 9,
+                              backgroundColor: '#0a66c2',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              borderWidth: 1.5,
+                              borderColor: cardBg,
+                            }}
+                          >
+                            <MaterialIcons
+                              name="thumb-up"
+                              size={10}
+                              color="#ffffff"
+                            />
+                          </View>
+                        </View>
                         <View style={{ marginLeft: 12, flex: 1 }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                             <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 14 }}>
@@ -1249,7 +1555,114 @@ export default function ProfessionalSocialFeedScreen() {
                 })
               ) : (
                 <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-                  <Text style={{ color: '#8b9bb4', fontSize: 13 }}>Be the first person to like this post!</Text>
+                  <Text style={{ color: '#8b9bb4', fontSize: 13 }}>No {reactionTab === 'like' ? 'Likes' : reactionTab === 'love' ? 'Love reactions' : 'reactions'} yet.</Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── REAL-TIME NETWORK FOLLOWERS & CONNECTIONS MODAL ── */}
+      <Modal
+        visible={isFollowersModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsFollowersModalOpen(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+          <View style={{ width: '100%', maxWidth: 480, backgroundColor: '#09111e', borderRadius: 16, borderWidth: 1, borderColor: '#1a273c', maxHeight: 540, padding: 18 }}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#162338', paddingBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(230, 184, 0, 0.2)', justifyContent: 'center', alignItems: 'center' }}>
+                  <MaterialIcons name="people" size={16} color={goldPrimary} />
+                </View>
+                <View>
+                  <Text style={{ fontSize: 16, fontWeight: '800', color: '#ffffff' }}>
+                    Network Followers ({followersList.length})
+                  </Text>
+                  <Text style={{ fontSize: 11, color: '#8b9bb4', marginTop: 1 }}>
+                    Real-time real estate professionals in your network
+                  </Text>
+                </View>
+              </View>
+              <Pressable onPress={() => setIsFollowersModalOpen(false)} style={{ padding: 4 }}>
+                <MaterialIcons name="close" size={22} color="#8b9bb4" />
+              </Pressable>
+            </View>
+
+            {/* List */}
+            <ScrollView style={{ marginTop: 12 }} showsVerticalScrollIndicator={false}>
+              {isLoadingFollowers ? (
+                <ActivityIndicator size="small" color={goldPrimary} style={{ marginVertical: 24 }} />
+              ) : followersList.length > 0 ? (
+                followersList.map((fUser: any, idx: number) => {
+                  const fId = fUser.id || fUser._id || fUser.username;
+                  const isF = Boolean(followingMap[fId] || followingMap[fUser.username]);
+                  return (
+                    <View
+                      key={fId || idx}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingVertical: 10,
+                        paddingHorizontal: 8,
+                        borderRadius: 10,
+                        borderBottomWidth: 1,
+                        borderBottomColor: '#131e30',
+                      }}
+                    >
+                      <Pressable
+                        onPress={() => {
+                          setIsFollowersModalOpen(false);
+                          router.push({ pathname: '/(app)/profile', params: { id: fId } });
+                        }}
+                        style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 }}
+                      >
+                        <UserAvatar user={fUser} size={42} />
+                        <View style={{ marginLeft: 12, flex: 1 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 13.5 }}>
+                              {fUser.fullName || fUser.username}
+                            </Text>
+                            <MaterialIcons name="verified" size={14} color="#0095f6" />
+                          </View>
+                          <Text style={{ color: '#8b9bb4', fontSize: 11.5 }}>
+                            @{fUser.username}
+                          </Text>
+                          {fUser.headline && (
+                            <Text style={{ color: '#64748b', fontSize: 11, marginTop: 1 }} numberOfLines={1}>
+                              {fUser.headline}
+                            </Text>
+                          )}
+                        </View>
+                      </Pressable>
+
+                      {/* Connect / Follow Toggle */}
+                      <Pressable
+                        onPress={() => toggleFollowAdvisor(fId)}
+                        style={[
+                          styles.advisorFollowBtn,
+                          isF && { backgroundColor: '#1a273c', borderColor: '#223854' },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.advisorFollowBtnText,
+                            { color: isF ? '#ffffff' : goldPrimary },
+                          ]}
+                        >
+                          {isF ? '✓ Connected' : '+ Connect'}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  );
+                })
+              ) : (
+                <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                  <Text style={{ color: '#8b9bb4', fontSize: 13 }}>No followers yet.</Text>
                 </View>
               )}
             </ScrollView>

@@ -23,39 +23,6 @@ import { Image } from 'react-native';
 
 const MD_BREAKPOINT = 768;
 
-const PROFILE_ILLUSTRATIONS = [
-  {
-    id: 'ill-1',
-    name: 'Metropolis Tower',
-    url: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=300',
-  },
-  {
-    id: 'ill-2',
-    name: 'Luxury Residence',
-    url: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=300',
-  },
-  {
-    id: 'ill-3',
-    name: 'Coastal Villa',
-    url: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=300',
-  },
-  {
-    id: 'ill-4',
-    name: 'Tech SEZ Park',
-    url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300',
-  },
-  {
-    id: 'ill-5',
-    name: 'Architect Blueprint',
-    url: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=300',
-  },
-  {
-    id: 'ill-6',
-    name: 'Modern Penthouse',
-    url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=300',
-  },
-];
-
 const GOALS = [
   {
     id: 'buying',
@@ -239,11 +206,11 @@ export default function PersonalizeScreen() {
               </Text>
               <Text style={{ fontSize: 12, color: '#8b9bb4', marginBottom: 14 }}>
                 {user?.authProvider === 'google'
-                  ? 'Your Google profile photo is synced, or choose an illustration below.'
-                  : 'Choose a professional avatar illustration or upload from your device.'}
+                  ? 'Your Google profile photo is automatically synced with your account.'
+                  : 'Upload your photo or use your default initial avatar.'}
               </Text>
 
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
                 {profilePicture ? (
                   <Image source={{ uri: profilePicture }} style={{ width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: '#daa520' }} />
                 ) : (
@@ -282,26 +249,6 @@ export default function PersonalizeScreen() {
                   )}
                 </View>
               </View>
-
-              {/* Quick illustration picks */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingTop: 4 }}>
-                {PROFILE_ILLUSTRATIONS.map((ill) => (
-                  <Pressable
-                    key={ill.id}
-                    onPress={() => setProfilePicture(ill.url)}
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 24,
-                      overflow: 'hidden',
-                      borderWidth: 2,
-                      borderColor: profilePicture === ill.url ? '#daa520' : '#1e2d42',
-                    }}
-                  >
-                    <Image source={{ uri: ill.url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                  </Pressable>
-                ))}
-              </ScrollView>
             </View>
 
             {/* Selection Grid */}

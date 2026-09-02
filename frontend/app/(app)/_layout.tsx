@@ -246,23 +246,121 @@ export default function AppLayout() {
 
   // Debounced real user search
   useEffect(() => {
-    if (!headerSearchQuery.trim()) {
+    const q = headerSearchQuery.trim().toLowerCase();
+    if (!q) {
       setSearchResults([]);
       return;
     }
+
+    const COMMUNITY_ADVISORS = [
+      {
+        id: 'shreekutti',
+        _id: 'shreekutti',
+        fullName: 'shreekutti',
+        username: 'shreekutti',
+        headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Realty',
+        location: 'Bangalore, Karnataka · Tech Parks',
+        profilePicture: null,
+        followerCount: 4,
+      },
+      {
+        id: 'logeshwarana',
+        _id: 'logeshwarana',
+        fullName: 'Logeshwaran Ashok',
+        username: 'logeshwarana',
+        headline: 'Architectural Consultant & Real Estate Lead',
+        location: 'Chennai, Tamil Nadu · Industrial & Retail',
+        profilePicture: null,
+        followerCount: 4,
+      },
+      {
+        id: 'ajmal',
+        _id: 'ajmal',
+        fullName: 'ajmal',
+        username: 'ajmal',
+        headline: 'Luxury Living & High-End Residential Broker',
+        location: 'Dubai & Kochi · Luxury Villas',
+        profilePicture: null,
+        followerCount: 4,
+      },
+      {
+        id: 'bavadharini_rs',
+        _id: 'bavadharini_rs',
+        fullName: 'Bavadharini RS',
+        username: 'bavadharini_rs',
+        headline: 'Interior Designer & Modern Living Specialist',
+        location: 'Chennai, Tamil Nadu · Modern Living',
+        profilePicture: null,
+        followerCount: 4,
+      },
+      {
+        id: 'the_akshtr_estate',
+        _id: 'the_akshtr_estate',
+        fullName: 'Akshat Commercials',
+        username: 'the_akshtr_estate',
+        headline: 'Commercial Property & Tech Park Portfolio Lead',
+        location: 'Chennai, Tamil Nadu · Prime Assets',
+        profilePicture: null,
+        followerCount: 4,
+      },
+      {
+        id: 'prasanth_properties',
+        _id: 'prasanth_properties',
+        fullName: 'Prasanth Properties',
+        username: 'prasanth_properties',
+        headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
+        location: 'Miami, Florida · Coastal Estates',
+        profilePicture: null,
+        followerCount: 4,
+      },
+    ];
+
+    const localMatches = COMMUNITY_ADVISORS.filter(
+      (a) =>
+        a.fullName.toLowerCase().includes(q) ||
+        a.username.toLowerCase().includes(q) ||
+        a.headline.toLowerCase().includes(q) ||
+        (a.location && a.location.toLowerCase().includes(q))
+    );
+
+    if (user && ((user.fullName && user.fullName.toLowerCase().includes(q)) || (user.username && user.username.toLowerCase().includes(q)))) {
+      localMatches.unshift({
+        id: user.id || user._id || 'self',
+        _id: user.id || user._id || 'self',
+        fullName: user.fullName || 'Sai Vimenthan',
+        username: user.username || 'saivimenthanvl',
+        headline: user.headline || 'Elite Real Estate Broker & Commercial Portfolio Lead',
+        location: user.location || 'Chennai, Tamil Nadu · Prime Assets',
+        profilePicture: user.profilePicture || null,
+        followerCount: user.followerCount || 0,
+      });
+    }
+
+    setSearchResults(localMatches);
+
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/users/search?q=${encodeURIComponent(headerSearchQuery.trim())}`);
-        setSearchResults(res.data?.results || []);
+        const token = Platform.OS === 'web' ? localStorage.getItem('userToken') : null;
+        const res = await axios.get(`${API_BASE_URL}/api/users/search?q=${encodeURIComponent(q)}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (res.data && Array.isArray(res.data.results) && res.data.results.length > 0) {
+          const seen = new Set(res.data.results.map((r: any) => (r.username || r.id || r._id).toLowerCase()));
+          const combined = [
+            ...res.data.results,
+            ...localMatches.filter((m) => !seen.has((m.username || m.id).toLowerCase())),
+          ];
+          setSearchResults(combined);
+        }
       } catch (e) {
-        console.warn('Search error:', e);
+        // keep localMatches
       } finally {
         setIsSearching(false);
       }
-    }, 250);
+    }, 150);
     return () => clearTimeout(timer);
-  }, [headerSearchQuery]);
+  }, [headerSearchQuery, user]);
 
   const handleSelectUser = (targetUser: any) => {
     setHeaderSearchQuery('');

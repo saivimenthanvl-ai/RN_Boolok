@@ -26,6 +26,24 @@ const postSchema = new mongoose.Schema(
       },
     ],
 
+    reactions: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        type: {
+          type: String,
+          enum: ['like', 'love'],
+          default: 'like',
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+
     comments: [
       {
         user: {

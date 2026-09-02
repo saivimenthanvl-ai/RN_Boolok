@@ -73,9 +73,15 @@ export default function WelcomeScreen() {
 
               <View style={styles.agentsWrap}>
                 <View style={styles.avatarGroup}>
-                  <Image source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDIxWkMvsGE0JVWnlIgddMHLoJXaRlDZ6ix8j3D9lYjuwnCOzP9CNlu1fzYZY0IdHrAth3dOjcqTQkF0di1msUI8dzNv_iYYinXCqpmS_He-TtYeX2yihtLQW87EOEvQ0cRUnbkr34efkxQnqcIqbGwacliKDTjiIR2Q70ReAxB0_Vcm3OpsfrGpMwH7Iy1Tj-PQxXPDP2uCgzOL0qR-A97Niy6DKYuLKuOruowYqZAELwQqKhyoxD9EHvwU-Xo3iNnDHoxmvUCvhwb' }} style={styles.avatar} />
-                  <Image source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBf1JP5uw6F3kXbl22_QsvpVKgBtO5onIAGunkBwxr3bR-L1c78ICodedTQOZrlfDomIJqrmyIGPMavPeewWfHsI5p96IKc_oVcta0v-3zBcdjRwpGADabzczCo37FRcdrfpizxS0vxtDaqF_te5HcBKDvNaXIBmHbLYNHGGAL80fP4s1vhEZlBNwXr0OX99wPKBClaP6gfsJQE7hML1cLbG_vEzrM_grE-N6a6sVcV05BOCx-mpOc1zKtQKdT-cdpcdkKD84w_GfU8' }} style={[styles.avatar, styles.avatarOffset]} />
-                  <Image source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDyxmBGNsXUTWVtKVR8KZxFHgci8cNJlnSzZOdv8em2dr2RPZUZ5IH_02HVhI3oCjz28RtVFiGhB-Xer8jAox2eaUSMC-6LCIRstcpGAoZkP0jjEy_weZJdbIz9uZc1PDF3HgOYHLtKFPUBQ_nMbpdBhwuP4GynDnNY2HZpfVZuepwc0OWoYCoCsBzAqbCQ_DZXge0iwxf8ahztMnSJ0dUEgKVmywEp-A95wR7GRQGgjkahukqvLE-KZew8uGJ_iVr9U6vikD20pvR9' }} style={[styles.avatar, styles.avatarOffset]} />
+                  <View style={[styles.avatar, { backgroundColor: '#162338', justifyContent: 'center', alignItems: 'center', borderColor: '#daa520' }]}>
+                    <Text style={{ color: '#daa520', fontWeight: '800', fontSize: 15 }}>S</Text>
+                  </View>
+                  <View style={[styles.avatar, styles.avatarOffset, { backgroundColor: '#1e293b', justifyContent: 'center', alignItems: 'center', borderColor: '#daa520' }]}>
+                    <Text style={{ color: '#daa520', fontWeight: '800', fontSize: 15 }}>L</Text>
+                  </View>
+                  <View style={[styles.avatar, styles.avatarOffset, { backgroundColor: '#0f172a', justifyContent: 'center', alignItems: 'center', borderColor: '#daa520' }]}>
+                    <Text style={{ color: '#daa520', fontWeight: '800', fontSize: 15 }}>A</Text>
+                  </View>
                 </View>
                 <Text style={[typography.labelMd, { color: colors.primaryFixed }]}>
                   JOIN 5,000+ TOP-TIER AGENTS
