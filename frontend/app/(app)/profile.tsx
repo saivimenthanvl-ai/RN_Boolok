@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -1563,15 +1563,12 @@ export default function ProfessionalUserProfileScreen() {
   const defaultBio =
     profileUser?.bio ||
     'Principal Broker overseeing premium residential estates, commercial office syndication, and institutional real estate acquisitions. Specialized in turnkey acquisitions and AI-driven valuation models.';
-  const mutualsText = useMemo(() => {
-    const raw = (profileUser?.mutuals || '').trim();
-    if (raw && !raw.includes('Logeshwaran A, Logeshwaran A')) {
-      return raw;
-    }
-    return followerCount > 0
+  const rawMutuals = (profileUser?.mutuals || '').trim();
+  const mutualsText = (rawMutuals && !rawMutuals.includes('Logeshwaran A, Logeshwaran A'))
+    ? rawMutuals
+    : (followerCount > 0
       ? `Followed by Logeshwaran A, shreekutti and ${Math.max(1, followerCount - 2)} other${Math.max(1, followerCount - 2) > 1 ? 's' : ''}`
-      : '4 followers in Boolok Network';
-  }, [profileUser?.mutuals, followerCount]);
+      : '4 followers in Boolok Network');
 
   return (
     <ScrollView
