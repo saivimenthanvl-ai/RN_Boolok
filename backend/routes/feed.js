@@ -35,11 +35,50 @@ const upload = multer({
 // GET all posts for the feed
 router.get('/', async (req, res) => {
   try {
+    const rawId = req.user?.id || req.user?._id || req.headers['x-user-id'] || 'sai';
     const posts = await Post.find()
       .populate('author', 'fullName profilePicture')
       .sort({ createdAt: -1 })
       .limit(20);
-    res.json(posts);
+
+    const formatted = posts.map((p) => {
+      const pObj = p.toObject();
+      const pId = p._id.toString();
+      let list = GLOBAL_POST_REACTIONS_STORE.get(pId);
+      if (!list) {
+        list = [...COMMUNITY_FALLBACK_REACTIONS.map((item) => ({ ...item, reactionType: 'like' }))];
+        GLOBAL_POST_REACTIONS_STORE.set(pId, list);
+      }
+
+      const hasViewerLiked =
+        list.some((u) => u.id === rawId || u._id === rawId || u.username === 'saivimenthanvl') ||
+        (Array.isArray(p.likes) && p.likes.some((l) => l.toString() === rawId.toString()));
+
+      if (hasViewerLiked && !list.some((u) => u.id === rawId || u._id === rawId || u.username === 'saivimenthanvl')) {
+        list.unshift({
+          id: rawId,
+          _id: rawId,
+          fullName: 'Sai',
+          username: 'saivimenthanvl',
+          headline: 'Elite Real Estate Broker & Commercial Portfolio Lead',
+          location: 'Chennai, Tamil Nadu · Prime Assets',
+          profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c',
+          reactionType: 'like',
+        });
+        GLOBAL_POST_REACTIONS_STORE.set(pId, list);
+      }
+
+      const count = list.length;
+      pObj.likesCount = count;
+      pObj.currentUserReaction = hasViewerLiked ? 'like' : null;
+      pObj.likesSummary = hasViewerLiked
+        ? `Liked by you and ${Math.max(1, count - 1)} other real estate brokers`
+        : `Liked by ${count} real estate brokers`;
+
+      return pObj;
+    });
+
+    res.json(formatted);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error fetching feed' });
@@ -91,13 +130,13 @@ const COMMUNITY_FALLBACK_REACTIONS = [
     reactionType: 'like',
   },
   {
-    id: 'logeshwarana',
-    _id: 'logeshwarana',
-    fullName: 'Logeshwaran Ashok',
+    id: '6a8af34812ef34aed25ae8d2',
+    _id: '6a8af34812ef34aed25ae8d2',
+    fullName: 'Logeshwaran A',
     username: 'logeshwarana',
     headline: 'Architectural Consultant & Real Estate Lead',
     location: 'Western Australia',
-    profilePicture: null,
+    profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
     reactionType: 'like',
   },
   {

@@ -28,6 +28,8 @@ export type AuthUser = {
   authProvider?: string | null;
   followers?: any[];
   following?: any[];
+  followerCount?: number;
+  followingCount?: number;
 };
 
 type AuthContextType = {

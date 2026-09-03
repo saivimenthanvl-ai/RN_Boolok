@@ -25,6 +25,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import { useRouter } from 'expo-router';
 
 const DUMMY_VIDEOS = [
   {
@@ -82,7 +83,7 @@ const DUMMY_VIDEOS = [
     poster: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     comments: [
-      { _id: 'c4-1', user: { fullName: 'Logeshwaran Ashok' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
+      { _id: 'c4-1', user: { fullName: 'Logeshwaran A' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
       { _id: 'c4-2', user: { fullName: 'shreekutti' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
       { _id: 'c4-3', user: { fullName: 'cinemahub.live' }, text: 'Clean architectural lines and modern corporate facade. ✨', createdAt: new Date() },
     ],
@@ -191,11 +192,12 @@ const SHARE_CONTACTS = [
   { id: '1', name: 'shreekutti', role: 'Residential Architect · Chennai', avatar: 'S' },
   { id: '2', name: 'ajmal', role: 'CRE Advisory & Multi-Family', avatar: 'A' },
   { id: '3', name: 'cinemahub.live', role: 'Studio & Commercial Spaces', avatar: 'C' },
-  { id: '4', name: 'Logeshwaran Ashok', role: 'Architectural Consultant · Tech Parks', avatar: 'L' },
+  { id: '4', name: 'Logeshwaran A', role: 'Architectural Consultant · Tech Parks', avatar: 'L' },
   { id: '5', name: 'Sai Vimenthan', role: 'Principal Broker · Commercial Assets', avatar: 'S' },
 ];
 
 const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }: any) => {
+  const router = useRouter();
   const { theme } = useTheme();
   const [deleting, setDeleting] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -205,7 +207,7 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
   const [showShareModal, setShowShareModal] = useState(false);
   const [sharedContacts, setSharedContacts] = useState<Record<string, boolean>>({});
   const [comments, setComments] = useState<any[]>(item.comments || [
-    { _id: 'ic1', user: { fullName: 'Logeshwaran Ashok' }, text: 'High potential zoning for hospitality & luxury retreats! 🏢✨', createdAt: new Date() },
+    { _id: 'ic1', user: { fullName: 'Logeshwaran A' }, text: 'High potential zoning for hospitality & luxury retreats! 🏢✨', createdAt: new Date() },
     { _id: 'ic2', user: { fullName: 'Sai Vimenthan' }, text: 'Water rights & soil pre-certification confirms strong ROI.', createdAt: new Date() },
   ]);
   const [showComments, setShowComments] = useState(false);

@@ -181,9 +181,9 @@ const DUMMY_REAL_ESTATE_POSTS = [
     time: '2h · 🌐',
     content: 'Just listed! 🌟 Stunning modern beachfront villa with private infinity pool and direct access to crystal waters. Turnkey luxury investment ready for immediate handover! DM for private walkthroughs. 🏖️🔑',
     mediaUrls: ['https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200'],
-    likes: ['u1', 'u2', 'u3', 'u4', 'u5'],
-    likesSummary: 'Liked by 5 real estate brokers',
-    likesCount: 5,
+    likes: ['shreekutti', '6a8af34812ef34aed25ae8d2', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'],
+    likesSummary: 'Liked by 6 real estate brokers',
+    likesCount: 6,
     commentsCount: 2,
     comments: [
       {
@@ -213,14 +213,18 @@ const DUMMY_REAL_ESTATE_POSTS = [
     time: '1d · 🌐',
     content: 'Bespoke custom kitchen & dining makeover completed for our luxury penthouse client. Custom Italian marble countertops, hidden smart refrigeration, and brass accents. ✨🍽️',
     mediaUrls: ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200'],
-    likes: ['u1', 'u2', 'u3'],
-    likesSummary: 'Liked by 3 real estate brokers',
-    likesCount: 3,
+    likes: ['shreekutti', '6a8af34812ef34aed25ae8d2', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'],
+    likesSummary: 'Liked by 6 real estate brokers',
+    likesCount: 6,
     commentsCount: 1,
     comments: [
       {
         _id: 'c5',
-        author: { fullName: 'logeshwarana', username: 'logeshwarana', profilePicture: null },
+        author: {
+          fullName: 'Logeshwaran A',
+          username: 'logeshwarana',
+          profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
+        },
         text: 'Stunning cabinetry and seamless marble alignment!',
         time: '6h ago',
       },
@@ -239,13 +243,13 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     profilePicture: null,
   },
   {
-    id: 'logeshwarana',
-    _id: 'logeshwarana',
-    fullName: 'Logeshwaran Ashok',
+    id: '6a8af34812ef34aed25ae8d2',
+    _id: '6a8af34812ef34aed25ae8d2',
+    fullName: 'Logeshwaran A',
     username: 'logeshwarana',
     headline: 'Architectural Consultant & Real Estate Lead',
-    followerCount: 4,
-    profilePicture: null,
+    followerCount: 2,
+    profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
   },
   {
     id: 'ajmal',
@@ -488,25 +492,26 @@ export default function ProfessionalSocialFeedScreen() {
       const merged = baseList.map((p) => {
         const isPersistedLiked = Boolean(likedMap[p._id]) || (Array.isArray(p.likes) && p.likes.includes(viewerId));
         const baseLikes = Array.isArray(p.likes) ? p.likes : [];
-        const baseCount = typeof p.likesCount === 'number' ? p.likesCount : baseLikes.length;
+        const rawCount = typeof p.likesCount === 'number' ? p.likesCount : baseLikes.length;
+        const communityCount = Math.max(6, isPersistedLiked ? rawCount - 1 : rawCount);
 
         if (isPersistedLiked) {
           const nextLikes = baseLikes.includes(viewerId) ? baseLikes : [viewerId, ...baseLikes];
-          const nextCount = baseLikes.includes(viewerId) ? baseCount : baseCount + 1;
+          const nextCount = communityCount + 1; // Always 7 (Sai + 6 advisors)
           return {
             ...p,
             currentUserReaction: 'like',
             likes: nextLikes,
             likesCount: nextCount,
-            likesSummary: `Liked by you and ${Math.max(1, nextCount - 1)} other real estate brokers`,
+            likesSummary: `Liked by you and ${communityCount} other real estate brokers`,
           };
         }
         return {
           ...p,
           currentUserReaction: null,
           likes: baseLikes.filter((id: string) => id !== viewerId),
-          likesCount: baseLikes.includes(viewerId) ? Math.max(0, baseCount - 1) : baseCount,
-          likesSummary: `Liked by ${baseCount} real estate brokers`,
+          likesCount: communityCount,
+          likesSummary: `Liked by ${communityCount} real estate brokers`,
         };
       });
 
@@ -517,9 +522,18 @@ export default function ProfessionalSocialFeedScreen() {
       }
 
       if (suggestedRes.status === 'fulfilled' && Array.isArray(suggestedRes.value.data?.suggested)) {
-        setSuggestedUsers(suggestedRes.value.data.suggested);
+        const seen = new Set<string>();
+        const uniqueSuggested = suggestedRes.value.data.suggested.filter((u: any) => {
+          const uname = (u.username || u.id || u._id || '').toLowerCase();
+          const email = (u.email || '').toLowerCase();
+          if (email.includes('logeshwarana@boolok.ai')) return false;
+          if (seen.has(uname)) return false;
+          seen.add(uname);
+          return true;
+        });
+        setSuggestedUsers(uniqueSuggested);
         const map: Record<string, boolean> = {};
-        suggestedRes.value.data.suggested.forEach((u: any) => {
+        uniqueSuggested.forEach((u: any) => {
           if (u.isFollowing) map[u.id || u._id] = true;
         });
         setFollowingMap((prev) => ({ ...prev, ...map }));
@@ -610,8 +624,7 @@ export default function ProfessionalSocialFeedScreen() {
             nextLikes = nextLikes.filter((id: string) => id !== viewerId);
           }
 
-          const currentCount = typeof p.likesCount === 'number' ? p.likesCount : (p.likes?.length || 6);
-          const newCount = isCurrentlyLiked ? Math.max(0, currentCount - 1) : currentCount + 1;
+          const newCount = willBeLiked ? 7 : 6;
 
           return {
             ...p,
@@ -619,8 +632,8 @@ export default function ProfessionalSocialFeedScreen() {
             likes: nextLikes,
             likesCount: newCount,
             likesSummary: willBeLiked
-              ? `Liked by you and ${Math.max(1, newCount - 1)} other real estate brokers`
-              : `Liked by ${newCount} real estate brokers`,
+              ? `Liked by you and 6 other real estate brokers`
+              : `Liked by 6 real estate brokers`,
           };
         }
         return p;

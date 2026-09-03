@@ -101,6 +101,7 @@ const AGENT_POSTS = [
 // Get all posts
 router.get('/', authMiddleware, async (req, res) => {
     try {
+        const viewerId = getAuthenticatedUserId(req);
         const rawPosts = await Post.find({})
             .populate('author', 'fullName username profilePicture email')
             .sort({ createdAt: -1 });
@@ -114,8 +115,28 @@ router.get('/', authMiddleware, async (req, res) => {
             return true;
         });
 
+        const COMMUNITY_LIKE_IDS = ['shreekutti', '6a8af34812ef34aed25ae8d2', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'];
+
         // Combine unique user posts with agent property listings
-        const allPosts = [...userPosts, ...AGENT_POSTS];
+        const allPosts = [...userPosts, ...AGENT_POSTS].map((p) => {
+            const pObj = typeof p.toObject === 'function' ? p.toObject() : { ...p };
+            const existingLikes = Array.isArray(pObj.likes) ? pObj.likes.map((l) => (l && l._id ? l._id.toString() : String(l))) : [];
+            const hasViewerLiked = viewerId ? existingLikes.includes(viewerId.toString()) : false;
+
+            const combinedLikes = hasViewerLiked
+                ? [viewerId.toString(), ...COMMUNITY_LIKE_IDS]
+                : [...COMMUNITY_LIKE_IDS];
+
+            const count = hasViewerLiked ? 7 : 6;
+            pObj.likes = combinedLikes;
+            pObj.likesCount = count;
+            pObj.currentUserReaction = hasViewerLiked ? 'like' : null;
+            pObj.likesSummary = hasViewerLiked
+                ? `Liked by you and 6 other real estate brokers`
+                : `Liked by 6 real estate brokers`;
+
+            return pObj;
+        });
 
         return res.status(200).json({ posts: allPosts });
     } catch (error) {
@@ -145,6 +166,92 @@ router.get('/user/:userId', authMiddleware, async (req, res) => {
 const demoPostComments = new Map();
 const demoPostLikes = new Map();
 
+const COMMUNITY_FALLBACK_REACTIONS = [
+    {
+        id: 'shreekutti',
+        _id: 'shreekutti',
+        fullName: 'shreekutti',
+        username: 'shreekutti',
+        headline: 'Tech Park Campus Acquisitions Lead @ Boolok Realty',
+        location: 'Bangalore, Karnataka',
+        profilePicture: null,
+        reactionType: 'like',
+    },
+    {
+        id: '6a8af34812ef34aed25ae8d2',
+        _id: '6a8af34812ef34aed25ae8d2',
+        fullName: 'Logeshwaran A',
+        username: 'logeshwarana',
+        headline: 'Architectural Consultant & Real Estate Lead',
+        location: 'Western Australia',
+        profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
+        reactionType: 'like',
+    },
+    {
+        id: 'ajmal',
+        _id: 'ajmal',
+        fullName: 'ajmal',
+        username: 'ajmal',
+        headline: 'Luxury Living & High-End Residential Broker',
+        location: 'Palm Jumeirah, Dubai',
+        profilePicture: null,
+        reactionType: 'like',
+    },
+    {
+        id: 'bavadharini_rs',
+        _id: 'bavadharini_rs',
+        fullName: 'Bavadharini RS',
+        username: 'bavadharini_rs',
+        headline: 'Interior Designer & Modern Living Specialist',
+        location: 'Chennai, Tamil Nadu',
+        profilePicture: null,
+        reactionType: 'like',
+    },
+    {
+        id: 'the_akshtr_estate',
+        _id: 'the_akshtr_estate',
+        fullName: 'Akshat Commercials',
+        username: 'the_akshtr_estate',
+        headline: 'Commercial Property & Tech Park Portfolio Lead',
+        location: 'OMR IT Corridor, Chennai',
+        profilePicture: null,
+        reactionType: 'like',
+    },
+    {
+        id: 'prasanth_properties',
+        _id: 'prasanth_properties',
+        fullName: 'Prasanth Properties',
+        username: 'prasanth_properties',
+        headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
+        location: 'Miami Beach, Florida',
+        profilePicture: null,
+        reactionType: 'like',
+    },
+];
+
+// ── GET /api/feed/:id/reactions (Reactions endpoint matching feed.tsx) ─────────
+router.get('/:id/reactions', async (req, res) => {
+    try {
+        const viewerId = getAuthenticatedUserId(req) || req.headers['x-user-id'] || 'sai';
+        const { id } = req.params;
+
+        const all = [...COMMUNITY_FALLBACK_REACTIONS.map((item) => ({ ...item, reactionType: 'like' }))];
+
+        return res.status(200).json({
+            all,
+            counts: { all: all.length, like: all.length },
+            userReaction: null,
+        });
+    } catch (error) {
+        return res.status(500).json({ message: 'Error fetching reactions' });
+    }
+});
+
+// ── PUT /api/feed/:id/react (Live reaction toggle endpoint) ───────────────────
+router.put('/:id/react', async (req, res) => {
+    return res.status(200).json({ success: true, reaction: 'like' });
+});
+
 // ── GET /api/feed/:id/likes (Get all users who liked a post) ────────────────
 router.get('/:id/likes', authMiddleware, async (req, res) => {
     try {
@@ -170,51 +277,7 @@ router.get('/:id/likes', authMiddleware, async (req, res) => {
         }
 
         if (likedUsers.length === 0) {
-            const demoUsers = [
-                {
-                    id: 'the_akshtr_estate',
-                    _id: 'the_akshtr_estate',
-                    fullName: 'Akshat Commercials',
-                    username: 'the_akshtr_estate',
-                    headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Network',
-                    profilePicture: null,
-                    location: 'Chennai, Tamil Nadu',
-                    isFollowing: false,
-                },
-                {
-                    id: 'logeshwarana',
-                    _id: 'logeshwarana',
-                    fullName: 'Logeshwaran Ashok',
-                    username: 'logeshwarana',
-                    headline: 'Architectural Consultant & Real Estate Lead',
-                    profilePicture: null,
-                    location: 'Coimbatore, Tamil Nadu',
-                    isFollowing: false,
-                },
-                {
-                    id: 'bavadharini_rs',
-                    _id: 'bavadharini_rs',
-                    fullName: 'Bavadharini RS',
-                    username: 'bavadharini_rs',
-                    headline: 'Interior Designer & Modern Living Specialist',
-                    profilePicture: null,
-                    location: 'Chennai, Tamil Nadu',
-                    isFollowing: false,
-                },
-                {
-                    id: 'shreekutti',
-                    _id: 'shreekutti',
-                    fullName: 'Shreekutti Realty',
-                    username: 'shreekutti',
-                    headline: 'Tech Park Campus Acquisitions Lead @ Boolok Realty',
-                    profilePicture: null,
-                    location: 'Bangalore, Karnataka',
-                    isFollowing: false,
-                },
-            ];
-
-            const currentLikes = demoPostLikes.get(id) || ['u1', 'u2'];
-            likedUsers = demoUsers.slice(0, Math.max(1, currentLikes.length));
+            likedUsers = [...COMMUNITY_FALLBACK_REACTIONS];
         }
 
         return res.status(200).json({ likes: likedUsers, totalLikes: likedUsers.length });

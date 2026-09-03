@@ -252,7 +252,16 @@ export default function AppLayout() {
       return;
     }
 
-    const COMMUNITY_ADVISORS = [
+    const COMMUNITY_ADVISORS: Array<{
+      id: string;
+      _id: string;
+      fullName: string;
+      username: string;
+      headline: string;
+      location: string;
+      profilePicture: string | null;
+      followerCount: number;
+    }> = [
       {
         id: 'shreekutti',
         _id: 'shreekutti',
@@ -264,14 +273,14 @@ export default function AppLayout() {
         followerCount: 4,
       },
       {
-        id: 'logeshwarana',
-        _id: 'logeshwarana',
-        fullName: 'Logeshwaran Ashok',
+        id: '6a8af34812ef34aed25ae8d2',
+        _id: '6a8af34812ef34aed25ae8d2',
+        fullName: 'Logeshwaran A',
         username: 'logeshwarana',
         headline: 'Architectural Consultant & Real Estate Lead',
-        location: 'Chennai, Tamil Nadu · Industrial & Retail',
-        profilePicture: null,
-        followerCount: 4,
+        location: 'Western Australia',
+        profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
+        followerCount: 2,
       },
       {
         id: 'ajmal',

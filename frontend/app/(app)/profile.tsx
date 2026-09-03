@@ -96,7 +96,7 @@ const COMMUNITY_MEMBERS = [
         thumbnail: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
         videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
         comments: [
-          { _id: 'sc-1', user: { fullName: 'Logeshwaran Ashok' }, text: '8.6% cap rate on ORR is top quartile performance! 🏢🚀', createdAt: new Date() },
+          { _id: 'sc-1', user: { fullName: 'Logeshwaran A' }, text: '8.6% cap rate on ORR is top quartile performance! 🏢🚀', createdAt: new Date() },
           { _id: 'sc-2', user: { fullName: 'Akshat Commercials' }, text: 'Strong institutional covenants on this campus.', createdAt: new Date() },
         ],
       },
@@ -117,15 +117,15 @@ const COMMUNITY_MEMBERS = [
     ],
   },
   {
-    id: 'logeshwarana',
-    _id: 'logeshwarana',
-    fullName: 'Logeshwaran Ashok',
+    id: '6a8af34812ef34aed25ae8d2',
+    _id: '6a8af34812ef34aed25ae8d2',
+    fullName: 'Logeshwaran A',
     username: 'logeshwarana',
     headline: 'Architectural Consultant & Real Estate Lead',
     location: 'Western Australia · Vineyard Estates',
     bio: 'Focused on precision cap-rate calculations, commercial yield optimization, and real estate investment portfolios.',
     closedDeals: '18',
-    profilePicture: null,
+    profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
     coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
     reels: [
       {
@@ -280,7 +280,7 @@ const COMMUNITY_MEMBERS = [
         thumbnail: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200',
         videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
         comments: [
-          { _id: 'akc-1', user: { fullName: 'Logeshwaran Ashok' }, text: 'Triple net lease with institutional covenants is top tier! 🏢', createdAt: new Date() },
+          { _id: 'akc-1', user: { fullName: 'Logeshwaran A' }, text: 'Triple net lease with institutional covenants is top tier! 🏢', createdAt: new Date() },
         ],
       },
     ],
@@ -384,7 +384,7 @@ const SAI_REELS = [
     thumbnail: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     comments: [
-      { _id: 'c4-1', user: { fullName: 'Logeshwaran Ashok' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
+      { _id: 'c4-1', user: { fullName: 'Logeshwaran A' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
       { _id: 'c4-2', user: { fullName: 'Shreekutti' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
     ],
   },
@@ -468,7 +468,7 @@ const ProfileReelItem = ({ reel }: { reel: any }) => {
   const [likesCount, setLikesCount] = useState<number>(reel.likes?.length ?? reel.likes ?? 100);
   const [hasLiked, setHasLiked] = useState(false);
   const [comments, setComments] = useState<any[]>(reel.comments || [
-    { _id: 'c1', user: { fullName: 'Logeshwaran Ashok' }, text: 'Incredible property location and zoning potential! 🏢✨', createdAt: new Date() },
+    { _id: 'c1', user: { fullName: 'Logeshwaran A' }, text: 'Incredible property location and zoning potential! 🏢✨', createdAt: new Date() },
     { _id: 'c2', user: { fullName: 'Bavadharini RS' }, text: 'The architectural design and layout looks world class. 🌿', createdAt: new Date() },
   ]);
   const [showComments, setShowComments] = useState(false);
@@ -846,7 +846,7 @@ export default function ProfessionalUserProfileScreen() {
           },
           {
             _id: 'c-2',
-            author: { fullName: 'Logeshwaran Ashok', username: 'logeshwarana' },
+            author: { fullName: 'Logeshwaran A', username: 'logeshwarana' },
             text: 'Zoning approvals and floor area ratio look optimal.',
             time: '1h ago',
           },
@@ -2167,7 +2167,7 @@ export default function ProfessionalUserProfileScreen() {
                   style={{ backgroundColor: '#070e1a', color: '#ffffff', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#1a273c', marginBottom: 16, fontSize: 14 }}
                   value={editFullName}
                   onChangeText={setEditFullName}
-                  placeholder="e.g. Logeshwaran Ashok"
+                  placeholder="e.g. Logeshwaran A"
                   placeholderTextColor="#475569"
                 />
 

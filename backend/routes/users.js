@@ -138,13 +138,13 @@ const COMMUNITY_MEMBERS = [
   {
     username: 'logeshwarana',
     aliases: ['logeshwarana', 'logeshwaran_ashok', 'logeshwaran'],
-    fullName: 'Logeshwaran Ashok',
-    email: 'logeshwarana@boolok.ai',
+    fullName: 'Logeshwaran A',
+    email: 'waranlogesh0406@gmail.com',
     headline: 'Architectural Consultant & Real Estate Lead',
-    location: 'Chennai, Tamil Nadu · Industrial & Retail',
+    location: 'Western Australia',
     bio: 'Focused on precision cap-rate calculations, commercial yield optimization, and real estate investment portfolios.',
     closedDeals: '18',
-    profilePicture: null,
+    profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
     coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
   },
   {
@@ -311,7 +311,7 @@ async function resolveOrSeedUser(id) {
     }
   }
 
-  if (!profileUser && lookup) {
+  if (!profileUser && lookup && !mongoose.Types.ObjectId.isValid(lookup)) {
     let existing = await User.findOne({ username: lookup });
     if (!existing) {
       const generatedName = lookup.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -404,16 +404,26 @@ router.get('/suggested', authMiddleware, async (req, res) => {
     // Auto-seed community members into MongoDB with full relationships
     await ensureCommunityConnections();
 
-    const query = viewerId ? { _id: { $ne: viewerId } } : {};
+    const query = {
+      email: { $ne: 'logeshwarana@boolok.ai' },
+      ...(viewerId ? { _id: { $ne: viewerId } } : {}),
+    };
 
     const users = await User.find(query)
       .populate('followers', 'fullName username profilePicture')
-      .select('fullName username profilePicture bio headline location followers following')
-      .limit(10);
+      .select('fullName username email profilePicture bio headline location followers following')
+      .limit(15);
 
-    const suggested = users.map((u) => {
+    const seen = new Set();
+    const suggested = [];
+
+    for (const u of users) {
       const sanitized = sanitizeUserProfile(u, viewerId);
-      return {
+      const uname = (sanitized.username || sanitized.id || '').toLowerCase();
+      if (seen.has(uname)) continue;
+      seen.add(uname);
+
+      suggested.push({
         id: sanitized.id,
         _id: sanitized.id,
         fullName: sanitized.fullName,
@@ -426,8 +436,8 @@ router.get('/suggested', authMiddleware, async (req, res) => {
         followerCount: sanitized.followerCount,
         isFollowing: sanitized.isFollowing,
         subtitle: sanitized.mutuals || (sanitized.followerCount > 0 ? `${sanitized.followerCount} follower${sanitized.followerCount > 1 ? 's' : ''}` : 'New Member'),
-      };
-    });
+      });
+    }
 
     return res.status(200).json({ suggested });
   } catch (error) {
@@ -951,7 +961,7 @@ const SAI_REELS = [
     thumbnail: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     comments: [
-      { _id: 'c4-1', user: { fullName: 'Logeshwaran Ashok' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
+      { _id: 'c4-1', user: { fullName: 'Logeshwaran A' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
       { _id: 'c4-2', user: { fullName: 'Shreekutti Realty' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
     ],
   },
@@ -970,7 +980,7 @@ const COMMUNITY_POSTS_MAP = {
       mediaUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
       likes: ['sai', 'logeshwarana', 'ajmal'],
       comments: [
-        { author: { fullName: 'Logeshwaran Ashok', username: 'logeshwarana' }, text: '8.4% cap rate on Outer Ring Road is top quartile.' },
+        { author: { fullName: 'Logeshwaran A', username: 'logeshwarana' }, text: '8.4% cap rate on Outer Ring Road is top quartile.' },
         { author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' }, text: 'Strong institutional covenants.' },
       ],
     },
@@ -1005,7 +1015,7 @@ const COMMUNITY_POSTS_MAP = {
       likes: ['sai', 'logeshwarana', 'shreekutti', 'the_akshtr_estate'],
       comments: [
         { author: { fullName: 'Shreekutti', username: 'shreekutti' }, text: 'Unrivaled private beach frontage!' },
-        { author: { fullName: 'Logeshwaran Ashok', username: 'logeshwarana' }, text: 'Bespoke marble and high ceiling elevation.' },
+        { author: { fullName: 'Logeshwaran A', username: 'logeshwarana' }, text: 'Bespoke marble and high ceiling elevation.' },
       ],
     },
   ],
@@ -1037,7 +1047,7 @@ const COMMUNITY_POSTS_MAP = {
       mediaUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200',
       likes: ['sai', 'shreekutti', 'logeshwarana'],
       comments: [
-        { author: { fullName: 'Logeshwaran Ashok', username: 'logeshwarana' }, text: 'Triple net lease with institutional covenants is top tier!' },
+        { author: { fullName: 'Logeshwaran A', username: 'logeshwarana' }, text: 'Triple net lease with institutional covenants is top tier!' },
       ],
     },
   ],
@@ -1069,7 +1079,7 @@ const COMMUNITY_POSTS_MAP = {
       mediaUrl: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200',
       likes: ['logeshwarana', 'shreekutti'],
       comments: [
-        { author: { fullName: 'Logeshwaran Ashok', username: 'logeshwarana' }, text: 'Prime UK corporate covenants.' },
+        { author: { fullName: 'Logeshwaran A', username: 'logeshwarana' }, text: 'Prime UK corporate covenants.' },
       ],
     },
   ],
