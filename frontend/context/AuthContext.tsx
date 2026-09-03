@@ -79,8 +79,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const storedUser = await readValue(USER_KEY);
 
         if (storedToken && storedUser) {
+          const parsed = JSON.parse(storedUser);
+          if (!parsed.profilePicture && ((parsed.username || '').includes('sai') || (parsed.email || '').includes('sai') || parsed.fullName === 'Sai')) {
+            parsed.profilePicture = 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c';
+            await saveValue(USER_KEY, JSON.stringify(parsed));
+          }
           setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+          setUser(parsed);
         }
       } catch (error) {
         console.error('Failed to restore authentication session:', error);

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -302,8 +302,10 @@ const getReactionMeta = (type: string | null) => {
 
 export default function ProfessionalSocialFeedScreen() {
   const { user } = useAuth();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { width } = useWindowDimensions();
+
+  const styles = useMemo(() => getStyles(isDark), [isDark]);
 
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -457,7 +459,7 @@ export default function ProfessionalSocialFeedScreen() {
           delete map[postId];
         }
         localStorage.setItem('boolok_user_liked_posts', JSON.stringify(map));
-      } catch (e) {}
+      } catch (e) { }
     }
   };
 
@@ -479,8 +481,8 @@ export default function ProfessionalSocialFeedScreen() {
         feedRes.status === 'fulfilled' && Array.isArray(feedRes.value.data)
           ? feedRes.value.data
           : feedRes.status === 'fulfilled' && Array.isArray(feedRes.value.data?.posts)
-          ? feedRes.value.data.posts
-          : [];
+            ? feedRes.value.data.posts
+            : [];
 
       const baseList = [
         ...rawPosts,
@@ -775,9 +777,9 @@ export default function ProfessionalSocialFeedScreen() {
 
   const displayedNews = showAllNews ? newsList : newsList.slice(0, 5);
 
-  const bgDark = '#060b13';
-  const cardBg = '#0c1626';
-  const borderColor = '#1a273c';
+  const bgDark = isDark ? '#060b13' : '#ffffff';
+  const cardBg = isDark ? '#0c1626' : '#ffffff';
+  const borderColor = isDark ? '#1a273c' : '#e2e8f0';
   const goldPrimary = '#e6b800';
 
   return (
@@ -960,12 +962,12 @@ export default function ProfessionalSocialFeedScreen() {
             const mediaList = Array.isArray(post.mediaUrls)
               ? post.mediaUrls
               : post.mediaUrl
-              ? [
+                ? [
                   post.mediaUrl.startsWith('http') || post.mediaUrl.startsWith('data:')
                     ? post.mediaUrl
                     : `${process.env.EXPO_PUBLIC_API_URL}${post.mediaUrl}`,
                 ]
-              : [];
+                : [];
 
             return (
               <View
@@ -1434,24 +1436,24 @@ export default function ProfessionalSocialFeedScreen() {
                 <View style={[styles.reactionDot, { backgroundColor: '#0a66c2', width: 22, height: 22, borderRadius: 11 }]}>
                   <MaterialIcons name="thumb-up" size={12} color="#ffffff" />
                 </View>
-                <Text style={{ fontSize: 16, fontWeight: '800', color: '#ffffff', marginLeft: 4 }}>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: isDark ? '#ffffff' : '#0f172a', marginLeft: 4 }}>
                   Likes ({allReactionUsers.length})
                 </Text>
               </View>
               <Pressable onPress={() => setIsLikesModalOpen(false)} style={{ padding: 4 }}>
-                <MaterialIcons name="close" size={22} color="#8b9bb4" />
+                <MaterialIcons name="close" size={22} color={isDark ? '#8b9bb4' : '#64748b'} />
               </Pressable>
             </View>
 
             {/* Categorization Tabs (All, 👍 Thumbs Up) */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, borderBottomWidth: 1, borderBottomColor: '#162338', paddingBottom: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, borderBottomWidth: 1, borderBottomColor: borderColor, paddingBottom: 10 }}>
               <Pressable
                 onPress={() => setReactionTab('all')}
                 style={[
-                  { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: reactionTab === 'all' ? '#1e293b' : 'transparent', borderWidth: 1, borderColor: reactionTab === 'all' ? '#334155' : 'transparent' },
+                  { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: reactionTab === 'all' ? (isDark ? '#1e293b' : '#f1f5f9') : 'transparent', borderWidth: 1, borderColor: reactionTab === 'all' ? (isDark ? '#334155' : '#cbd5e1') : 'transparent' },
                 ]}
               >
-                <Text style={{ fontSize: 13, fontWeight: '700', color: reactionTab === 'all' ? '#ffffff' : '#8b9bb4' }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: reactionTab === 'all' ? (isDark ? '#ffffff' : '#0f172a') : (isDark ? '#8b9bb4' : '#64748b') }}>
                   All ({allReactionUsers.length})
                 </Text>
               </Pressable>
@@ -1465,7 +1467,7 @@ export default function ProfessionalSocialFeedScreen() {
                 <View style={[styles.reactionDot, { backgroundColor: '#0a66c2', width: 18, height: 18, borderRadius: 9 }]}>
                   <MaterialIcons name="thumb-up" size={10} color="#ffffff" />
                 </View>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: reactionTab === 'like' ? '#60a5fa' : '#8b9bb4' }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: reactionTab === 'like' ? '#3b82f6' : (isDark ? '#8b9bb4' : '#64748b') }}>
                   Thumbs Up ({allReactionUsers.length})
                 </Text>
               </Pressable>
@@ -1476,14 +1478,13 @@ export default function ProfessionalSocialFeedScreen() {
               {isLoadingLikes ? (
                 <View style={{ paddingVertical: 32, alignItems: 'center' }}>
                   <ActivityIndicator size="small" color={goldPrimary} />
-                  <Text style={{ color: '#8b9bb4', fontSize: 12, marginTop: 8 }}>Loading real-time reactions...</Text>
+                  <Text style={{ color: isDark ? '#8b9bb4' : '#64748b', fontSize: 12, marginTop: 8 }}>Loading real-time reactions...</Text>
                 </View>
               ) : (reactionTab === 'all' ? allReactionUsers : allReactionUsers.filter((u) => u.reactionType === reactionTab)).length > 0 ? (
                 (reactionTab === 'all' ? allReactionUsers : allReactionUsers.filter((u) => u.reactionType === reactionTab)).map((u: any, idx: number) => {
                   const uId = u.id || u._id || u.username;
                   const isF = Boolean(followingMap[uId]);
                   const uReaction = u.reactionType || 'like';
-                  const uReactionMeta = getReactionMeta(uReaction);
 
                   return (
                     <View
@@ -1494,8 +1495,9 @@ export default function ProfessionalSocialFeedScreen() {
                         justifyContent: 'space-between',
                         paddingVertical: 10,
                         paddingHorizontal: 6,
-                        borderBottomWidth: idx < allReactionUsers.length - 1 ? 1 : 0,
-                        borderBottomColor: '#142033',
+                        borderRadius: 10,
+                        borderBottomWidth: 1,
+                        borderBottomColor: borderColor,
                       }}
                     >
                       <Pressable
@@ -1503,18 +1505,18 @@ export default function ProfessionalSocialFeedScreen() {
                           setIsLikesModalOpen(false);
                           router.push({ pathname: '/(app)/profile', params: { id: uId } });
                         }}
-                        style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 12 }}
+                        style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 }}
                       >
                         <View style={{ position: 'relative' }}>
-                          <UserAvatar user={u} size={42} />
+                          <UserAvatar user={u} size={40} />
                           <View
                             style={{
                               position: 'absolute',
                               bottom: -2,
                               right: -2,
-                              width: 18,
-                              height: 18,
-                              borderRadius: 9,
+                              width: 16,
+                              height: 16,
+                              borderRadius: 8,
                               backgroundColor: '#0a66c2',
                               justifyContent: 'center',
                               alignItems: 'center',
@@ -1522,55 +1524,50 @@ export default function ProfessionalSocialFeedScreen() {
                               borderColor: cardBg,
                             }}
                           >
-                            <MaterialIcons
-                              name="thumb-up"
-                              size={10}
-                              color="#ffffff"
-                            />
+                            <MaterialIcons name="thumb-up" size={8} color="#ffffff" />
                           </View>
                         </View>
                         <View style={{ marginLeft: 12, flex: 1 }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 14 }}>
-                              {u.fullName}
+                            <Text style={{ color: isDark ? '#ffffff' : '#0f172a', fontWeight: '700', fontSize: 14 }}>
+                              {u.fullName || u.username}
                             </Text>
                             <MaterialIcons name="verified" size={14} color="#0095f6" />
                           </View>
-                          <Text style={{ color: '#8b9bb4', fontSize: 12 }}>
+                          <Text style={{ color: isDark ? '#8b9bb4' : '#64748b', fontSize: 12 }}>
                             @{u.username}
                           </Text>
                           {u.headline && (
-                            <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+                            <Text style={{ color: isDark ? '#64748b' : '#94a3b8', fontSize: 11, marginTop: 2 }} numberOfLines={1}>
                               {u.headline}
                             </Text>
                           )}
                         </View>
                       </Pressable>
 
-                      {uId !== user?.id && (
-                        <Pressable
-                          onPress={() => toggleFollowAdvisor(uId)}
+                      {/* Follow/Connect Button */}
+                      <Pressable
+                        onPress={() => toggleFollowAdvisor(uId)}
+                        style={[
+                          styles.advisorFollowBtn,
+                          isF && { backgroundColor: isDark ? '#1a273c' : '#f1f5f9' },
+                        ]}
+                      >
+                        <Text
                           style={[
-                            styles.advisorFollowBtn,
-                            isF && { backgroundColor: '#1a273c' },
+                            styles.advisorFollowBtnText,
+                            { color: isF ? (isDark ? '#ffffff' : '#0f172a') : goldPrimary },
                           ]}
                         >
-                          <Text
-                            style={[
-                              styles.advisorFollowBtnText,
-                              { color: isF ? '#ffffff' : goldPrimary },
-                            ]}
-                          >
-                            {isF ? '✓ Following' : '+ Follow'}
-                          </Text>
-                        </Pressable>
-                      )}
+                          {isF ? '✓ Connected' : '+ Connect'}
+                        </Text>
+                      </Pressable>
                     </View>
                   );
                 })
               ) : (
                 <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-                  <Text style={{ color: '#8b9bb4', fontSize: 13 }}>No {reactionTab === 'like' ? 'Likes' : reactionTab === 'love' ? 'Love reactions' : 'reactions'} yet.</Text>
+                  <Text style={{ color: isDark ? '#8b9bb4' : '#64748b', fontSize: 13 }}>No {reactionTab === 'like' ? 'Likes' : reactionTab === 'love' ? 'Love reactions' : 'reactions'} yet.</Text>
                 </View>
               )}
             </ScrollView>
@@ -1578,7 +1575,7 @@ export default function ProfessionalSocialFeedScreen() {
         </View>
       </Modal>
 
-      {/* ── REAL-TIME NETWORK FOLLOWERS & CONNECTIONS MODAL ── */}
+      {/* ── Followers Modal ──────────────────────────────────────────────── */}
       <Modal
         visible={isFollowersModalOpen}
         transparent
@@ -1586,24 +1583,24 @@ export default function ProfessionalSocialFeedScreen() {
         onRequestClose={() => setIsFollowersModalOpen(false)}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
-          <View style={{ width: '100%', maxWidth: 480, backgroundColor: '#09111e', borderRadius: 16, borderWidth: 1, borderColor: '#1a273c', maxHeight: 540, padding: 18 }}>
+          <View style={{ width: '100%', maxWidth: 480, backgroundColor: isDark ? '#09111e' : '#ffffff', borderRadius: 16, borderWidth: 1, borderColor, maxHeight: 540, padding: 18 }}>
             {/* Header */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#162338', paddingBottom: 12 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: borderColor, paddingBottom: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(230, 184, 0, 0.2)', justifyContent: 'center', alignItems: 'center' }}>
                   <MaterialIcons name="people" size={16} color={goldPrimary} />
                 </View>
                 <View>
-                  <Text style={{ fontSize: 16, fontWeight: '800', color: '#ffffff' }}>
+                  <Text style={{ fontSize: 16, fontWeight: '800', color: isDark ? '#ffffff' : '#0f172a' }}>
                     Network Followers ({followersList.length})
                   </Text>
-                  <Text style={{ fontSize: 11, color: '#8b9bb4', marginTop: 1 }}>
+                  <Text style={{ fontSize: 11, color: isDark ? '#8b9bb4' : '#64748b', marginTop: 1 }}>
                     Real-time real estate professionals in your network
                   </Text>
                 </View>
               </View>
               <Pressable onPress={() => setIsFollowersModalOpen(false)} style={{ padding: 4 }}>
-                <MaterialIcons name="close" size={22} color="#8b9bb4" />
+                <MaterialIcons name="close" size={22} color={isDark ? '#8b9bb4' : '#64748b'} />
               </Pressable>
             </View>
 
@@ -1626,7 +1623,7 @@ export default function ProfessionalSocialFeedScreen() {
                         paddingHorizontal: 8,
                         borderRadius: 10,
                         borderBottomWidth: 1,
-                        borderBottomColor: '#131e30',
+                        borderBottomColor: borderColor,
                       }}
                     >
                       <Pressable
@@ -1639,12 +1636,12 @@ export default function ProfessionalSocialFeedScreen() {
                         <UserAvatar user={fUser} size={42} />
                         <View style={{ marginLeft: 12, flex: 1 }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 13.5 }}>
+                            <Text style={{ color: isDark ? '#ffffff' : '#0f172a', fontWeight: '700', fontSize: 13.5 }}>
                               {fUser.fullName || fUser.username}
                             </Text>
                             <MaterialIcons name="verified" size={14} color="#0095f6" />
                           </View>
-                          <Text style={{ color: '#8b9bb4', fontSize: 11.5 }}>
+                          <Text style={{ color: isDark ? '#8b9bb4' : '#64748b', fontSize: 11.5 }}>
                             @{fUser.username}
                           </Text>
                           {fUser.headline && (
@@ -1688,614 +1685,639 @@ export default function ProfessionalSocialFeedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-  },
-  mainLayoutContainer: {
-    width: '100%',
-    maxWidth: 1180,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 24,
-  },
+const getStyles = (isDark: boolean) => {
+  const textPrimary = isDark ? '#ffffff' : '#0f172a';
+  const textSecondary = isDark ? '#cbd5e1' : '#475569';
+  const textMuted = isDark ? '#8b9bb4' : '#64748b';
+  const borderCol = isDark ? '#1a273c' : '#e2e8f0';
+  const inputBg = isDark ? '#070e1a' : '#f8fafc';
+  const itemBubbleBg = isDark ? '#162235' : '#f1f5f9';
+  const cardBackground = isDark ? '#0c1626' : '#ffffff';
+  const actionBtnBackground = isDark ? '#1a273c' : '#f1f5f9';
 
-  // Left Column
-  leftColumn: {
-    width: 240,
-  },
-  card: {
-    borderRadius: 10,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  profileCoverBanner: {
-    height: 64,
-    width: '100%',
-    padding: 8,
-    alignItems: 'flex-end',
-  },
-  bannerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  bannerBadgeText: {
-    color: '#e6b800',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  profileAvatarWrapper: {
-    marginTop: -32,
-    alignSelf: 'center',
-    position: 'relative',
-  },
-  profileAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 2,
-    borderColor: '#0c1626',
-  },
-  avatarPlusBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#e6b800',
-    borderRadius: 10,
-    padding: 2,
-  },
-  profileInfoBox: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 16,
-    alignItems: 'center',
-  },
-  profileNameText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#ffffff',
-    textAlign: 'center',
-  },
-  profileRoleText: {
-    fontSize: 12,
-    color: '#cbd5e1',
-    marginTop: 4,
-    textAlign: 'center',
-    lineHeight: 16,
-  },
-  profileLocationText: {
-    fontSize: 11,
-    color: '#8b9bb4',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  companyTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 10,
-    backgroundColor: '#162235',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  companyTagText: {
-    color: '#e6b800',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  statsDivider: {
-    borderTopWidth: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  statRowItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 3,
-  },
-  statRowLabel: {
-    color: '#8b9bb4',
-    fontSize: 12,
-  },
-  statRowValue: {
-    color: '#e6b800',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  savedItemsBtn: {
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-  },
-  savedItemsText: {
-    color: '#cbd5e1',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  quickMenuHeading: {
-    color: '#8b9bb4',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 4,
-  },
-  quickMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  quickMenuText: {
-    color: '#cbd5e1',
-    fontSize: 13,
-    fontWeight: '600',
-  },
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: isDark ? '#060b13' : '#ffffff',
+    },
+    scrollContent: {
+      paddingVertical: 24,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+    },
+    mainLayoutContainer: {
+      width: '100%',
+      maxWidth: 1180,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 24,
+    },
 
-  // Center Column
-  centerColumn: {
-    flex: 1,
-    maxWidth: 580,
-  },
-  startPostHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    gap: 12,
-  },
-  startPostAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-  },
-  startPostInputTrigger: {
-    flex: 1,
-    backgroundColor: '#070e1a',
-    borderWidth: 1,
-    borderColor: '#1a273c',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    justifyContent: 'center',
-  },
-  startPostPlaceholder: {
-    color: '#8b9bb4',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  startPostActionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#1a273c',
-  },
-  composerActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  composerActionText: {
-    color: '#cbd5e1',
-    fontSize: 12,
-    fontWeight: '600',
-  },
+    // Left Column
+    leftColumn: {
+      width: 240,
+    },
+    card: {
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: borderCol,
+      backgroundColor: cardBackground,
+      overflow: 'hidden',
+    },
+    profileCoverBanner: {
+      height: 64,
+      width: '100%',
+      padding: 8,
+      alignItems: 'flex-end',
+    },
+    bannerBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    bannerBadgeText: {
+      color: '#e6b800',
+      fontSize: 9,
+      fontWeight: '800',
+      letterSpacing: 0.5,
+    },
+    profileAvatarWrapper: {
+      marginTop: -32,
+      alignSelf: 'center',
+      position: 'relative',
+    },
+    profileAvatar: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      borderWidth: 2,
+      borderColor: cardBackground,
+    },
+    avatarPlusBadge: {
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      backgroundColor: '#e6b800',
+      borderRadius: 10,
+      padding: 2,
+    },
+    profileInfoBox: {
+      paddingHorizontal: 16,
+      paddingTop: 10,
+      paddingBottom: 16,
+      alignItems: 'center',
+    },
+    profileNameText: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: textPrimary,
+      textAlign: 'center',
+    },
+    profileRoleText: {
+      fontSize: 12,
+      color: textSecondary,
+      marginTop: 4,
+      textAlign: 'center',
+      lineHeight: 16,
+    },
+    profileLocationText: {
+      fontSize: 11,
+      color: textMuted,
+      marginTop: 4,
+      textAlign: 'center',
+    },
+    companyTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 10,
+      backgroundColor: isDark ? '#162235' : '#f1f5f9',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 4,
+    },
+    companyTagText: {
+      color: '#e6b800',
+      fontSize: 10,
+      fontWeight: '700',
+    },
+    statsDivider: {
+      borderTopWidth: 1,
+      borderTopColor: borderCol,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+    },
+    statRowItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginVertical: 3,
+    },
+    statRowLabel: {
+      color: textMuted,
+      fontSize: 12,
+    },
+    statRowValue: {
+      color: '#e6b800',
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    savedItemsBtn: {
+      borderTopWidth: 1,
+      borderTopColor: borderCol,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      padding: 12,
+    },
+    savedItemsText: {
+      color: textSecondary,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    quickMenuHeading: {
+      color: textMuted,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+      paddingHorizontal: 14,
+      paddingTop: 12,
+      paddingBottom: 4,
+    },
+    quickMenuItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    quickMenuText: {
+      color: textSecondary,
+      fontSize: 13,
+      fontWeight: '600',
+    },
 
-  // Sort
-  sortHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 12,
-  },
-  sortDividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#1a273c',
-  },
-  sortLabel: {
-    color: '#8b9bb4',
-    fontSize: 11,
-    marginLeft: 12,
-  },
+    // Center Column
+    centerColumn: {
+      flex: 1,
+      maxWidth: 580,
+    },
+    startPostHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 14,
+      gap: 12,
+    },
+    startPostAvatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+    },
+    startPostInputTrigger: {
+      flex: 1,
+      backgroundColor: inputBg,
+      borderWidth: 1,
+      borderColor: borderCol,
+      borderRadius: 24,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      justifyContent: 'center',
+    },
+    startPostPlaceholder: {
+      color: textMuted,
+      fontSize: 13,
+      fontWeight: '500',
+    },
+    startPostActionsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      paddingVertical: 10,
+      borderTopWidth: 1,
+      borderTopColor: borderCol,
+    },
+    composerActionBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 8,
+      backgroundColor: actionBtnBackground,
+    },
+    composerActionText: {
+      color: textSecondary,
+      fontSize: 12,
+      fontWeight: '600',
+    },
 
-  // Post Card
-  postCard: {
-    marginBottom: 16,
-  },
-  postHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 14,
-  },
-  postAuthorAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-  },
-  postAuthorName: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  postAuthorDegree: {
-    color: '#8b9bb4',
-    fontSize: 12,
-  },
-  postAuthorTitle: {
-    color: '#8b9bb4',
-    fontSize: 11,
-    marginTop: 1,
-  },
-  postTimeText: {
-    color: '#64748b',
-    fontSize: 10,
-    marginTop: 2,
-  },
-  feedFollowBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#162235',
-  },
-  feedFollowBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  postBodyContent: {
-    color: '#e2e8f0',
-    fontSize: 13.5,
-    lineHeight: 19,
-    paddingHorizontal: 14,
-    paddingBottom: 12,
-  },
-  postMediaContainer: {
-    width: '100%',
-  },
-  singlePostImage: {
-    width: '100%',
-    height: 340,
-  },
-  multiImageRow: {
-    flexDirection: 'row',
-    gap: 2,
-  },
-  multiPostImage: {
-    flex: 1,
-    height: 240,
-  },
-  socialStatsBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-  },
-  reactionIconsGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 6,
-  },
-  reactionDot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  socialReactionText: {
-    color: '#8b9bb4',
-    fontSize: 11,
-  },
-  socialCommentsCountText: {
-    color: '#8b9bb4',
-    fontSize: 11,
-  },
-  postActionsBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 6,
-  },
-  postActionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  postActionItemText: {
-    color: '#8b9bb4',
-    fontSize: 12,
-    fontWeight: '600',
-  },
+    // Sort
+    sortHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: 12,
+    },
+    sortDividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: borderCol,
+    },
+    sortLabel: {
+      color: textMuted,
+      fontSize: 11,
+      marginLeft: 12,
+    },
 
-  // Comments Drawer
-  commentSectionDrawer: {
-    borderTopWidth: 1,
-    padding: 14,
-  },
-  commentInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
-  },
-  commentUserAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  inlineCommentInput: {
-    flex: 1,
-    backgroundColor: '#070e1a',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    color: '#ffffff',
-    fontSize: 12.5,
-    borderWidth: 1,
-    borderColor: '#1a273c',
-  },
-  commentSubmitBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16,
-  },
-  commentSubmitBtnText: {
-    color: '#000000',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  commentItemBlock: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    marginTop: 10,
-  },
-  commentItemAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-  },
-  commentItemBubble: {
-    flex: 1,
-    backgroundColor: '#162235',
-    borderRadius: 8,
-    padding: 10,
-  },
-  commentItemAuthorName: {
-    color: '#e6b800',
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  commentItemText: {
-    color: '#e2e8f0',
-    fontSize: 12,
-    lineHeight: 16,
-  },
+    // Post Card
+    postCard: {
+      marginBottom: 16,
+    },
+    postHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      padding: 14,
+    },
+    postAuthorAvatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+    },
+    postAuthorName: {
+      color: textPrimary,
+      fontSize: 14,
+      fontWeight: '800',
+    },
+    postAuthorDegree: {
+      color: textMuted,
+      fontSize: 12,
+    },
+    postAuthorTitle: {
+      color: textMuted,
+      fontSize: 11,
+      marginTop: 1,
+    },
+    postTimeText: {
+      color: isDark ? '#64748b' : '#94a3b8',
+      fontSize: 10,
+      marginTop: 2,
+    },
+    feedFollowBtn: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      backgroundColor: actionBtnBackground,
+    },
+    feedFollowBtnText: {
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    postBodyContent: {
+      color: isDark ? '#e2e8f0' : '#1e293b',
+      fontSize: 13.5,
+      lineHeight: 19,
+      paddingHorizontal: 14,
+      paddingBottom: 12,
+    },
+    postMediaContainer: {
+      width: '100%',
+    },
+    singlePostImage: {
+      width: '100%',
+      height: 340,
+    },
+    multiImageRow: {
+      flexDirection: 'row',
+      gap: 2,
+    },
+    multiPostImage: {
+      flex: 1,
+      height: 240,
+    },
+    socialStatsBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: borderCol,
+    },
+    reactionIconsGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginRight: 6,
+    },
+    reactionDot: {
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    socialReactionText: {
+      color: textMuted,
+      fontSize: 11,
+    },
+    socialCommentsCountText: {
+      color: textMuted,
+      fontSize: 11,
+    },
+    postActionsBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      paddingVertical: 6,
+    },
+    postActionItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+    },
+    postActionItemText: {
+      color: textMuted,
+      fontSize: 12,
+      fontWeight: '600',
+    },
 
-  // Right Column
-  rightColumn: {
-    width: 290,
-  },
-  newsHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingTop: 14,
-  },
-  newsHeaderTitle: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '800',
-    marginLeft: 8,
-  },
-  newsSubheader: {
-    color: '#8b9bb4',
-    fontSize: 11,
-    fontWeight: '700',
-    paddingHorizontal: 14,
-    marginTop: 6,
-    marginBottom: 10,
-  },
-  newsListContainer: {
-    paddingHorizontal: 14,
-  },
-  newsItemRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginVertical: 6,
-  },
-  newsDotIndicator: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#e6b800',
-    marginTop: 6,
-  },
-  newsItemTitle: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
-    lineHeight: 16,
-  },
-  newsItemMeta: {
-    color: '#8b9bb4',
-    fontSize: 10,
-    marginTop: 2,
-  },
-  showMoreNewsBtn: {
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#1a273c',
-    marginTop: 8,
-  },
-  showMoreNewsText: {
-    color: '#e6b800',
-    fontSize: 11,
-    fontWeight: '700',
-  },
+    // Comments Drawer
+    commentSectionDrawer: {
+      borderTopWidth: 1,
+      borderTopColor: borderCol,
+      padding: 14,
+    },
+    commentInputRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginBottom: 12,
+    },
+    commentUserAvatar: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+    },
+    inlineCommentInput: {
+      flex: 1,
+      backgroundColor: inputBg,
+      borderRadius: 20,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      color: textPrimary,
+      fontSize: 12.5,
+      borderWidth: 1,
+      borderColor: borderCol,
+    },
+    commentSubmitBtn: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 16,
+    },
+    commentSubmitBtnText: {
+      color: '#000000',
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    commentItemBlock: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      marginTop: 10,
+    },
+    commentItemAvatar: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+    },
+    commentItemBubble: {
+      flex: 1,
+      backgroundColor: itemBubbleBg,
+      borderRadius: 8,
+      padding: 10,
+    },
+    commentItemAuthorName: {
+      color: '#e6b800',
+      fontSize: 12,
+      fontWeight: '700',
+      marginBottom: 2,
+    },
+    commentItemText: {
+      color: isDark ? '#e2e8f0' : '#1e293b',
+      fontSize: 12,
+      lineHeight: 16,
+    },
 
-  // Suggested Advisors
-  advisorsHeading: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '800',
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 6,
-  },
-  advisorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  advisorAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-  },
-  advisorName: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  advisorSubtitle: {
-    color: '#8b9bb4',
-    fontSize: 10,
-    marginTop: 1,
-  },
-  advisorFollowBtn: {
-    borderWidth: 1,
-    borderColor: '#e6b800',
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  advisorFollowBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
+    // Right Column
+    rightColumn: {
+      width: 290,
+    },
+    newsHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 14,
+      paddingTop: 14,
+    },
+    newsHeaderTitle: {
+      color: textPrimary,
+      fontSize: 14,
+      fontWeight: '800',
+      marginLeft: 8,
+    },
+    newsSubheader: {
+      color: textMuted,
+      fontSize: 11,
+      fontWeight: '700',
+      paddingHorizontal: 14,
+      marginTop: 6,
+      marginBottom: 10,
+    },
+    newsListContainer: {
+      paddingHorizontal: 14,
+    },
+    newsItemRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginVertical: 6,
+    },
+    newsDotIndicator: {
+      width: 5,
+      height: 5,
+      borderRadius: 2.5,
+      backgroundColor: '#e6b800',
+      marginTop: 6,
+    },
+    newsItemTitle: {
+      color: textPrimary,
+      fontSize: 12,
+      fontWeight: '600',
+      lineHeight: 16,
+    },
+    newsItemMeta: {
+      color: textMuted,
+      fontSize: 10,
+      marginTop: 2,
+    },
+    showMoreNewsBtn: {
+      paddingVertical: 10,
+      alignItems: 'center',
+      borderTopWidth: 1,
+      borderTopColor: borderCol,
+      marginTop: 8,
+    },
+    showMoreNewsText: {
+      color: '#e6b800',
+      fontSize: 11,
+      fontWeight: '700',
+    },
 
-  footerLegal: {
-    marginTop: 20,
-    paddingHorizontal: 8,
-  },
-  footerLegalLinks: {
-    color: '#64748b',
-    fontSize: 10,
-    lineHeight: 16,
-    textAlign: 'center',
-  },
-  footerCopyright: {
-    color: '#475569',
-    fontSize: 9,
-    marginTop: 6,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
+    // Suggested Advisors
+    advisorsHeading: {
+      color: textPrimary,
+      fontSize: 13,
+      fontWeight: '800',
+      paddingHorizontal: 14,
+      paddingTop: 12,
+      paddingBottom: 6,
+    },
+    advisorRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+    },
+    advisorAvatar: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+    },
+    advisorName: {
+      color: textPrimary,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    advisorSubtitle: {
+      color: textMuted,
+      fontSize: 10,
+      marginTop: 1,
+    },
+    advisorFollowBtn: {
+      borderWidth: 1,
+      borderColor: '#e6b800',
+      borderRadius: 14,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    advisorFollowBtnText: {
+      fontSize: 11,
+      fontWeight: '700',
+    },
 
-  // Create Modal
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalBox: {
-    width: '100%',
-    maxWidth: 540,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalHeaderAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-  },
-  modalAuthorName: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  modalAuthorPrivacy: {
-    color: '#8b9bb4',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  modalTextInput: {
-    backgroundColor: '#070e1a',
-    borderRadius: 8,
-    padding: 14,
-    color: '#ffffff',
-    fontSize: 14,
-    minHeight: 120,
-    textAlignVertical: 'top',
-    marginBottom: 12,
-  },
-  modalUrlInput: {
-    backgroundColor: '#070e1a',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: '#ffffff',
-    fontSize: 13,
-    marginBottom: 16,
-  },
-  modalFooterActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  modalAttachVideoBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  modalAttachVideoText: {
-    color: '#60a5fa',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  modalPublishBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  modalPublishBtnText: {
-    color: '#000000',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-});
+    footerLegal: {
+      marginTop: 20,
+      paddingHorizontal: 8,
+    },
+    footerLegalLinks: {
+      color: isDark ? '#64748b' : '#94a3b8',
+      fontSize: 10,
+      lineHeight: 16,
+      textAlign: 'center',
+    },
+    footerCopyright: {
+      color: isDark ? '#475569' : '#64748b',
+      fontSize: 9,
+      marginTop: 6,
+      textAlign: 'center',
+      fontWeight: '600',
+    },
+
+    // Create Modal
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.75)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    modalBox: {
+      width: '100%',
+      maxWidth: 540,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: borderCol,
+      backgroundColor: cardBackground,
+      padding: 20,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    modalHeaderAvatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+    },
+    modalAuthorName: {
+      color: textPrimary,
+      fontSize: 15,
+      fontWeight: '800',
+    },
+    modalAuthorPrivacy: {
+      color: textMuted,
+      fontSize: 11,
+      marginTop: 2,
+    },
+    modalTextInput: {
+      backgroundColor: inputBg,
+      borderRadius: 8,
+      padding: 14,
+      color: textPrimary,
+      fontSize: 14,
+      minHeight: 120,
+      textAlignVertical: 'top',
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: borderCol,
+    },
+    modalUrlInput: {
+      backgroundColor: inputBg,
+      borderWidth: 1,
+      borderColor: borderCol,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      color: textPrimary,
+      fontSize: 13,
+      marginBottom: 16,
+    },
+    modalFooterActions: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    modalAttachVideoBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    modalAttachVideoText: {
+      color: '#60a5fa',
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    modalPublishBtn: {
+      paddingHorizontal: 24,
+      paddingVertical: 10,
+      borderRadius: 8,
+    },
+    modalPublishBtnText: {
+      color: '#000000',
+      fontSize: 14,
+      fontWeight: '700',
+    },
+  });
+};

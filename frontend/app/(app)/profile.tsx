@@ -125,6 +125,9 @@ const COMMUNITY_MEMBERS = [
     location: 'Western Australia · Vineyard Estates',
     bio: 'Focused on precision cap-rate calculations, commercial yield optimization, and real estate investment portfolios.',
     closedDeals: '18',
+    followerCount: 1,
+    followingCount: 1,
+    mutuals: 'Followed by Sai',
     profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
     coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
     reels: [
@@ -410,7 +413,7 @@ function resolveMemberProfile(targetId: string, viewer: any) {
       headline: viewer?.headline || 'Elite Real Estate Broker & Commercial Portfolio Lead',
       location: viewer?.location || 'Chennai, Tamil Nadu · Prime Assets',
       bio: viewer?.bio || 'Real estate professional and advisor on the Boolok AI network.',
-      profilePicture: viewer?.profilePicture || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800',
+      profilePicture: viewer?.profilePicture || 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c',
       coverImage: viewer?.coverImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
       closedDeals: viewer?.closedDeals || '12',
       followerCount: 4,
@@ -731,7 +734,7 @@ const ProfileReelItem = ({ reel }: { reel: any }) => {
 export default function ProfessionalUserProfileScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { user: viewer, updateUser } = useAuth();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { width } = useWindowDimensions();
 
   const isSelf = !id || id === 'self' || id === viewer?.id || id === viewer?._id || (Boolean(viewer?.username) && String(id).toLowerCase() === String(viewer?.username).toLowerCase());
@@ -1210,6 +1213,18 @@ export default function ProfessionalUserProfileScreen() {
     setIsFollowersModalOpen(true);
     setIsLoadingFollowers(true);
     const activeId = targetId || profileUser?.id || profileUser?._id || viewer?.id;
+    const isTargetLogesh = String(activeId).toLowerCase().includes('logesh') || (profileUser?.username || '').toLowerCase().includes('logesh');
+
+    const saiFollower = {
+      id: viewer?.id || 'saivimenthanvl',
+      _id: viewer?._id || 'saivimenthanvl',
+      fullName: viewer?.fullName || 'Sai',
+      username: viewer?.username || 'saivimenthanvl',
+      headline: viewer?.headline || 'Principal Real Estate Broker & Portfolio Advisor',
+      location: viewer?.location || 'Chennai, Tamil Nadu · Prime Assets',
+      profilePicture: viewer?.profilePicture || 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c',
+    };
+
     try {
       const token = await getToken();
       const res = await axios.get(`${API_BASE_URL}/api/users/${activeId}/followers`, {
@@ -1218,25 +1233,27 @@ export default function ProfessionalUserProfileScreen() {
       if (res.data && Array.isArray(res.data.followers) && res.data.followers.length > 0) {
         const seen = new Set<string>();
         const unique = res.data.followers.filter((f: any) => {
-          const fid = (f.id || f._id || f.username || '').toString().toLowerCase();
+          const fid = (f.username || f.id || f._id || '').toString().toLowerCase();
           const fname = (f.fullName || '').toLowerCase();
-          if (fid.includes('6a8dc') || fname.includes('6a8dc') || /^[0-9a-fA-F]{24}$/.test(fid)) return false;
+          if (fid.includes('6a8dc49') || fname.includes('6a8dc49')) return false;
           if (seen.has(fid)) return false;
           seen.add(fid);
           return true;
         });
-        const finalFollowers = unique.length > 0 ? unique : COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, 4);
+        const finalFollowers = unique.length > 0
+          ? unique
+          : (isTargetLogesh ? [saiFollower] : COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, 4));
         setFollowersList(finalFollowers);
         setFollowerCountState(finalFollowers.length);
       } else {
-        const initialMembers = COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, 4);
+        const initialMembers = isTargetLogesh ? [saiFollower] : COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, 4);
         setFollowersList(initialMembers);
-        setFollowerCountState(4);
+        setFollowerCountState(initialMembers.length);
       }
     } catch (error) {
-      const initialMembers = COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, 4);
+      const initialMembers = isTargetLogesh ? [saiFollower] : COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, 4);
       setFollowersList(initialMembers);
-      setFollowerCountState(4);
+      setFollowerCountState(initialMembers.length);
     } finally {
       setIsLoadingFollowers(false);
     }
@@ -1551,9 +1568,9 @@ export default function ProfessionalUserProfileScreen() {
   const posts = postsToDisplay;
   const reels = reelsToDisplay;
 
-  const bgDark = '#060b13';
-  const cardBg = '#0c1626';
-  const borderColor = '#1a273c';
+  const bgDark = isDark ? '#060b13' : '#ffffff';
+  const cardBg = isDark ? '#0c1626' : '#ffffff';
+  const borderColor = isDark ? '#1a273c' : '#e2e8f0';
   const goldPrimary = '#e6b800';
 
   const defaultHeadline =
@@ -1579,8 +1596,8 @@ export default function ProfessionalUserProfileScreen() {
       <View style={styles.container}>
         {/* Back navigation */}
         <Pressable onPress={() => router.push('/(app)/feed')} style={styles.backBtn}>
-          <MaterialIcons name="arrow-back" size={20} color="#ffffff" />
-          <Text style={styles.backText}>Back to Real Estate Feed</Text>
+          <MaterialIcons name="arrow-back" size={20} color={isDark ? '#ffffff' : '#0f172a'} />
+          <Text style={[styles.backText, { color: isDark ? '#ffffff' : '#0f172a' }]}>Back to Real Estate Feed</Text>
         </Pressable>
 
         {/* ═══════════════════════════════════════════════════════════════════════
@@ -1617,9 +1634,9 @@ export default function ProfessionalUserProfileScreen() {
                 onPress={isSelf ? () => setIsAvatarModalOpen(true) : undefined}
                 style={styles.avatarWrapper}
               >
-                {profileUser.profilePicture || (isSelf || (profileUser.username || '').includes('sai') ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800' : null) ? (
+                {profileUser.profilePicture || (isSelf || (profileUser.username || '').includes('sai')) ? (
                   <Image
-                    source={{ uri: profileUser.profilePicture || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800' }}
+                    source={{ uri: profileUser.profilePicture || 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' }}
                     style={styles.avatarImage}
                   />
                 ) : (

@@ -66,7 +66,7 @@ function sanitizeUserProfile(user, viewerId = null) {
     headline: user.headline || 'Real Estate Professional & Boolok Member',
     location: user.location || 'Chennai, Tamil Nadu · Prime Assets',
     coverImage: user.coverImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-    profilePicture: user.profilePicture || ((user.username || '').includes('sai') ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800' : null),
+    profilePicture: user.profilePicture || ((user.username || '').includes('sai') ? 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' : null),
     closedDeals: user.closedDeals || '12',
     followerCount,
     followingCount,
@@ -256,6 +256,18 @@ const COMMUNITY_MEMBERS = [
     profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
   },
+  {
+    username: 'saivimenthanvl',
+    aliases: ['sai', 'saivimenthanvl', 'saivimenthan'],
+    fullName: 'Sai',
+    email: 'saivimenthanvl@gmail.com',
+    headline: 'Principal Real Estate Broker & Portfolio Advisor',
+    location: 'Chennai, Tamil Nadu · Prime Assets',
+    bio: 'Principal Broker overseeing premium residential estates, commercial office syndication, and institutional real estate acquisitions.',
+    closedDeals: '12',
+    profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c',
+    coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
+  },
 ];
 
 async function resolveOrSeedUser(id) {
@@ -402,8 +414,18 @@ async function ensureCommunityConnections() {
 
     // 3. Connect mutual followers for all community members
     for (const member of seeded) {
+      if (member.username === 'logeshwarana') {
+        const saiUser = await User.findOne({ username: 'saivimenthanvl' });
+        if (saiUser) {
+          member.followers = [saiUser._id];
+          member.following = [saiUser._id];
+          await member.save();
+        }
+        continue;
+      }
+
       if (!member.followers || member.followers.length === 0) {
-        const others = seeded.filter((o) => o._id.toString() !== member._id.toString()).slice(0, 4);
+        const others = seeded.filter((o) => o._id.toString() !== member._id.toString() && o.username !== 'logeshwarana').slice(0, 4);
         member.followers = others.map((o) => o._id);
         await member.save();
 
@@ -625,7 +647,7 @@ router.get('/:id/followers', authMiddleware, async (req, res) => {
               username: f.username || 'member',
               headline: f.headline || 'Real Estate Professional',
               location: f.location || 'Global Real Estate Network',
-              profilePicture: f.profilePicture || null,
+              profilePicture: f.profilePicture || (((f.username || '').includes('sai')) ? 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' : null),
             };
           }
           return { id: f.toString(), _id: f.toString(), fullName: 'Boolok Member', username: 'member', profilePicture: null };

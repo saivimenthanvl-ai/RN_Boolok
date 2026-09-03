@@ -618,18 +618,24 @@ export default function AppLayout() {
                 </View>
               )}
 
-              {user?.profilePicture ? (
-                <Image
-                  source={{ uri: user.profilePicture }}
-                  style={styles.profileImage}
-                />
-              ) : (
-                <View style={[styles.profileImage, { backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center', flexShrink: 0 }]}>
-                  <Text style={{ color: theme.onPrimary, fontSize: 18, fontWeight: 'bold' }}>
-                    {(user?.fullName || 'Agent').charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
+              {(() => {
+                const navAvatar = user?.profilePicture || (((user?.username || '').includes('sai') || (user?.fullName || '').includes('Sai')) ? 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' : null);
+                if (navAvatar) {
+                  return (
+                    <Image
+                      source={{ uri: navAvatar }}
+                      style={styles.profileImage}
+                    />
+                  );
+                }
+                return (
+                  <View style={[styles.profileImage, { backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center', flexShrink: 0 }]}>
+                    <Text style={{ color: theme.onPrimary, fontSize: 18, fontWeight: 'bold' }}>
+                      {(user?.fullName || 'Agent').charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                );
+              })()}
               <Pressable
                 onPress={() => router.push('/(app)/settings')}
                 style={({ pressed, hovered }: any) => [
@@ -643,8 +649,8 @@ export default function AppLayout() {
           </View>
         </View>
 
-        <View style={[styles.slotContainer, { backgroundColor: theme.surface }]}>
-          <Stack screenOptions={{ headerShown: false, animation: 'fade' }} />
+        <View style={[styles.slotContainer, { backgroundColor: isDark ? '#060b13' : '#ffffff', flex: 1 }]}>
+          <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: isDark ? '#060b13' : '#ffffff' } }} />
         </View>
 
         {!isWide && <BottomNav />}

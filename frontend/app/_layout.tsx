@@ -13,9 +13,47 @@ import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '../context/AuthContext';
-import { ThemeProvider } from '../context/ThemeContext';
+import { ThemeProvider, useTheme } from '../context/ThemeContext';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
+function RootLayoutNav() {
+  const { isDark } = useTheme();
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.body.style.backgroundColor = isDark ? '#060b13' : '#ffffff';
+    }
+  }, [isDark]);
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: 'fade',
+        contentStyle: { backgroundColor: isDark ? '#060b13' : '#ffffff' },
+      }}
+    >
+      {/* Public routes: never wrapped by the authenticated app layout */}
+      <Stack.Screen name="index" />
+      <Stack.Screen name="brand-vision" />
+
+      {/*
+        FIX: explicitly registered. This Stack declares its children
+        manually, which stops expo-router from auto-registering any
+        file not listed here — auth-callback.tsx existed on disk but
+        was invisible to the router without this line, producing
+        "Unmatched Route" every time Google's OAuth popup redirected
+        back to it.
+      */}
+      <Stack.Screen name="auth-callback" />
+
+      {/* Route groups */}
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(app)" />
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
@@ -104,31 +142,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: 'fade',
-              contentStyle: { backgroundColor: '#050505' },
-            }}
-          >
-            {/* Public routes: never wrapped by the authenticated app layout */}
-            <Stack.Screen name="index" />
-            <Stack.Screen name="brand-vision" />
-
-            {/*
-              FIX: explicitly registered. This Stack declares its children
-              manually, which stops expo-router from auto-registering any
-              file not listed here — auth-callback.tsx existed on disk but
-              was invisible to the router without this line, producing
-              "Unmatched Route" every time Google's OAuth popup redirected
-              back to it.
-            */}
-            <Stack.Screen name="auth-callback" />
-
-            {/* Route groups */}
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(app)" />
-          </Stack>
+          <RootLayoutNav />
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

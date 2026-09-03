@@ -1,10 +1,8 @@
-// components/LoadingScreen.tsx
-// Full-screen branded loader displaying the iconic 8-dot star mark.
-
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BoolokLogo from './BoolokLogo';
+import { useTheme } from '../context/ThemeContext';
 
 type LoadingScreenProps = {
   /** Optional status text (ignored for clean logo presentation) */
@@ -14,8 +12,11 @@ type LoadingScreenProps = {
 };
 
 export default function LoadingScreen({
-  dark = true,
+  dark,
 }: LoadingScreenProps) {
+  const { isDark } = useTheme();
+  const effectiveDark = dark !== undefined ? dark : isDark;
+
   const pulse = useRef(new Animated.Value(1)).current;
   const opacity = useRef(new Animated.Value(0.85)).current;
 
@@ -54,7 +55,8 @@ export default function LoadingScreen({
     ).start();
   }, [pulse, opacity]);
 
-  const bg = dark ? '#000000' : '#000000';
+  const bg = effectiveDark ? '#060b13' : '#ffffff';
+  const logoColor = effectiveDark ? '#ffffff' : '#0f172a';
 
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: bg }]}>
@@ -65,7 +67,7 @@ export default function LoadingScreen({
             opacity: opacity,
           }}
         >
-          <BoolokLogo size={76} color="#ffffff" />
+          <BoolokLogo size={76} color={logoColor} />
         </Animated.View>
       </View>
     </SafeAreaView>
