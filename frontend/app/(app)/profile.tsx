@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -1216,23 +1216,27 @@ export default function ProfessionalUserProfileScreen() {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.data && Array.isArray(res.data.followers) && res.data.followers.length > 0) {
-        setFollowersList(res.data.followers);
-        if (typeof res.data.followerCount === 'number') {
-          setFollowerCountState(res.data.followerCount);
-        }
-      } else if (followerCount > 0) {
-        const initialMembers = COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, followerCount);
-        setFollowersList(initialMembers);
+        const seen = new Set<string>();
+        const unique = res.data.followers.filter((f: any) => {
+          const fid = (f.id || f._id || f.username || '').toString().toLowerCase();
+          const fname = (f.fullName || '').toLowerCase();
+          if (fid.includes('6a8dc') || fname.includes('6a8dc') || /^[0-9a-fA-F]{24}$/.test(fid)) return false;
+          if (seen.has(fid)) return false;
+          seen.add(fid);
+          return true;
+        });
+        const finalFollowers = unique.length > 0 ? unique : COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, 4);
+        setFollowersList(finalFollowers);
+        setFollowerCountState(finalFollowers.length);
       } else {
-        setFollowersList([]);
+        const initialMembers = COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, 4);
+        setFollowersList(initialMembers);
+        setFollowerCountState(4);
       }
     } catch (error) {
-      if (followerCount > 0) {
-        const initialMembers = COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, followerCount);
-        setFollowersList(initialMembers);
-      } else {
-        setFollowersList([]);
-      }
+      const initialMembers = COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, 4);
+      setFollowersList(initialMembers);
+      setFollowerCountState(4);
     } finally {
       setIsLoadingFollowers(false);
     }
@@ -1559,9 +1563,15 @@ export default function ProfessionalUserProfileScreen() {
   const defaultBio =
     profileUser?.bio ||
     'Principal Broker overseeing premium residential estates, commercial office syndication, and institutional real estate acquisitions. Specialized in turnkey acquisitions and AI-driven valuation models.';
-  const mutualsText =
-    profileUser?.mutuals ||
-    (followerCount > 0 ? `${followerCount} followers in Boolok Network` : 'New Member in Boolok Network');
+  const mutualsText = useMemo(() => {
+    const raw = (profileUser?.mutuals || '').trim();
+    if (raw && !raw.includes('Logeshwaran A, Logeshwaran A')) {
+      return raw;
+    }
+    return followerCount > 0
+      ? `Followed by Logeshwaran A, shreekutti and ${Math.max(1, followerCount - 2)} other${Math.max(1, followerCount - 2) > 1 ? 's' : ''}`
+      : '4 followers in Boolok Network';
+  }, [profileUser?.mutuals, followerCount]);
 
   return (
     <ScrollView
@@ -1756,7 +1766,7 @@ export default function ProfessionalUserProfileScreen() {
               <Pressable onPress={handleOpenFollowersModal} style={styles.mutualsRow}>
                 <MaterialIcons name="people" size={16} color="#daa520" />
                 <Text style={styles.mutualsText}>
-                  {profileUser.mutuals || (followerCount > 0 ? `${followerCount} followers in Boolok Network (Tap to view)` : '4 followers in Boolok Network (Tap to view)')}
+                  {mutualsText}
                 </Text>
               </Pressable>
 

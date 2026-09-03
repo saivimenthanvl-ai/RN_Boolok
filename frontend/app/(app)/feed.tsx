@@ -526,7 +526,9 @@ export default function ProfessionalSocialFeedScreen() {
         const uniqueSuggested = suggestedRes.value.data.suggested.filter((u: any) => {
           const uname = (u.username || u.id || u._id || '').toLowerCase();
           const email = (u.email || '').toLowerCase();
+          const fullName = (u.fullName || '').toLowerCase();
           if (email.includes('logeshwarana@boolok.ai')) return false;
+          if (uname.includes('6a8dc') || fullName.includes('6a8dc') || /^[0-9a-fA-F]{24}$/.test(uname)) return false;
           if (seen.has(uname)) return false;
           seen.add(uname);
           return true;
@@ -840,7 +842,7 @@ export default function ProfessionalSocialFeedScreen() {
               <View style={[styles.statsDivider, { borderTopColor: borderColor }]}>
                 <View style={styles.statRowItem}>
                   <Text style={styles.statRowLabel}>Profile viewers</Text>
-                  <Text style={styles.statRowValue}>248</Text>
+                  <Text style={styles.statRowValue}>38</Text>
                 </View>
                 <View style={styles.statRowItem}>
                   <Text style={styles.statRowLabel}>Properties Listed</Text>
@@ -848,7 +850,7 @@ export default function ProfessionalSocialFeedScreen() {
                 </View>
                 <View style={styles.statRowItem}>
                   <Text style={styles.statRowLabel}>Post Impressions</Text>
-                  <Text style={styles.statRowValue}>1.8k</Text>
+                  <Text style={styles.statRowValue}>148</Text>
                 </View>
               </View>
 

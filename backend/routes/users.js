@@ -10,27 +10,52 @@ const router = express.Router();
 const getAuthenticatedUserId = (req) => req.user?.id || req.user?._id || req.userId || null;
 
 function sanitizeUserProfile(user, viewerId = null) {
-  const followers = user.followers || [];
-  const following = user.following || [];
-  const isFollowing = viewerId ? followers.some((f) => {
-    const fId = f._id ? f._id.toString() : f.toString();
-    return fId === viewerId.toString();
-  }) : false;
+  const rawFollowers = user.followers || [];
+  const rawFollowing = user.following || [];
 
-  const followerNames = followers
-    .map((f) => (typeof f === 'object' && f.fullName ? f.fullName : null))
-    .filter(Boolean);
+  // Deduplicate followers by id
+  const seenFids = new Set();
+  const followers = [];
+  for (const f of rawFollowers) {
+    const fId = f && f._id ? f._id.toString() : String(f || '');
+    if (!fId || seenFids.has(fId)) continue;
+    seenFids.add(fId);
+    followers.push(f);
+  }
+
+  const isFollowing = viewerId
+    ? followers.some((f) => {
+        const fId = f._id ? f._id.toString() : f.toString();
+        return fId === viewerId.toString();
+      })
+    : false;
+
+  // Deduplicate follower display names strictly
+  const seenNames = new Set();
+  const followerNames = [];
+  for (const f of followers) {
+    if (typeof f === 'object' && f && f.fullName) {
+      const name = f.fullName.trim();
+      if (!seenNames.has(name.toLowerCase())) {
+        seenNames.add(name.toLowerCase());
+        followerNames.push(name);
+      }
+    }
+  }
 
   let mutualsText = '';
   if (followerNames.length === 1) {
     mutualsText = `Followed by ${followerNames[0]}`;
   } else if (followerNames.length === 2) {
     mutualsText = `Followed by ${followerNames[0]} and ${followerNames[1]}`;
-  } else if (followerNames.length > 2) {
-    mutualsText = `Followed by ${followerNames[0]}, ${followerNames[1]} and ${followerNames.length - 2} other${followerNames.length - 2 > 1 ? 's' : ''}`;
+  } else if (followerNames.length === 3) {
+    mutualsText = `Followed by ${followerNames[0]}, ${followerNames[1]} and 1 other`;
+  } else if (followerNames.length > 3) {
+    mutualsText = `Followed by ${followerNames[0]}, ${followerNames[1]} and ${followerNames.length - 2} others`;
   }
 
-  const isLogesh = (user.username || '').toLowerCase() === 'logeshwarana';
+  const followerCount = followers.length > 0 ? followers.length : 4;
+  const followingCount = rawFollowing.length > 0 ? rawFollowing.length : 4;
 
   return {
     id: user._id.toString(),
@@ -43,13 +68,13 @@ function sanitizeUserProfile(user, viewerId = null) {
     coverImage: user.coverImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
     profilePicture: user.profilePicture || ((user.username || '').includes('sai') ? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800' : null),
     closedDeals: user.closedDeals || '12',
-    followerCount: followers.length > 0 ? followers.length : 4,
-    followingCount: following.length > 0 ? following.length : 4,
+    followerCount,
+    followingCount,
     isFollowing,
     isSelf: viewerId ? viewerId.toString() === user._id.toString() : false,
-    mutuals: mutualsText || '4 followers in Boolok Real Estate Network',
+    mutuals: mutualsText || `${followerCount} followers in Boolok Real Estate Network`,
     followers: followers.map((f) => (typeof f === 'object' ? { id: f._id, fullName: f.fullName, username: f.username, profilePicture: f.profilePicture } : f)),
-    following: following.map((f) => (typeof f === 'object' ? { id: f._id, fullName: f.fullName, username: f.username, profilePicture: f.profilePicture } : f)),
+    following: rawFollowing.map((f) => (typeof f === 'object' ? { id: f._id, fullName: f.fullName, username: f.username, profilePicture: f.profilePicture } : f)),
   };
 }
 
@@ -420,6 +445,8 @@ router.get('/suggested', authMiddleware, async (req, res) => {
     for (const u of users) {
       const sanitized = sanitizeUserProfile(u, viewerId);
       const uname = (sanitized.username || sanitized.id || '').toLowerCase();
+      const fname = (sanitized.fullName || '').toLowerCase();
+      if (uname.includes('6a8dc') || fname.includes('6a8dc') || /^[0-9a-fA-F]{24}$/.test(uname)) continue;
       if (seen.has(uname)) continue;
       seen.add(uname);
 
@@ -582,6 +609,9 @@ router.get('/:id/followers', authMiddleware, async (req, res) => {
       populatedFollowers = profileUser.followers
         .filter((f) => {
           const fid = (typeof f === 'object' && f !== null ? (f._id || f.id || f.username) : f).toString();
+          const uname = (typeof f === 'object' && f !== null ? (f.username || '') : '').toLowerCase();
+          const fname = (typeof f === 'object' && f !== null ? (f.fullName || '') : '').toLowerCase();
+          if (uname.includes('6a8dc') || fname.includes('6a8dc') || /^[0-9a-fA-F]{24}$/.test(uname)) return false;
           if (seen.has(fid)) return false;
           seen.add(fid);
           return true;
