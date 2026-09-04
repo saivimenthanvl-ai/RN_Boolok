@@ -203,7 +203,36 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
   const [isPlaying, setIsPlaying] = useState(false);
   const [likesCount, setLikesCount] = useState<number>(item.likes || 920);
   const [hasLiked, setHasLiked] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState<boolean>(() => {
+    if (Platform.OS === 'web') {
+      try {
+        const savedRaw = localStorage.getItem('boolok_saved_reels');
+        if (savedRaw) {
+          const parsed = JSON.parse(savedRaw);
+          return Array.isArray(parsed) && parsed.some((r: any) => r._id === item._id || r.id === item._id);
+        }
+      } catch (e) {}
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    // Check mobile or async persistent storage
+    (async () => {
+      try {
+        if (Platform.OS !== 'web') {
+          const raw = await SecureStore.getItemAsync('boolok_saved_reels');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.some((r: any) => r._id === item._id || r.id === item._id)) {
+              setIsSaved(true);
+            }
+          }
+        }
+      } catch (e) {}
+    })();
+  }, [item._id]);
+
   const [showShareModal, setShowShareModal] = useState(false);
   const [sharedContacts, setSharedContacts] = useState<Record<string, boolean>>({});
   const [comments, setComments] = useState<any[]>(item.comments || [
@@ -310,8 +339,51 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
     }
   };
 
-  const handleToggleSave = () => {
-    setIsSaved((prev) => !prev);
+  const handleToggleSave = async () => {
+    const nextSaved = !isSaved;
+    setIsSaved(nextSaved);
+
+    const reelPayload = {
+      _id: item._id,
+      id: item._id,
+      title: item.title,
+      location: item.location,
+      insight: item.insight,
+      aiMatch: item.aiMatch,
+      likes: likesCount,
+      videoUrl: item.videoUrl,
+      thumbnail: item.thumbnail || item.poster,
+      poster: item.poster || item.thumbnail,
+      savedAt: new Date().toISOString(),
+    };
+
+    if (Platform.OS === 'web') {
+      try {
+        const raw = localStorage.getItem('boolok_saved_reels');
+        let list: any[] = raw ? JSON.parse(raw) : [];
+        if (nextSaved) {
+          if (!list.some((r) => r._id === item._id || r.id === item._id)) {
+            list.unshift(reelPayload);
+          }
+        } else {
+          list = list.filter((r) => r._id !== item._id && r.id !== item._id);
+        }
+        localStorage.setItem('boolok_saved_reels', JSON.stringify(list));
+      } catch (e) {}
+    } else {
+      try {
+        const raw = await SecureStore.getItemAsync('boolok_saved_reels');
+        let list: any[] = raw ? JSON.parse(raw) : [];
+        if (nextSaved) {
+          if (!list.some((r) => r._id === item._id || r.id === item._id)) {
+            list.unshift(reelPayload);
+          }
+        } else {
+          list = list.filter((r) => r._id !== item._id && r.id !== item._id);
+        }
+        await SecureStore.setItemAsync('boolok_saved_reels', JSON.stringify(list));
+      } catch (e) {}
+    }
   };
 
   const handleShareToContact = (contactId: string) => {

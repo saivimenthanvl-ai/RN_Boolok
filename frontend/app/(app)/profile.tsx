@@ -180,7 +180,7 @@ const COMMUNITY_MEMBERS = [
     id: 'ajmal',
     _id: 'ajmal',
     fullName: 'Mohammed Ajmal',
-    username: 'ajmal',
+    username: 'mohammedajmal',
     headline: 'Luxury Living & High-End Residential Broker',
     location: 'Dubai · Luxury Villas',
     bio: 'Connecting international investors to premier waterfront villas and bespoke residential developments.',

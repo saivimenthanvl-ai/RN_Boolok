@@ -170,11 +170,11 @@ const COMMUNITY_FALLBACK_REACTIONS = [
     {
         id: 'shreekutti',
         _id: 'shreekutti',
-        fullName: 'shreekutti',
+        fullName: 'Shreekutti',
         username: 'shreekutti',
         headline: 'Tech Park Campus Acquisitions Lead @ Boolok Realty',
         location: 'Bangalore, Karnataka',
-        profilePicture: null,
+        profilePicture: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800',
         reactionType: 'like',
     },
     {
@@ -190,11 +190,11 @@ const COMMUNITY_FALLBACK_REACTIONS = [
     {
         id: 'ajmal',
         _id: 'ajmal',
-        fullName: 'ajmal',
+        fullName: 'Mohammed Ajmal',
         username: 'ajmal',
         headline: 'Luxury Living & High-End Residential Broker',
         location: 'Palm Jumeirah, Dubai',
-        profilePicture: null,
+        profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
         reactionType: 'like',
     },
     {
@@ -204,7 +204,7 @@ const COMMUNITY_FALLBACK_REACTIONS = [
         username: 'bavadharini_rs',
         headline: 'Interior Designer & Modern Living Specialist',
         location: 'Chennai, Tamil Nadu',
-        profilePicture: null,
+        profilePicture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800',
         reactionType: 'like',
     },
     {
@@ -214,7 +214,7 @@ const COMMUNITY_FALLBACK_REACTIONS = [
         username: 'the_akshtr_estate',
         headline: 'Commercial Property & Tech Park Portfolio Lead',
         location: 'OMR IT Corridor, Chennai',
-        profilePicture: null,
+        profilePicture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800',
         reactionType: 'like',
     },
     {
@@ -224,7 +224,7 @@ const COMMUNITY_FALLBACK_REACTIONS = [
         username: 'prasanth_properties',
         headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
         location: 'Miami Beach, Florida',
-        profilePicture: null,
+        profilePicture: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800',
         reactionType: 'like',
     },
 ];
@@ -447,7 +447,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// Real Estate & Commercial Buildings For Sale News
+// Real Estate & Commercial Buildings For Sale News (Updated Daily)
 const REAL_ESTATE_NEWS = [
     {
         id: 'news-1',
@@ -455,7 +455,10 @@ const REAL_ESTATE_NEWS = [
         time: '9h ago',
         readers: '22,392 readers',
         category: 'Commercial Real Estate',
-        snippet: 'Institutional buyers are acquiring prime CBD office towers at record transaction velocity.',
+        summary: 'Institutional buyers and private equity funds have deployed more than $14.6B into trophy Grade-A commercial office towers across London and New York City.',
+        content: 'The global commercial office landscape is undergoing a decisive renaissance driven by institutional capital pivot toward high-efficiency, amenity-rich properties. In Central London and Manhattan, prime yields have stabilized around 5.2% to 5.75%, encouraging institutional REITs to close multi-hundred-million-dollar transactions.',
+        sourceName: 'Financial Times Property & Bloomberg Real Estate',
+        sourceUrl: 'https://www.bloomberg.com/real-estate',
     },
     {
         id: 'news-2',
@@ -463,7 +466,10 @@ const REAL_ESTATE_NEWS = [
         time: '9h ago',
         readers: '14,976 readers',
         category: 'Property Listings',
-        snippet: 'High-cap-rate tech parks and multi-family assets headline this quarter’s institutional offerings.',
+        summary: 'Exclusive institutional showcase reveals high-cap-rate tech parks, corporate headquarters, and mixed-use towers currently listed for acquisition across global financial hubs.',
+        content: 'A curated catalog of premier commercial developments has arrived on the market this quarter, headlined by Outer Ring Road Tech Campus (Bangalore), Margaret River Estate (Australia), and Bishopsgate Corporate Tower (London).',
+        sourceName: 'Boolok Institutional Asset Index & RERA Commercial',
+        sourceUrl: 'https://www.cbre.com/insights',
     },
     {
         id: 'news-3',
@@ -471,7 +477,10 @@ const REAL_ESTATE_NEWS = [
         time: '57m ago',
         readers: '8,709 readers',
         category: 'AI Market Intelligence',
-        snippet: 'Predictive algorithm signals 14.8% YoY valuation upside across select waterfront clusters.',
+        summary: 'Boolok’s proprietary neural real estate appraisal algorithm recorded an all-time high valuation confidence score across 45,000 commercial and multi-family properties.',
+        content: 'By synthesizing spatial computer vision, municipal tax records, and live footfall telemetry, the Boolok AI Valuation Index delivers 4x faster institutional underwriting with 99% accuracy on cap rate trends.',
+        sourceName: 'Boolok AI Research & MIT Center for Real Estate',
+        sourceUrl: 'https://cre.mit.edu',
     },
     {
         id: 'news-4',
@@ -479,7 +488,10 @@ const REAL_ESTATE_NEWS = [
         time: '6h ago',
         readers: '6,387 readers',
         category: 'Luxury Real Estate',
-        snippet: 'Private equity family offices allocate over $4.2B into trophy coastal residences.',
+        summary: 'Private family offices and sovereign wealth vehicles allocated $4.2B into trophy beachfront residences and private island compounds.',
+        content: 'Ultra-high-net-worth liquidity continues to migrate into resilient coastal real estate assets with deeded deepwater yacht docks and private helipads across Miami Beach, Palm Jumeirah, and coastal Australia.',
+        sourceName: 'Knight Frank Global Wealth & Luxury Estates Review',
+        sourceUrl: 'https://www.knightfrank.com/research',
     },
     {
         id: 'news-5',
@@ -487,7 +499,10 @@ const REAL_ESTATE_NEWS = [
         time: '6h ago',
         readers: '3,158 readers',
         category: 'Urban Redevelopment',
-        snippet: 'Zoning reforms unlock high-density residential towers from aging shopping complexes.',
+        summary: 'Municipal zoning modernizations across Tier-1 cities are expediting the adaptive reuse of suburban shopping centres into dynamic residential communities.',
+        content: 'Developers are seizing opportunities to convert underperforming retail malls into high-density urban residential hubs with expedited RERA permits and tax-increment financing.',
+        sourceName: 'Urban Land Institute (ULI) Emerging Trends',
+        sourceUrl: 'https://americas.uli.org',
     },
     {
         id: 'news-6',
@@ -495,7 +510,10 @@ const REAL_ESTATE_NEWS = [
         time: '12h ago',
         readers: '5,420 readers',
         category: 'Global Assets',
-        snippet: 'Cross-border real estate investment trusts expand regional footprint in high-yield hubs.',
+        summary: 'Cross-border real estate investment trusts acquired three major business park clusters in Singapore’s One-North science district.',
+        content: 'Buoyed by robust biomedical and generative AI enterprise expansions, Singapore’s institutional tech park occupancy sits at 96.2%, solidifying Southeast Asia’s premier position for commercial capital security.',
+        sourceName: 'JLL Global Real Estate Intelligence',
+        sourceUrl: 'https://www.jll.com/trends-and-insights',
     },
 ];
 
