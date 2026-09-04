@@ -187,7 +187,7 @@ const SEARCH_DATABASE: SearchItem[] = [
       phone: '+91 80 4120 7890',
       email: 'shreekutti@boolok.ai',
       verified: true,
-      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800',
+      avatar: null,
       rating: '4.9 ★ (18 campus syndications)',
     },
     sourceName: 'India RERA & IT Corridor Portal',
@@ -516,14 +516,11 @@ export default function AISearchHubScreen() {
     const isLogesh = name.toLowerCase().includes('logesh');
 
     let photoUri: string | null = null;
-    const isShree = name.toLowerCase().includes('shree');
     if (isSai) {
       photoUri = user?.profilePicture || 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c';
     } else if (isLogesh) {
       photoUri = 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c';
-    } else if (isShree) {
-      photoUri = seller.avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800';
-    } else if (seller.avatar && typeof seller.avatar === 'string' && seller.avatar.startsWith('http')) {
+    } else if (seller.avatar && typeof seller.avatar === 'string' && !seller.avatar.includes('images.unsplash.com') && (seller.avatar.startsWith('http') || seller.avatar.startsWith('data:'))) {
       photoUri = seller.avatar;
     }
 

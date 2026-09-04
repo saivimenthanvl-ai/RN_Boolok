@@ -25,9 +25,9 @@ function sanitizeUserProfile(user, viewerId = null) {
 
   const isFollowing = viewerId
     ? followers.some((f) => {
-        const fId = f._id ? f._id.toString() : f.toString();
-        return fId === viewerId.toString();
-      })
+      const fId = f._id ? f._id.toString() : f.toString();
+      return fId === viewerId.toString();
+    })
     : false;
 
   // Deduplicate follower display names strictly
@@ -95,7 +95,7 @@ router.get('/search', async (req, res) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'boolok_secret_key_2026');
         viewerId = decoded.id || decoded._id;
       }
-    } catch (_) {}
+    } catch (_) { }
 
     const regex = new RegExp(q, 'i');
 
@@ -157,7 +157,7 @@ const COMMUNITY_MEMBERS = [
     location: 'Bangalore, Karnataka · Tech Parks',
     bio: 'Specialized in commercial land development and Grade-A tech hub transactions across South India.',
     closedDeals: '18',
-    profilePicture: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800',
+    profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
   },
   {
@@ -181,7 +181,7 @@ const COMMUNITY_MEMBERS = [
     location: 'Dubai & Kochi · Luxury Villas',
     bio: 'Connecting international investors to premier waterfront villas and bespoke residential developments.',
     closedDeals: '14',
-    profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
+    profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
   },
   {
@@ -193,7 +193,7 @@ const COMMUNITY_MEMBERS = [
     location: 'Chennai, Tamil Nadu · Modern Living',
     bio: 'Bespoke high-end interior architecture, penthouse makeovers, and custom luxury styling.',
     closedDeals: '16',
-    profilePicture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800',
+    profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200',
   },
   {
@@ -205,7 +205,7 @@ const COMMUNITY_MEMBERS = [
     location: 'Chennai, Tamil Nadu · Prime Assets',
     bio: 'Specializing in Grade-A IT SEZ parks, commercial lease syndications, and institutional asset acquisitions on OMR Chennai.',
     closedDeals: '29',
-    profilePicture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800',
+    profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200',
   },
   {
@@ -217,7 +217,7 @@ const COMMUNITY_MEMBERS = [
     location: 'Miami, Florida · Coastal Estates',
     bio: 'Luxury real estate advisory focused on ultra-prime beachfront residences and waterfront villas.',
     closedDeals: '11',
-    profilePicture: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800',
+    profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=1200',
   },
   {
@@ -323,6 +323,10 @@ async function resolveOrSeedUser(id) {
           existing.fullName = memberDef.fullName;
           needsSave = true;
         }
+        if (existing.profilePicture && existing.profilePicture.includes('images.unsplash.com')) {
+          existing.profilePicture = memberDef.profilePicture || null;
+          needsSave = true;
+        }
         if (memberDef.headline && (!existing.headline || existing.headline.includes('Boolok Member'))) {
           existing.headline = memberDef.headline;
           needsSave = true;
@@ -402,6 +406,9 @@ async function ensureCommunityConnections() {
           followers: [],
           following: [],
         });
+      } else if (user.profilePicture && user.profilePicture.includes('images.unsplash.com')) {
+        user.profilePicture = m.profilePicture || null;
+        await user.save();
       }
     }
 
@@ -965,8 +972,8 @@ const LOGESHWARAN_REELS = [
     thumbnail: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1200',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     comments: [
-      { _id: 'c1-1', user: { fullName: 'Shreekutti Realty' }, text: 'The terroir and climate suitability metrics are exceptional here! 🍇✨', createdAt: new Date() },
-      { _id: 'c1-2', user: { fullName: 'Ajmal Khan' }, text: '50-year pre-verified water rights make this a bulletproof acquisition. 🍷', createdAt: new Date() },
+      { _id: 'c1-1', user: { fullName: 'Shreekutti' }, text: 'The terroir and climate suitability metrics are exceptional here! 🍇✨', createdAt: new Date() },
+      { _id: 'c1-2', user: { fullName: 'Mohammed Ajmal' }, text: '50-year pre-verified water rights make this a bulletproof acquisition. 🍷', createdAt: new Date() },
     ],
   },
   {
@@ -980,8 +987,8 @@ const LOGESHWARAN_REELS = [
     thumbnail: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
     comments: [
-      { _id: 'c2-1', user: { fullName: 'Ajmal Khan' }, text: 'Thermal zoning and serene forested topography are hard to find in Kyoto! ⛩️🍃', createdAt: new Date() },
-      { _id: 'c2-2', user: { fullName: 'Shreekutti Realty' }, text: 'Eco-luxury cabins here will command top-tier international ADRs. 🏡✨', createdAt: new Date() },
+      { _id: 'c2-1', user: { fullName: 'Mohammed Ajmal' }, text: 'Thermal zoning and serene forested topography are hard to find in Kyoto! ⛩️🍃', createdAt: new Date() },
+      { _id: 'c2-2', user: { fullName: 'Shreekutti' }, text: 'Eco-luxury cabins here will command top-tier international ADRs. 🏡✨', createdAt: new Date() },
     ],
   },
   {
@@ -996,7 +1003,7 @@ const LOGESHWARAN_REELS = [
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
     comments: [
       { _id: 'c3-1', user: { fullName: 'Akshat Commercials' }, text: 'Breathtaking ocean cliff views! Perfect setting for luxury resort hospitality. 🌅🏖️', createdAt: new Date() },
-      { _id: 'c3-2', user: { fullName: 'Shreekutti Realty' }, text: '14% YoY tourism surge matches our regional Bali portfolio forecast. 📈', createdAt: new Date() },
+      { _id: 'c3-2', user: { fullName: 'Shreekutti' }, text: '14% YoY tourism surge matches our regional Bali portfolio forecast. 📈', createdAt: new Date() },
     ],
   },
 ];
@@ -1014,7 +1021,7 @@ const SAI_REELS = [
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     comments: [
       { _id: 'c4-1', user: { fullName: 'Logeshwaran A' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
-      { _id: 'c4-2', user: { fullName: 'Shreekutti Realty' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
+      { _id: 'c4-2', user: { fullName: 'Shreekutti' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
     ],
   },
 ];

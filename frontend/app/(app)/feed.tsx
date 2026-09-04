@@ -127,20 +127,15 @@ const UserAvatar = ({
   const name = user?.fullName || user?.username || 'User';
   const cleanName = String(name).toLowerCase();
 
-  // Ensure verified portrait photos for seeded community members
+  // If the profile picture is a fake stock portrait (Unsplash), clear it
+  if (profilePicture && typeof profilePicture === 'string' && profilePicture.includes('images.unsplash.com')) {
+    profilePicture = null;
+  }
+
+  // Preserve genuine Google-authenticated profile images
   if (!profilePicture || !profilePicture.startsWith('http')) {
-    if (cleanName.includes('shree')) {
-      profilePicture = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800';
-    } else if (cleanName.includes('logesh')) {
+    if (cleanName.includes('logesh')) {
       profilePicture = 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c';
-    } else if (cleanName.includes('ajmal')) {
-      profilePicture = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800';
-    } else if (cleanName.includes('bava')) {
-      profilePicture = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800';
-    } else if (cleanName.includes('akshat') || cleanName.includes('akshtr')) {
-      profilePicture = 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800';
-    } else if (cleanName.includes('prasanth')) {
-      profilePicture = 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800';
     } else if (cleanName.includes('sai')) {
       profilePicture = 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c';
     }
@@ -160,7 +155,7 @@ const UserAvatar = ({
   const charCode = (name.charCodeAt(0) || 0) + (name.charCodeAt(name.length - 1) || 0);
   const bgColor = colors[charCode % colors.length];
 
-  if (profilePicture && typeof profilePicture === 'string' && profilePicture.startsWith('http')) {
+  if (profilePicture && typeof profilePicture === 'string' && (profilePicture.startsWith('http') || profilePicture.startsWith('data:'))) {
     return (
       <Image
         source={{ uri: profilePicture }}
@@ -200,7 +195,7 @@ const DUMMY_REAL_ESTATE_POSTS = [
       username: 'shreekutti',
       title: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Realty',
       degree: '1st',
-      profilePicture: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800',
+      profilePicture: null,
     },
     time: '1w · 🌐',
     content: 'And just like that, our summer commercial campus acquisition is a wrap!\n\nI’m incredibly grateful for the opportunity to have closed this Grade-A Tech Park & Commercial Office development. Fully leased 92,000 sq ft, 8.4% cap rate with pre-verified energy efficiency ratings. Available for institutional portfolios and private office syndication.',
@@ -228,7 +223,7 @@ const DUMMY_REAL_ESTATE_POSTS = [
         author: {
           fullName: 'Mohammed Ajmal',
           username: 'ajmal',
-          profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
+          profilePicture: null,
         },
         text: 'Outstanding acquisition! The architectural footprint is world-class.',
         time: '5d ago',
@@ -243,7 +238,7 @@ const DUMMY_REAL_ESTATE_POSTS = [
       username: 'prasanth_properties',
       title: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
       degree: '1st',
-      profilePicture: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800',
+      profilePicture: null,
     },
     time: '2h · 🌐',
     content: 'Just listed! 🌟 Stunning modern beachfront villa with private infinity pool and direct access to crystal waters. Turnkey luxury investment ready for immediate handover! DM for private walkthroughs. 🏖️🔑',
@@ -258,7 +253,7 @@ const DUMMY_REAL_ESTATE_POSTS = [
         author: {
           fullName: 'Shreekutti',
           username: 'shreekutti',
-          profilePicture: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800',
+          profilePicture: null,
         },
         text: 'The natural lighting on this waterfront build is stunning!',
         time: '1h ago',
@@ -268,7 +263,7 @@ const DUMMY_REAL_ESTATE_POSTS = [
         author: {
           fullName: 'Yashwanth Realty',
           username: 'yashwanth_realty',
-          profilePicture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800',
+          profilePicture: null,
         },
         text: 'Spectacular location and panoramic backdrop.',
         time: '45m ago',
@@ -283,7 +278,7 @@ const DUMMY_REAL_ESTATE_POSTS = [
       username: 'bavadharini_rs',
       title: 'Interior Designer & Modern Living Specialist',
       degree: '1st',
-      profilePicture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800',
+      profilePicture: null,
     },
     time: '1d · 🌐',
     content: 'Bespoke custom kitchen & dining makeover completed for our luxury penthouse client. Custom Italian marble countertops, hidden smart refrigeration, and brass accents. ✨🍽️',
@@ -318,7 +313,7 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     location: 'Outer Ring Road, Bangalore',
     deals: '18 deals closed',
     followerCount: 4,
-    profilePicture: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800',
+    profilePicture: null,
   },
   {
     id: '6a8af34812ef34aed25ae8d2',
@@ -342,7 +337,7 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     location: 'Indiranagar & Prime Districts',
     deals: '14 deals closed',
     followerCount: 4,
-    profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
+    profilePicture: null,
   },
   {
     id: 'bavadharini_rs',
@@ -354,7 +349,7 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     location: 'Koramangala 4th Block',
     deals: '16 deals closed',
     followerCount: 4,
-    profilePicture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800',
+    profilePicture: null,
   },
   {
     id: 'the_akshtr_estate',
@@ -366,7 +361,7 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     location: 'Electronic City Phase 1',
     deals: '29 deals closed',
     followerCount: 4,
-    profilePicture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800',
+    profilePicture: null,
   },
   {
     id: 'prasanth_properties',
@@ -378,7 +373,7 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     location: 'CBD Commercial Corridor',
     deals: '11 deals closed',
     followerCount: 4,
-    profilePicture: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800',
+    profilePicture: null,
   },
 ];
 

@@ -174,7 +174,7 @@ const COMMUNITY_FALLBACK_REACTIONS = [
         username: 'shreekutti',
         headline: 'Tech Park Campus Acquisitions Lead @ Boolok Realty',
         location: 'Bangalore, Karnataka',
-        profilePicture: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800',
+        profilePicture: null,
         reactionType: 'like',
     },
     {
@@ -194,7 +194,7 @@ const COMMUNITY_FALLBACK_REACTIONS = [
         username: 'ajmal',
         headline: 'Luxury Living & High-End Residential Broker',
         location: 'Palm Jumeirah, Dubai',
-        profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800',
+        profilePicture: null,
         reactionType: 'like',
     },
     {
@@ -204,7 +204,7 @@ const COMMUNITY_FALLBACK_REACTIONS = [
         username: 'bavadharini_rs',
         headline: 'Interior Designer & Modern Living Specialist',
         location: 'Chennai, Tamil Nadu',
-        profilePicture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800',
+        profilePicture: null,
         reactionType: 'like',
     },
     {
@@ -214,7 +214,7 @@ const COMMUNITY_FALLBACK_REACTIONS = [
         username: 'the_akshtr_estate',
         headline: 'Commercial Property & Tech Park Portfolio Lead',
         location: 'OMR IT Corridor, Chennai',
-        profilePicture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800',
+        profilePicture: null,
         reactionType: 'like',
     },
     {
@@ -224,7 +224,7 @@ const COMMUNITY_FALLBACK_REACTIONS = [
         username: 'prasanth_properties',
         headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
         location: 'Miami Beach, Florida',
-        profilePicture: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800',
+        profilePicture: null,
         reactionType: 'like',
     },
 ];

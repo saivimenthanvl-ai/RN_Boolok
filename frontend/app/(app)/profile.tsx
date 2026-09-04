@@ -32,7 +32,10 @@ import { API_BASE_URL } from '../../lib/api';
 const GLOBAL_FOLLOWED_USERS = new Set<string>();
 
 const UserAvatar = ({ user, size = 40, style }: { user?: any; size?: number; style?: any }) => {
-  const photo = user?.profilePicture || user?.avatar;
+  let photo = user?.profilePicture || user?.avatar;
+  if (photo && typeof photo === 'string' && photo.includes('images.unsplash.com')) {
+    photo = null;
+  }
   const name = user?.fullName || user?.username || 'User';
   const initial = name[0]?.toUpperCase() || 'U';
 
@@ -1634,9 +1637,14 @@ export default function ProfessionalUserProfileScreen() {
                 onPress={isSelf ? () => setIsAvatarModalOpen(true) : undefined}
                 style={styles.avatarWrapper}
               >
-                {profileUser.profilePicture || (isSelf || (profileUser.username || '').includes('sai')) ? (
+                {profileUser.profilePicture && !profileUser.profilePicture.includes('images.unsplash.com') ? (
                   <Image
-                    source={{ uri: profileUser.profilePicture || 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' }}
+                    source={{ uri: profileUser.profilePicture }}
+                    style={styles.avatarImage}
+                  />
+                ) : (isSelf || (profileUser.username || '').includes('sai')) ? (
+                  <Image
+                    source={{ uri: 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' }}
                     style={styles.avatarImage}
                   />
                 ) : (
@@ -1670,8 +1678,8 @@ export default function ProfessionalUserProfileScreen() {
                       {
                         backgroundColor: '#daa520',
                         borderRadius: 14,
-                        width: 26,
-                        height: 26,
+                        width: 28,
+                        height: 28,
                         justifyContent: 'center',
                         alignItems: 'center',
                         borderWidth: 2,
@@ -1679,7 +1687,7 @@ export default function ProfessionalUserProfileScreen() {
                       },
                     ]}
                   >
-                    <MaterialIcons name="add" size={18} color="#000000" />
+                    <MaterialIcons name="photo-camera" size={16} color="#000000" />
                   </View>
                 ) : (
                   <View style={styles.avatarVerifiedBadge}>
