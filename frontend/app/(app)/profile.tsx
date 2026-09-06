@@ -646,13 +646,14 @@ const SAI_REELS = [
     location: 'Coventry, United Kingdom',
     aiMatch: 97,
     insight: 'Strong engagement expected based on similar recent listings.',
-    likes: 0,
+    likes: 100,
     poster: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
     thumbnail: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     comments: [
       { _id: 'c4-1', user: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
-      { _id: 'c4-2', user: { fullName: 'Shreekutti', username: 'shreekutti' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
+      { _id: 'c4-2', user: { fullName: 'shreekutti', username: 'shreekutti' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
+      { _id: 'c4-3', user: { fullName: 'yashwanth', username: 'yashwanth' }, text: 'Clean architectural lines and modern corporate facade. ✨', createdAt: new Date() },
     ],
   },
 ];
@@ -686,6 +687,58 @@ function resolveMemberProfile(targetId: string, viewer: any) {
       reels: SAI_REELS,
       posts: [
         {
+          _id: 'sai-luxury-prime-p-1',
+          title: 'Luxury Prime Commercial Asset',
+          price: '$8,900,000',
+          location: 'Prime Commercial Corridor',
+          specs: 'Turnkey Acquisition · High Cap Rate',
+          content: 'Rare institutional-grade luxury commercial asset with prime corridor access and verified high cap rate. Pre-approved for immediate institutional portfolio integration. 🏢💼',
+          image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200',
+          mediaUrl: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200',
+          likes: ['the_akshtr_estate', 'logeshwarana', 'ajmal', 'bavadharini_rs', 'prasanth_properties', 'shreekutti'],
+          likesCount: 6,
+          commentsCount: 6,
+          firstLikerName: 'Akshat Commercials',
+          comments: [
+            {
+              _id: 'slp-c-1',
+              author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
+              text: 'Exceptional cap rate and prime commercial footprint! This is exactly what institutional investors look for. 🏢📈',
+              time: '1h ago',
+            },
+            {
+              _id: 'slp-c-2',
+              author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
+              text: 'Turnkey acquisition with pre-verified covenants is perfect for REIT portfolios.',
+              time: '45 min ago',
+            },
+            {
+              _id: 'slp-c-3',
+              author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
+              text: 'High cap rate corridor asset. DM for immediate acquisition interest! 🔑',
+              time: '30 min ago',
+            },
+            {
+              _id: 'slp-c-4',
+              author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
+              text: 'The architectural finish and interior design elements are world-class on this asset. 🌿',
+              time: '20 min ago',
+            },
+            {
+              _id: 'slp-c-5',
+              author: { fullName: 'Prasanth Properties', username: 'prasanth_properties' },
+              text: 'Is this available for syndication? Would love to discuss terms. 🏛️',
+              time: '10 min ago',
+            },
+            {
+              _id: 'slp-c-6',
+              author: { fullName: 'Shreekutti', username: 'shreekutti' },
+              text: 'Grade-A specs with strong tenant covenant structure. Solid long-term hold! 💼✨',
+              time: '5 min ago',
+            },
+          ],
+        },
+        {
           _id: 'sai-p-1',
           title: 'Coventry Corporate Headquarters',
           price: '$16,500,000',
@@ -694,6 +747,7 @@ function resolveMemberProfile(targetId: string, viewer: any) {
           content: 'Grade-A institutional office headquarters with 100% occupancy and blue-chip covenants.',
           image: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200',
           mediaUrl: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200',
+          likes: ['the_akshtr_estate', 'logeshwarana', 'ajmal', 'bavadharini_rs'],
           likesCount: 104,
           commentsCount: 14,
         },
@@ -730,14 +784,46 @@ function resolveMemberProfile(targetId: string, viewer: any) {
   };
 }
 
+const PROFILE_SHARE_CONTACTS = [
+  { id: '1', name: 'shreekutti', role: 'Residential Architect · Chennai', avatar: 'S' },
+  { id: '2', name: 'ajmal', role: 'CRE Advisory & Multi-Family', avatar: 'A' },
+  { id: '3', name: 'yashwanth', role: 'Commercial Realty · Tech Hubs', avatar: 'Y' },
+  { id: '4', name: 'Logeshwaran A', role: 'Architectural Consultant · Tech Parks', avatar: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
+  { id: '5', name: 'Sai Vimenthan', role: 'Principal Broker · Commercial Assets', avatar: 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' },
+];
+
 const ProfileReelItem = ({ reel }: { reel: any }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [likesCount, setLikesCount] = useState<number>(reel.likes?.length ?? reel.likes ?? 100);
+  const [likesCount, setLikesCount] = useState<number>(() => {
+    if (typeof reel.likes === 'number' && reel.likes > 0) return reel.likes;
+    if (Array.isArray(reel.likes)) return reel.likes.length > 0 ? reel.likes.length : 100;
+    return 100;
+  });
   const [hasLiked, setHasLiked] = useState(false);
-  const [comments, setComments] = useState<any[]>(reel.comments || [
-    { _id: 'c1', user: { fullName: 'Logeshwaran A' }, text: 'Incredible property location and zoning potential! 🏢✨', createdAt: new Date() },
-    { _id: 'c2', user: { fullName: 'Bavadharini RS' }, text: 'The architectural design and layout looks world class. 🌿', createdAt: new Date() },
-  ]);
+  const [isSaved, setIsSaved] = useState<boolean>(() => {
+    if (Platform.OS === 'web') {
+      try {
+        const savedRaw = localStorage.getItem('boolok_saved_reels');
+        if (savedRaw) {
+          const parsed = JSON.parse(savedRaw);
+          return Array.isArray(parsed) && parsed.some((r: any) => r._id === reel._id || r.id === reel._id);
+        }
+      } catch (e) { }
+    }
+    return false;
+  });
+
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [sharedContacts, setSharedContacts] = useState<Record<string, boolean>>({});
+
+  const [comments, setComments] = useState<any[]>(() => {
+    if (Array.isArray(reel.comments) && reel.comments.length > 0) return reel.comments;
+    return [
+      { _id: 'c4-1', user: { fullName: 'Logeshwaran A' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
+      { _id: 'c4-2', user: { fullName: 'shreekutti' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
+      { _id: 'c4-3', user: { fullName: 'yashwanth' }, text: 'Clean architectural lines and modern corporate facade. ✨', createdAt: new Date() },
+    ];
+  });
   const [showComments, setShowComments] = useState(false);
   const [commentInput, setCommentInput] = useState('');
 
@@ -793,6 +879,60 @@ const ProfileReelItem = ({ reel }: { reel: any }) => {
     }
   };
 
+  const handleToggleSave = async () => {
+    const nextSaved = !isSaved;
+    setIsSaved(nextSaved);
+
+    const reelPayload = {
+      _id: reel._id,
+      id: reel._id,
+      title: reel.title,
+      location: reel.location,
+      insight: reel.insight,
+      aiMatch: reel.aiMatch,
+      likes: likesCount,
+      videoUrl: reel.videoUrl,
+      thumbnail: reel.thumbnail || reel.poster,
+      poster: reel.poster || reel.thumbnail,
+      savedAt: new Date().toISOString(),
+    };
+
+    if (Platform.OS === 'web') {
+      try {
+        const raw = localStorage.getItem('boolok_saved_reels');
+        let list: any[] = raw ? JSON.parse(raw) : [];
+        if (nextSaved) {
+          if (!list.some((r) => r._id === reel._id || r.id === reel._id)) {
+            list.unshift(reelPayload);
+          }
+        } else {
+          list = list.filter((r) => r._id !== reel._id && r.id !== reel._id);
+        }
+        localStorage.setItem('boolok_saved_reels', JSON.stringify(list));
+      } catch (e) { }
+    } else {
+      try {
+        const raw = await SecureStore.getItemAsync('boolok_saved_reels');
+        let list: any[] = raw ? JSON.parse(raw) : [];
+        if (nextSaved) {
+          if (!list.some((r) => r._id === reel._id || r.id === reel._id)) {
+            list.unshift(reelPayload);
+          }
+        } else {
+          list = list.filter((r) => r._id !== reel._id && r.id !== reel._id);
+        }
+        await SecureStore.setItemAsync('boolok_saved_reels', JSON.stringify(list));
+      } catch (e) { }
+    }
+  };
+
+  const handleShareToContact = (contactId: string) => {
+    setSharedContacts((prev) => ({ ...prev, [contactId]: true }));
+    setTimeout(() => {
+      setSharedContacts((prev) => ({ ...prev, [contactId]: false }));
+    }, 2000);
+  };
+
   const handleAddComment = () => {
     if (!commentInput.trim()) return;
     const newC = {
@@ -808,14 +948,14 @@ const ProfileReelItem = ({ reel }: { reel: any }) => {
   return (
     <View style={styles.reelCardItem}>
       {/* ── Video Player / Fallback ── */}
-      <Pressable onPress={togglePlay} style={StyleSheet.absoluteFill}>
+      <TouchableOpacity activeOpacity={0.95} onPress={togglePlay} style={StyleSheet.absoluteFill}>
         {Platform.OS === 'web' ? (
           <video
             ref={videoRef}
             src={videoSource}
             poster={reel.thumbnail || reel.poster}
             loop
-            preload="metadata"
+            muted
             playsInline
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
@@ -851,30 +991,30 @@ const ProfileReelItem = ({ reel }: { reel: any }) => {
         {!isPlaying && (
           <View style={styles.centerPlayOverlay} pointerEvents="none">
             <View style={styles.playIconCircle}>
-              <MaterialIcons name="play-arrow" size={36} color="#e6b800" />
+              <MaterialIcons name="play-arrow" size={54} color="#f9c03d" />
             </View>
           </View>
         )}
-      </Pressable>
+      </TouchableOpacity>
 
       {/* ── Top Overlay: AI Match Score ── */}
       <View style={styles.reelMatchBadge} pointerEvents="none">
         <View style={styles.reelMatchDot} />
-        <Text style={styles.reelMatchText}>{reel.aiMatch || 95}% AI MATCH</Text>
+        <Text style={styles.reelMatchText}>{reel.aiMatch || 97}% AI MATCH</Text>
       </View>
 
-      {/* ── Right Action Sidebar (Like, Comment, Share) ── */}
+      {/* ── Right Action Sidebar (Like, Comment, Save, Share) ── */}
       <View style={styles.reelRightActions} pointerEvents="box-none">
         {/* Like Button */}
         <TouchableOpacity
           onPress={handleLike}
           activeOpacity={0.7}
-          style={styles.reelActionBtn}
+          style={[styles.reelActionBtn, Platform.OS === 'web' && ({ cursor: 'pointer' } as any)]}
         >
-          <View style={[styles.reelActionIconBox, hasLiked && { backgroundColor: 'rgba(239, 68, 68, 0.35)', borderColor: '#ef4444' }]}>
+          <View style={[styles.reelActionIconBox, hasLiked && { backgroundColor: 'rgba(239, 68, 68, 0.4)', borderColor: '#ef4444' }]}>
             <MaterialIcons
               name={hasLiked ? 'favorite' : 'favorite-border'}
-              size={24}
+              size={28}
               color={hasLiked ? '#ef4444' : '#ffffff'}
             />
           </View>
@@ -887,49 +1027,159 @@ const ProfileReelItem = ({ reel }: { reel: any }) => {
         <TouchableOpacity
           onPress={() => setShowComments(true)}
           activeOpacity={0.7}
-          style={styles.reelActionBtn}
+          style={[styles.reelActionBtn, Platform.OS === 'web' && ({ cursor: 'pointer' } as any)]}
         >
           <View style={styles.reelActionIconBox}>
-            <MaterialCommunityIcons name="comment-text-outline" size={22} color="#ffffff" />
+            <MaterialCommunityIcons name="comment-text-outline" size={26} color="#ffffff" />
           </View>
           <Text style={styles.reelActionText}>{comments.length}</Text>
         </TouchableOpacity>
 
         {/* Save / Bookmark Button */}
         <TouchableOpacity
+          onPress={handleToggleSave}
           activeOpacity={0.7}
-          style={styles.reelActionBtn}
+          style={[styles.reelActionBtn, Platform.OS === 'web' && ({ cursor: 'pointer' } as any)]}
         >
-          <View style={styles.reelActionIconBox}>
-            <MaterialIcons name="bookmark-border" size={24} color="#ffffff" />
+          <View style={[styles.reelActionIconBox, isSaved && { backgroundColor: 'rgba(230, 184, 0, 0.35)', borderColor: '#e6b800' }]}>
+            <MaterialIcons
+              name={isSaved ? 'bookmark' : 'bookmark-border'}
+              size={28}
+              color={isSaved ? '#e6b800' : '#ffffff'}
+            />
           </View>
-          <Text style={styles.reelActionText}>Save</Text>
+          <Text style={[styles.reelActionText, isSaved && { color: '#e6b800', fontWeight: 'bold' }]}>
+            {isSaved ? 'Saved' : 'Save'}
+          </Text>
         </TouchableOpacity>
 
         {/* Share Button */}
         <TouchableOpacity
+          onPress={() => setShowShareModal(true)}
           activeOpacity={0.7}
-          style={styles.reelActionBtn}
+          style={[styles.reelActionBtn, Platform.OS === 'web' && ({ cursor: 'pointer' } as any)]}
         >
           <View style={styles.reelActionIconBox}>
-            <MaterialIcons name="share" size={22} color="#ffffff" />
+            <MaterialIcons name="share" size={28} color="#ffffff" />
           </View>
           <Text style={styles.reelActionText}>Share</Text>
         </TouchableOpacity>
       </View>
 
-      {/* ── Bottom Overlay Info ── */}
+      {/* ── Bottom Overlay Info (Insights Feed Aligned) ── */}
       <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.92)']}
+        colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
         style={styles.reelFooterOverlay}
-        pointerEvents="box-none"
+        pointerEvents="none"
       >
         <Text style={styles.reelTitleHeading}>{reel.title}</Text>
-        <Text style={styles.reelLocationSub}>📍 {reel.location}</Text>
+        <View style={styles.reelLocationRow}>
+          <MaterialIcons name="location-on" size={16} color="rgba(255,255,255,0.8)" />
+          <Text style={styles.reelLocationSub}>{reel.location}</Text>
+        </View>
         <View style={styles.reelInsightBox}>
-          <Text style={styles.reelInsightText}>🤖 {reel.insight}</Text>
+          <View style={styles.reelInsightHeader}>
+            <MaterialCommunityIcons name="brain" size={16} color="#f9c03d" />
+            <Text style={styles.reelInsightTitle}>AI INSIGHT</Text>
+          </View>
+          <Text style={styles.reelInsightText}>{reel.insight}</Text>
         </View>
       </LinearGradient>
+
+      {/* ── Share Modal ── */}
+      <Modal
+        visible={showShareModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowShareModal(false)}
+      >
+        <Pressable
+          onPress={() => setShowShareModal(false)}
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+          }}
+        >
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 440,
+              backgroundColor: '#0b1322',
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: '#1a273c',
+              padding: 22,
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#1a273c', paddingBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <MaterialIcons name="send" size={20} color="#f9c03d" />
+                <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '800' }}>Share Property Reel</Text>
+              </View>
+              <Pressable onPress={() => setShowShareModal(false)}>
+                <MaterialIcons name="close" size={22} color="#8b9bb4" />
+              </Pressable>
+            </View>
+
+            <Text style={{ color: '#8b9bb4', fontSize: 12.5, marginBottom: 14 }}>
+              Select a certified broker or advisor to send this video listing:
+            </Text>
+
+            <ScrollView style={{ maxHeight: 280 }} showsVerticalScrollIndicator={false}>
+              {PROFILE_SHARE_CONTACTS.map((contact) => {
+                const isSent = sharedContacts[contact.id];
+                return (
+                  <View
+                    key={contact.id}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingVertical: 10,
+                      paddingHorizontal: 12,
+                      backgroundColor: '#162235',
+                      borderRadius: 12,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      {contact.avatar && (contact.avatar.startsWith('http') || contact.avatar.startsWith('data:')) ? (
+                        <Image source={{ uri: contact.avatar }} style={{ width: 36, height: 36, borderRadius: 18 }} resizeMode="cover" />
+                      ) : (
+                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#f9c03d', justifyContent: 'center', alignItems: 'center' }}>
+                          <Text style={{ color: '#000000', fontWeight: '800', fontSize: 14 }}>{contact.avatar || (contact.name || 'U').charAt(0).toUpperCase()}</Text>
+                        </View>
+                      )}
+                      <View>
+                        <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>{contact.name}</Text>
+                        <Text style={{ color: '#8b9bb4', fontSize: 11.5 }}>{contact.role}</Text>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      onPress={() => handleShareToContact(contact.id)}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 6,
+                        borderRadius: 16,
+                        backgroundColor: isSent ? '#10b981' : '#f9c03d',
+                      }}
+                    >
+                      <Text style={{ color: '#000000', fontWeight: '700', fontSize: 12 }}>
+                        {isSent ? '✓ Sent' : 'Send'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* ── Comments Modal ── */}
       <Modal
@@ -1100,7 +1350,21 @@ export default function ProfessionalUserProfileScreen() {
 
   const handleOpenPostDetailsModal = async (post: any) => {
     setSelectedPostDetails(post);
-    setPostDetailsLikesCount(post.likes?.length || 1);
+    // Compute likes count excluding the current viewer so we always show "others" not including self
+    const viewerIdSelf = viewer?.id || viewer?._id;
+    const viewerUnameSelf = (viewer?.username || '').toLowerCase();
+    const rawLikes = Array.isArray(post.likes) ? post.likes : [];
+    const filteredLikesCount = rawLikes.filter((l: any) => {
+      const lid = typeof l === 'object' && l ? (l._id || l.id || '') : String(l);
+      return String(lid).toLowerCase() !== String(viewerIdSelf || '').toLowerCase() &&
+             String(lid).toLowerCase() !== viewerUnameSelf;
+    }).length;
+    const isSaiPost = post._id === 'sai-luxury-prime-p-1' ||
+      String(post._id) === '6a85cf218c87a5020393129b' ||
+      (post.author && ((post.author.username || '').toLowerCase() === 'saivimenthanvl' || (post.author.fullName || '').toLowerCase() === 'sai'));
+
+    const defaultCount = isSaiPost ? 6 : 1;
+    setPostDetailsLikesCount(filteredLikesCount > 0 ? filteredLikesCount : (post.likesCount || defaultCount));
     setHasLikedPostDetails(false);
     setPostDetailReaction(null);
     setActivePostDetailReactionPicker(false);
@@ -1182,7 +1446,16 @@ export default function ProfessionalUserProfileScreen() {
           setPostDetailsComments(res.data.post.comments);
         }
         if (Array.isArray(res.data.post.likes)) {
-          setPostDetailsLikesCount(res.data.post.likes.length);
+          // Filter out viewer from likes so count reflects "others who liked"
+          const viewerIdCheck = viewer?.id || viewer?._id;
+          const viewerUnameCheck = (viewer?.username || '').toLowerCase();
+          const filteredApiLikes = res.data.post.likes.filter((l: any) => {
+            const lid = typeof l === 'object' && l ? (l._id || l.id || '') : String(l);
+            return String(lid).toLowerCase() !== String(viewerIdCheck || '').toLowerCase() &&
+                   String(lid).toLowerCase() !== viewerUnameCheck;
+          });
+          const defaultApiCount = isSaiPost ? 6 : 1;
+          setPostDetailsLikesCount(filteredApiLikes.length > 0 ? (isSaiPost ? Math.max(6, filteredApiLikes.length) : filteredApiLikes.length) : defaultApiCount);
         }
       }
     } catch (e) {
@@ -1271,13 +1544,30 @@ export default function ProfessionalUserProfileScreen() {
       const res = await axios.get(`${API_BASE_URL}/api/feed/${selectedPostDetails._id}/reactions`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+      // Always filter out the current viewer so we show only "others who liked"
+      const viewerIdReact = viewer?.id || viewer?._id;
+      const viewerUnameReact = (viewer?.username || '').toLowerCase();
+      const filterViewerOut = (list: any[]) => list.filter((u: any) => {
+        const uid = String(u.id || u._id || '').toLowerCase();
+        const uname = String(u.username || '').toLowerCase();
+        return uid !== String(viewerIdReact || '').toLowerCase() && uname !== viewerUnameReact;
+      });
       if (res.data && Array.isArray(res.data.all) && res.data.all.length > 0) {
-        setAllPostLikesUsers(res.data.all);
-        setPostLikesUsersList(res.data.all);
+        const filtered = filterViewerOut(res.data.all);
+        setAllPostLikesUsers(filtered);
+        setPostLikesUsersList(filtered);
       } else {
-        const fallbacks = COMMUNITY_MEMBERS.map((m) => ({ ...m, reactionType: 'like' }));
-        setAllPostLikesUsers(fallbacks);
-        setPostLikesUsersList(fallbacks);
+        // Fallback to the specific likers for this post
+        const postLikers = [
+          { id: 'the_akshtr_estate', _id: 'the_akshtr_estate', fullName: 'Akshat Commercials', username: 'the_akshtr_estate', headline: 'Commercial Property & Tech Park Portfolio Lead', profilePicture: null, reactionType: 'like' },
+          { id: 'logeshwarana', _id: 'logeshwarana', fullName: 'Logeshwaran A', username: 'logeshwarana', headline: 'Architectural Consultant & Real Estate Lead', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c', reactionType: 'like' },
+          { id: 'ajmal', _id: 'ajmal', fullName: 'Mohammed Ajmal', username: 'ajmal', headline: 'Luxury Living & High-End Residential Broker', profilePicture: null, reactionType: 'like' },
+          { id: 'bavadharini_rs', _id: 'bavadharini_rs', fullName: 'Bavadharini RS', username: 'bavadharini_rs', headline: 'Interior Designer & Modern Living Specialist', profilePicture: null, reactionType: 'like' },
+          { id: 'prasanth_properties', _id: 'prasanth_properties', fullName: 'Prasanth Properties', username: 'prasanth_properties', headline: 'Luxury Waterfront Specialist · Coastal & Prime Estates', profilePicture: null, reactionType: 'like' },
+          { id: 'shreekutti', _id: 'shreekutti', fullName: 'Shreekutti', username: 'shreekutti', headline: 'Tech Park Campus Acquisitions Lead @ Boolok', profilePicture: null, reactionType: 'like' },
+        ];
+        setAllPostLikesUsers(postLikers);
+        setPostLikesUsersList(postLikers);
       }
     } catch (error) {
       const fallbacks = COMMUNITY_MEMBERS.map((m) => ({ ...m, reactionType: 'like' }));
@@ -2500,8 +2790,8 @@ export default function ProfessionalUserProfileScreen() {
                       </Text>
 
                       <View style={styles.propertyFooterRow}>
-                        <Text style={styles.propertyLikesText}>❤️ {post.likes?.length || 1}</Text>
-                        <Text style={styles.propertyCommentsText}>💬 {post.comments?.length || 6}</Text>
+                        <Text style={styles.propertyLikesText}>❤️ {post.likesCount || (Array.isArray(post.likes) ? post.likes.length : 0) || 6}</Text>
+                        <Text style={styles.propertyCommentsText}>💬 {post.commentsCount || post.comments?.length || 6}</Text>
                       </View>
                     </View>
                   </Pressable>
@@ -3013,7 +3303,15 @@ export default function ProfessionalUserProfileScreen() {
                         </View>
                       </View>
                       <Text style={{ fontSize: 12.5, color: '#93c5fd', textDecorationLine: 'underline', fontWeight: '600' }}>
-                        Akshat Commercials and 5 others
+                        {hasLikedPostDetails
+                          ? (postDetailsLikesCount > 0
+                              ? `Liked by you and ${postDetailsLikesCount} other real estate broker${postDetailsLikesCount > 1 ? 's' : ''}`
+                              : 'Liked by you')
+                          : (postDetailsLikesCount <= 0
+                              ? 'Be the first to like'
+                              : postDetailsLikesCount === 1
+                                ? (selectedPostDetails?.firstLikerName || 'Akshat Commercials')
+                                : `${selectedPostDetails?.firstLikerName || 'Akshat Commercials'} and ${postDetailsLikesCount - 1} other${postDetailsLikesCount - 1 > 1 ? 's' : ''}`)}
                       </Text>
                     </Pressable>
 
@@ -3746,16 +4044,17 @@ const styles = StyleSheet.create({
   reelsGridContainer: {
     width: '100%',
     alignItems: 'center',
+    paddingVertical: 12,
   },
   reelCardItem: {
     width: '100%',
     maxWidth: 420,
-    height: 540,
+    height: 680,
     backgroundColor: '#18181b',
-    borderRadius: 20,
+    borderRadius: 24,
     overflow: 'hidden',
     position: 'relative',
-    marginBottom: 20,
+    marginBottom: 28,
   },
   reelImage: {
     width: '100%',
@@ -3763,46 +4062,44 @@ const styles = StyleSheet.create({
   },
   reelMatchBadge: {
     position: 'absolute',
-    top: 16,
-    left: 16,
+    top: 24,
+    left: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#000000',
-    borderWidth: 1,
-    borderColor: '#e6b800',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
-    zIndex: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(249, 192, 61, 0.3)',
+    zIndex: 20,
   },
   reelMatchDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#e6b800',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#f9c03d',
     marginRight: 6,
   },
   reelMatchText: {
-    color: '#e6b800',
-    fontWeight: '800',
-    fontSize: 11,
+    color: '#f9c03d',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
   centerPlayOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    zIndex: 10,
   },
   playIconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderWidth: 2,
-    borderColor: '#e6b800',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(249, 192, 61, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(249, 192, 61, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -3811,51 +4108,69 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    padding: 20,
+    zIndex: 15,
   },
   reelTitleHeading: {
+    fontSize: 24,
+    fontWeight: 'bold',
     color: '#ffffff',
-    fontSize: 18,
-    fontWeight: '800',
+    marginBottom: 4,
+  },
+  reelLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
   },
   reelLocationSub: {
-    color: '#cbd5e1',
-    fontSize: 12,
-    marginTop: 2,
-    marginBottom: 8,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    marginLeft: 4,
   },
   reelInsightBox: {
-    backgroundColor: '#1f1b0a',
+    backgroundColor: 'rgba(249, 192, 61, 0.1)',
     borderWidth: 1,
-    borderColor: '#e6b800',
-    borderRadius: 8,
-    padding: 8,
+    borderColor: 'rgba(249, 192, 61, 0.3)',
+    borderRadius: 12,
+    padding: 12,
+  },
+  reelInsightHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  reelInsightTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#f9c03d',
+    marginLeft: 6,
   },
   reelInsightText: {
-    color: '#e2e8f0',
-    fontSize: 11,
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    lineHeight: 18,
   },
 
   // Reel Right Actions Sidebar
   reelRightActions: {
     position: 'absolute',
-    right: 14,
-    bottom: 120,
+    right: 16,
+    bottom: 72,
     alignItems: 'center',
-    zIndex: 20,
+    zIndex: 30,
+    gap: 4,
   },
   reelActionBtn: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 18,
   },
   reelActionIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0,0,0,0.4)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 4,
@@ -3863,10 +4178,7 @@ const styles = StyleSheet.create({
   reelActionText: {
     color: '#ffffff',
     fontSize: 12,
-    fontWeight: '600',
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    fontWeight: '500',
   },
 
   // Comments Modal Styles

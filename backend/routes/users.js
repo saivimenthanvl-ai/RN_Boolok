@@ -1535,12 +1535,13 @@ router.post('/:id/follow', authMiddleware, async (req, res) => {
     target.followers = target.followers || [];
     viewer.following = viewer.following || [];
 
-    const isAlreadyFollowing = target.followers.some((f) => f.toString() === viewerId.toString());
+    const getFid = (f) => (f && f._id ? f._id.toString() : String(f || ''));
+    const isAlreadyFollowing = target.followers.some((f) => getFid(f) === viewerId.toString());
 
     if (isAlreadyFollowing) {
       // Unfollow
-      target.followers = target.followers.filter((f) => f.toString() !== viewerId.toString());
-      viewer.following = viewer.following.filter((f) => f.toString() !== target._id.toString());
+      target.followers = target.followers.filter((f) => getFid(f) !== viewerId.toString());
+      viewer.following = viewer.following.filter((f) => getFid(f) !== target._id.toString());
 
       await Promise.all([target.save(), viewer.save()]);
 

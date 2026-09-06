@@ -248,6 +248,67 @@ const VIGNESH_HOUSE_SHARE_COMMENTS = [
 
 const DUMMY_REAL_ESTATE_POSTS = [
   {
+    _id: 'sai-luxury-prime-p-1',
+    author: {
+      _id: 'saivimenthanvl',
+      fullName: 'Sai',
+      username: 'saivimenthanvl',
+      title: 'Elite Real Estate Broker & Commercial Portfolio Lead @ Boolok',
+      degree: '1st',
+      profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c',
+    },
+    time: '1h · 🌐',
+    title: 'Luxury Prime Commercial Asset',
+    price: '$8,900,000',
+    location: 'Prime Commercial Corridor',
+    specs: 'Turnkey Acquisition · High Cap Rate',
+    content: 'Rare institutional-grade luxury commercial asset with prime corridor access and verified high cap rate. Pre-approved for immediate institutional portfolio integration. 🏢💼',
+    mediaUrls: ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200'],
+    likes: ['the_akshtr_estate', 'logeshwarana', 'ajmal', 'bavadharini_rs', 'prasanth_properties', 'shreekutti'],
+    likesSummary: 'Liked by Akshat Commercials and 5 others',
+    likesCount: 6,
+    firstLikerName: 'Akshat Commercials',
+    commentsCount: 6,
+    comments: [
+      {
+        _id: 'slp-c-1',
+        author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
+        text: 'Exceptional cap rate and prime commercial footprint! This is exactly what institutional investors look for. 🏢📈',
+        time: '45 min ago',
+      },
+      {
+        _id: 'slp-c-2',
+        author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
+        text: 'Turnkey acquisition with pre-verified covenants is perfect for REIT portfolios.',
+        time: '30 min ago',
+      },
+      {
+        _id: 'slp-c-3',
+        author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
+        text: 'High cap rate corridor asset. DM for immediate acquisition interest! 🔑',
+        time: '25 min ago',
+      },
+      {
+        _id: 'slp-c-4',
+        author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
+        text: 'The architectural finish and interior design elements are world-class on this asset. 🌿',
+        time: '20 min ago',
+      },
+      {
+        _id: 'slp-c-5',
+        author: { fullName: 'Prasanth Properties', username: 'prasanth_properties' },
+        text: 'Is this available for syndication? Would love to discuss terms. 🏛️',
+        time: '10 min ago',
+      },
+      {
+        _id: 'slp-c-6',
+        author: { fullName: 'Shreekutti', username: 'shreekutti' },
+        text: 'Grade-A specs with strong tenant covenant structure. Solid long-term hold! 💼✨',
+        time: '5 min ago',
+      },
+    ],
+  },
+  {
     _id: 'post-shreekutti-1',
     author: {
       _id: 'shreekutti',
@@ -460,6 +521,11 @@ export default function ProfessionalSocialFeedScreen() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newPostText, setNewPostText] = useState('');
   const [newPostImage, setNewPostImage] = useState<string | null>(null);
+  const [postTitle, setPostTitle] = useState('');
+  const [postPrice, setPostPrice] = useState('');
+  const [postLocation, setPostLocation] = useState('');
+  const [postSpecs, setPostSpecs] = useState('');
+  const [postListingType, setPostListingType] = useState<'standard' | 'listing'>('standard');
   const [isPublishing, setIsPublishing] = useState(false);
 
   // Active Comment Post ID for inline comments
@@ -592,6 +658,17 @@ export default function ProfessionalSocialFeedScreen() {
       reactionType: 'like',
     };
 
+    // Named likers for Sai's "Luxury Prime Commercial Asset" post (6 specific people)
+    const SAI_POST_LIKERS = [
+      { id: 'the_akshtr_estate', _id: 'the_akshtr_estate', fullName: 'Akshat Commercials', username: 'the_akshtr_estate', headline: 'Commercial Property & Tech Park Portfolio Lead', profilePicture: null, reactionType: 'like' },
+      { id: 'logeshwarana', _id: 'logeshwarana', fullName: 'Logeshwaran A', username: 'logeshwarana', headline: 'Architectural Consultant & Real Estate Lead', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c', reactionType: 'like' },
+      { id: 'ajmal', _id: 'ajmal', fullName: 'Mohammed Ajmal', username: 'ajmal', headline: 'Luxury Living & High-End Residential Broker', profilePicture: null, reactionType: 'like' },
+      { id: 'bavadharini_rs', _id: 'bavadharini_rs', fullName: 'Bavadharini RS', username: 'bavadharini_rs', headline: 'Interior Designer & Modern Living Specialist', profilePicture: null, reactionType: 'like' },
+      { id: 'prasanth_properties', _id: 'prasanth_properties', fullName: 'Prasanth Properties', username: 'prasanth_properties', headline: 'Luxury Waterfront Specialist · Coastal & Prime Estates', profilePicture: null, reactionType: 'like' },
+      { id: 'shreekutti', _id: 'shreekutti', fullName: 'Shreekutti', username: 'shreekutti', headline: 'Tech Park Campus Acquisitions Lead @ Boolok', profilePicture: null, reactionType: 'like' },
+    ];
+    const isSaiPost = post._id === 'sai-luxury-prime-p-1' || (post.author?.username || '').toLowerCase() === 'saivimenthanvl';
+
     try {
       const token = await getToken();
       const res = await axios.get(`${API_BASE_URL}/api/feed/${post._id}/reactions`, {
@@ -603,27 +680,32 @@ export default function ProfessionalSocialFeedScreen() {
       let combined: any[] = [];
       if (res.data && Array.isArray(res.data.all) && res.data.all.length > 0) {
         combined = res.data.all.map((u: any) => ({ ...u, reactionType: 'like' }));
+        // Always remove the viewer from the "others who liked" list
+        combined = combined.filter((u) => u.id !== viewerId && u.username !== user?.username);
       } else {
-        combined = DEFAULT_COMMUNITY_ADVISORS.map((u: any) => ({ ...u, reactionType: 'like' }));
+        // Use named likers for Sai's post, generic fallback for others
+        combined = isSaiPost
+          ? SAI_POST_LIKERS.filter((u) => u.username !== user?.username)
+          : DEFAULT_COMMUNITY_ADVISORS.map((u: any) => ({ ...u, reactionType: 'like' })).filter((u: any) => u.id !== viewerId && u.username !== user?.username);
       }
 
-      // If viewer has liked the post, ensure they are in the list
+      // Only add viewer if they actively liked the post
       if (isCurrentlyLiked) {
         const hasViewer = combined.some((u) => u.id === viewerId || u.username === user?.username);
         if (!hasViewer) {
           combined.unshift(viewerObj);
         }
-      } else {
-        combined = combined.filter((u) => u.id !== viewerId && u.username !== user?.username);
       }
 
       setAllReactionUsers(combined);
       setLikesModalUsers(combined);
       setReactionCounts({ all: combined.length, like: combined.length });
     } catch (error) {
-      let fallbacks = DEFAULT_COMMUNITY_ADVISORS.map((u: any) => ({ ...u, reactionType: 'like' }));
+      let fallbacks = isSaiPost
+        ? SAI_POST_LIKERS.filter((u) => u.username !== user?.username)
+        : DEFAULT_COMMUNITY_ADVISORS.map((u: any) => ({ ...u, reactionType: 'like' })).filter((u: any) => u.id !== viewerId && u.username !== user?.username);
       if (isCurrentlyLiked) {
-        fallbacks.unshift(viewerObj);
+        fallbacks = [viewerObj, ...fallbacks];
       }
       setAllReactionUsers(fallbacks);
       setLikesModalUsers(fallbacks);
@@ -669,6 +751,30 @@ export default function ProfessionalSocialFeedScreen() {
     }
   };
 
+  const getStoredFollowedUsers = (): Record<string, boolean> => {
+    if (Platform.OS === 'web') {
+      try {
+        const val = localStorage.getItem('boolok_user_following_map');
+        return val ? JSON.parse(val) : {};
+      } catch (e) {
+        return {};
+      }
+    }
+    return {};
+  };
+
+  const saveStoredFollowedUser = (keys: (string | undefined)[], isFollowing: boolean) => {
+    if (Platform.OS === 'web') {
+      try {
+        const map = getStoredFollowedUsers();
+        keys.filter(Boolean).forEach((k) => {
+          map[k as string] = isFollowing;
+        });
+        localStorage.setItem('boolok_user_following_map', JSON.stringify(map));
+      } catch (e) { }
+    }
+  };
+
   const fetchPostsAndNews = async () => {
     try {
       const token = await getToken();
@@ -692,16 +798,51 @@ export default function ProfessionalSocialFeedScreen() {
 
       const baseList = [
         ...rawPosts,
-        ...DUMMY_REAL_ESTATE_POSTS.filter((dp) => !rawPosts.some((fp: any) => fp._id === dp._id)),
+        ...DUMMY_REAL_ESTATE_POSTS.filter((dp) => {
+          // Skip if API already has same post ID
+          if (rawPosts.some((fp: any) => fp._id === dp._id)) return false;
+          // For Sai's post: also skip if API already returned a post by saivimenthanvl (prevent duplicate)
+          if (dp.author?.username === 'saivimenthanvl') {
+            if (rawPosts.some((fp: any) =>
+              (fp.author?.username || '').toLowerCase() === 'saivimenthanvl' ||
+              (fp.author?._id || '').toLowerCase() === 'saivimenthanvl'
+            )) return false;
+          }
+          return true;
+        }),
       ];
 
       const viewerId = user?.id || user?._id || null;
       const viewerUsername = user?.username ? String(user?.username).toLowerCase() : null;
 
+      const SAI_COMMUNITY_LIKERS = ['the_akshtr_estate', 'logeshwarana', 'ajmal', 'bavadharini_rs', 'prasanth_properties', 'shreekutti'];
+
       const merged = baseList.map((p) => {
-        const baseLikes = Array.isArray(p.likes)
+        const isSaiPost = p._id === 'sai-luxury-prime-p-1' ||
+          String(p._id) === '6a85cf218c87a5020393129b' ||
+          (p.author && ((p.author.username || '').toLowerCase() === 'saivimenthanvl' || (p.author.fullName || '').toLowerCase() === 'sai'));
+
+        if (isSaiPost) {
+          p.title = p.title || 'Luxury Prime Commercial Asset';
+          p.price = p.price || '$8,900,000';
+          p.location = p.location || 'Prime Commercial Corridor';
+          p.specs = p.specs || 'Turnkey Acquisition · High Cap Rate';
+          p.content = p.content || 'Rare institutional-grade luxury commercial asset with prime corridor access and verified high cap rate. Pre-approved for immediate institutional portfolio integration. 🏢💼';
+          if (!p.mediaUrl && (!p.mediaUrls || p.mediaUrls.length === 0)) {
+            p.mediaUrl = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200';
+            p.mediaUrls = ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200'];
+          }
+          p.firstLikerName = 'Akshat Commercials';
+        }
+
+        let baseLikes = Array.isArray(p.likes)
           ? p.likes.map((l: any) => (typeof l === 'object' && l ? (l._id || l.id) : String(l)))
           : [];
+
+        if (isSaiPost) {
+          // For Sai's post, always include the 6 community broker likers as the base others
+          baseLikes = Array.from(new Set([...SAI_COMMUNITY_LIKERS, ...baseLikes]));
+        }
 
         const hasViewerInBase = viewerId
           ? baseLikes.some((id: string) => id === String(viewerId) || (viewerUsername && id.toLowerCase() === viewerUsername))
@@ -740,6 +881,7 @@ export default function ProfessionalSocialFeedScreen() {
           authorObj.username = 'yashwanth';
         }
 
+        const firstLikerName = p.firstLikerName || null;
         const otherBrokersCount = isPersistedLiked ? Math.max(0, likesCount - 1) : likesCount;
         let summaryText = '';
         if (isPersistedLiked) {
@@ -747,7 +889,13 @@ export default function ProfessionalSocialFeedScreen() {
             ? `Liked by you and ${otherBrokersCount} other real estate broker${otherBrokersCount > 1 ? 's' : ''}`
             : `Liked by you`;
         } else if (likesCount > 0) {
-          summaryText = `Liked by ${likesCount} real estate broker${likesCount > 1 ? 's' : ''}`;
+          if (firstLikerName && likesCount > 1) {
+            summaryText = `Liked by ${firstLikerName} and ${likesCount - 1} other${likesCount - 1 > 1 ? 's' : ''}`;
+          } else if (firstLikerName) {
+            summaryText = `Liked by ${firstLikerName}`;
+          } else {
+            summaryText = `Liked by ${likesCount} real estate broker${likesCount > 1 ? 's' : ''}`;
+          }
         } else {
           summaryText = `Be the first to like this property`;
         }
@@ -762,7 +910,21 @@ export default function ProfessionalSocialFeedScreen() {
         };
       });
 
-      setPosts(merged);
+      // Ensure Sai's post is always positioned as the second post (index 1) in the social feed
+      const saiIndex = merged.findIndex((p: any) =>
+        p._id === 'sai-luxury-prime-p-1' ||
+        String(p._id) === '6a85cf218c87a5020393129b' ||
+        (p.author && ((p.author.username || '').toLowerCase() === 'saivimenthanvl' || (p.author.fullName || '').toLowerCase() === 'sai'))
+      );
+
+      let finalMerged = [...merged];
+      if (saiIndex !== -1) {
+        const [saiPostItem] = finalMerged.splice(saiIndex, 1);
+        const targetPos = finalMerged.length > 0 ? 1 : 0;
+        finalMerged.splice(targetPos, 0, saiPostItem);
+      }
+
+      setPosts(finalMerged);
 
       if (newsRes.status === 'fulfilled' && Array.isArray(newsRes.value.data?.news)) {
         setNewsList(newsRes.value.data.news);
@@ -798,15 +960,35 @@ export default function ProfessionalSocialFeedScreen() {
             seen.add(uname);
             return true;
           });
-        setSuggestedUsers(uniqueSuggested);
+        const storedFollowMap = getStoredFollowedUsers();
         const map: Record<string, boolean> = {};
-        uniqueSuggested.forEach((u: any) => {
-          const isF = Boolean(u.isFollowing);
-          if (u.id) map[u.id] = isF;
-          if (u._id) map[u._id] = isF;
-          if (u.username) map[u.username] = isF;
+        const syncedSuggested = uniqueSuggested.map((u: any) => {
+          const uId = u.id || u._id;
+          const uname = u.username;
+          const isPersisted = storedFollowMap[uId] !== undefined
+            ? storedFollowMap[uId]
+            : (storedFollowMap[uname] !== undefined ? storedFollowMap[uname] : Boolean(u.isFollowing));
+          if (u.id) map[u.id] = isPersisted;
+          if (u._id) map[u._id] = isPersisted;
+          if (u.username) map[u.username] = isPersisted;
+
+          const baseFollowers = typeof u.followerCount === 'number' ? u.followerCount : 0;
+          let adjustedFollowers = baseFollowers;
+          if (isPersisted && !u.isFollowing) {
+            adjustedFollowers = baseFollowers + 1;
+          } else if (!isPersisted && u.isFollowing) {
+            adjustedFollowers = Math.max(0, baseFollowers - 1);
+          }
+
+          return {
+            ...u,
+            isFollowing: isPersisted,
+            followerCount: adjustedFollowers,
+          };
         });
-        setFollowingMap(map);
+
+        setSuggestedUsers(syncedSuggested);
+        setFollowingMap((prev) => ({ ...prev, ...map }));
       }
     } catch (error) {
       console.error('Feed fetch error:', error);
@@ -830,6 +1012,8 @@ export default function ProfessionalSocialFeedScreen() {
     const nextState = !isCurrentlyFollowing;
 
     const keysToUpdate = [targetId, targetUsername, targetUser?.id, targetUser?._id, targetUser?.username].filter(Boolean);
+    saveStoredFollowedUser(keysToUpdate, nextState);
+
     setFollowingMap((prev) => {
       const next = { ...prev };
       keysToUpdate.forEach((k) => {
@@ -863,6 +1047,8 @@ export default function ProfessionalSocialFeedScreen() {
       if (res.data) {
         const actualFollowing = typeof res.data.isFollowing === 'boolean' ? res.data.isFollowing : nextState;
         const actualCount = typeof res.data.followerCount === 'number' ? res.data.followerCount : undefined;
+
+        saveStoredFollowedUser(keysToUpdate, actualFollowing);
 
         setFollowingMap((prev) => {
           const next = { ...prev };
@@ -928,13 +1114,20 @@ export default function ProfessionalSocialFeedScreen() {
 
           const newCount = nextLikes.length;
           const otherBrokersCount = willBeLiked ? Math.max(0, newCount - 1) : newCount;
+          const firstLiker = p.firstLikerName || null;
           let summaryText = '';
           if (willBeLiked) {
             summaryText = otherBrokersCount > 0
               ? `Liked by you and ${otherBrokersCount} other real estate broker${otherBrokersCount > 1 ? 's' : ''}`
               : `Liked by you`;
           } else if (newCount > 0) {
-            summaryText = `Liked by ${newCount} real estate broker${newCount > 1 ? 's' : ''}`;
+            if (firstLiker && newCount > 1) {
+              summaryText = `Liked by ${firstLiker} and ${newCount - 1} other${newCount - 1 > 1 ? 's' : ''}`;
+            } else if (firstLiker) {
+              summaryText = `Liked by ${firstLiker}`;
+            } else {
+              summaryText = `Liked by ${newCount} real estate broker${newCount > 1 ? 's' : ''}`;
+            }
           } else {
             summaryText = `Be the first to like this property`;
           }
@@ -986,13 +1179,17 @@ export default function ProfessionalSocialFeedScreen() {
     const text = (commentInputs[postId] || '').trim();
     if (!text) return;
 
+    const currentAuthorName = user?.fullName || user?.username || 'Real Estate Professional';
+    const currentUsername = user?.username || (user?.email ? user.email.split('@')[0] : 'member');
+    const currentAvatar = user?.profilePicture || null;
+
     const newComment = {
       _id: `c-${Date.now()}`,
       author: {
-        _id: user?.id || 'sai',
-        fullName: user?.fullName || 'Sai Vimenthan',
-        username: user?.username || 'saivimenthanvl',
-        profilePicture: user?.profilePicture || null,
+        _id: user?.id || user?._id || 'user',
+        fullName: currentAuthorName,
+        username: currentUsername,
+        profilePicture: currentAvatar,
       },
       text,
       time: 'Just now',
@@ -1027,24 +1224,38 @@ export default function ProfessionalSocialFeedScreen() {
   };
 
   const handleCreatePost = async () => {
-    if (!newPostText.trim() && !newPostImage) {
-      alertMsg('Please write some details or attach a property image.');
+    const hasContent = newPostText.trim() || postTitle.trim() || newPostImage;
+    if (!hasContent) {
+      alertMsg('Please write some details or attach property information.');
       return;
     }
     setIsPublishing(true);
 
+    const titleTrimmed = postTitle.trim();
+    const priceTrimmed = postPrice.trim();
+    const locationTrimmed = postLocation.trim();
+    const specsTrimmed = postSpecs.trim();
+    const contentTrimmed = newPostText.trim() || (titleTrimmed ? `${titleTrimmed}${priceTrimmed ? ` · ${priceTrimmed}` : ''}${locationTrimmed ? ` · ${locationTrimmed}` : ''}` : '');
+
+    const currentAuthorName = user?.fullName || 'Real Estate Advisor';
+    const currentUsername = user?.username || (user?.email ? user.email.split('@')[0] : 'advisor');
+
     const newPostObj = {
       _id: `post-${Date.now()}`,
       author: {
-        _id: user?.id || 'self',
-        fullName: user?.fullName || 'Sai Vimenthan',
-        username: user?.username || 'saivimenthanvl',
-        title: 'Elite Real Estate Broker & Portfolio Advisor',
+        _id: user?.id || user?._id || 'self',
+        fullName: currentAuthorName,
+        username: currentUsername,
+        title: user?.headline || 'Elite Real Estate Broker & Portfolio Advisor',
         degree: 'You',
         profilePicture: user?.profilePicture || null,
       },
+      title: titleTrimmed,
+      price: priceTrimmed,
+      location: locationTrimmed,
+      specs: specsTrimmed,
       time: 'Just now · 🌐',
-      content: newPostText.trim(),
+      content: contentTrimmed,
       mediaUrls: newPostImage ? [newPostImage] : [],
       likes: [],
       likesCount: 0,
@@ -1058,7 +1269,14 @@ export default function ProfessionalSocialFeedScreen() {
       const token = await getToken();
       await axios.post(
         `${API_BASE_URL}/api/feed`,
-        { content: newPostText, mediaUrl: newPostImage },
+        {
+          title: titleTrimmed,
+          price: priceTrimmed,
+          location: locationTrimmed,
+          specs: specsTrimmed,
+          content: contentTrimmed,
+          mediaUrl: newPostImage,
+        },
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
     } catch (error) {
@@ -1067,9 +1285,14 @@ export default function ProfessionalSocialFeedScreen() {
 
     setNewPostText('');
     setNewPostImage(null);
+    setPostTitle('');
+    setPostPrice('');
+    setPostLocation('');
+    setPostSpecs('');
+    setPostListingType('standard');
     setIsPublishing(false);
     setIsCreateModalOpen(false);
-    alertMsg('Property post published successfully to Boolok Real Estate Network!');
+    alertMsg('Property listing published successfully to Boolok Real Estate Network!');
   };
 
   const alertMsg = (msg: string) => {
@@ -1203,7 +1426,10 @@ export default function ProfessionalSocialFeedScreen() {
             <View style={styles.startPostHeader}>
               <UserAvatar user={user} size={42} style={styles.startPostAvatar} />
               <Pressable
-                onPress={() => setIsCreateModalOpen(true)}
+                onPress={() => {
+                  setPostListingType('standard');
+                  setIsCreateModalOpen(true);
+                }}
                 style={styles.startPostInputTrigger}
               >
                 <Text style={styles.startPostPlaceholder}>
@@ -1223,7 +1449,10 @@ export default function ProfessionalSocialFeedScreen() {
               </Pressable>
 
               <Pressable
-                onPress={() => setIsCreateModalOpen(true)}
+                onPress={() => {
+                  setPostListingType('standard');
+                  setIsCreateModalOpen(true);
+                }}
                 style={styles.composerActionBtn}
               >
                 <MaterialIcons name="photo" size={20} color="#38bdf8" />
@@ -1231,7 +1460,10 @@ export default function ProfessionalSocialFeedScreen() {
               </Pressable>
 
               <Pressable
-                onPress={() => setIsCreateModalOpen(true)}
+                onPress={() => {
+                  setPostListingType('listing');
+                  setIsCreateModalOpen(true);
+                }}
                 style={styles.composerActionBtn}
               >
                 <MaterialIcons name="apartment" size={20} color="#e6b800" />
@@ -1356,6 +1588,44 @@ export default function ProfessionalSocialFeedScreen() {
                     </Pressable>
                   )}
                 </View>
+
+                {/* Commercial Property Listing Header & Badges if applicable */}
+                {(post.title || post.price || post.location || post.specs) && (
+                  <View style={{ backgroundColor: isDark ? '#0c1626' : '#f1f5f9', borderRadius: 10, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: isDark ? '#1a2c42' : '#cbd5e1' }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <MaterialIcons name="apartment" size={16} color={goldPrimary} />
+                        <Text style={{ color: goldPrimary, fontSize: 11, fontWeight: '800', letterSpacing: 0.5 }}>
+                          COMMERCIAL LISTING
+                        </Text>
+                      </View>
+                      {post.price && (
+                        <Text style={{ color: '#22c55e', fontSize: 15, fontWeight: '800' }}>
+                          {post.price}
+                        </Text>
+                      )}
+                    </View>
+                    {post.title && (
+                      <Text style={{ color: isDark ? '#ffffff' : '#0f172a', fontSize: 15, fontWeight: '800', marginBottom: 4 }}>
+                        {post.title}
+                      </Text>
+                    )}
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
+                      {post.location && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <MaterialIcons name="location-on" size={13} color="#94a3b8" />
+                          <Text style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: 12 }}>{post.location}</Text>
+                        </View>
+                      )}
+                      {post.specs && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <MaterialIcons name="straighten" size={13} color="#94a3b8" />
+                          <Text style={{ color: isDark ? '#94a3b8' : '#64748b', fontSize: 12 }}>{post.specs}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                )}
 
                 {/* Post Text Description */}
                 <Text style={styles.postBodyContent}>{post.content}</Text>
@@ -1562,25 +1832,15 @@ export default function ProfessionalSocialFeedScreen() {
 
                       return activeComments.map((c: any, cIdx: number) => {
                         const cAuthor = c.author || c.user || {};
-                        let rawName = cAuthor.fullName || cAuthor.username || (typeof c.author === 'string' ? c.author : '') || (typeof c.user === 'string' ? c.user : '');
-                        const commentBody = c.text || 'Clean zoning and strong cap rate numbers.';
+                        let rawName = (typeof cAuthor === 'object' ? (cAuthor.fullName || cAuthor.username) : '') || (typeof c.author === 'string' ? c.author : '') || (typeof c.user === 'string' ? c.user : '');
+                        const commentBody = c.text || '';
                         const commentTime = c.time || (c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '1h ago');
 
-                        // If rawName is missing, hex ID, placeholder 'Member' or empty, derive the real advisor name from the comment text or index
-                        const bodyLower = commentBody.toLowerCase();
-                        if (!rawName || /^[0-9a-fA-F]{24}$/.test(rawName) || rawName.startsWith('6a8') || rawName.toLowerCase() === 'member' || rawName.toLowerCase() === 'advisor') {
-                          if (cAuthor.username && !/^[0-9a-fA-F]{24}$/.test(cAuthor.username)) {
+                        const isPlaceholderOrMissing = !rawName || /^[0-9a-fA-F]{24}$/.test(rawName) || rawName.startsWith('6a8') || rawName.toLowerCase() === 'member' || rawName.toLowerCase() === 'advisor';
+                        if (isPlaceholderOrMissing) {
+                          if (cAuthor.username && !/^[0-9a-fA-F]{24}$/.test(cAuthor.username) && cAuthor.username !== 'advisor' && cAuthor.username !== 'member') {
                             rawName = cAuthor.username;
-                          } else if (bodyLower.includes('cap rate') && bodyLower.includes('institutional')) rawName = 'Logeshwaran A';
-                          else if (bodyLower.includes('tenant covenant') || bodyLower.includes('specs')) rawName = 'Shreekutti';
-                          else if (bodyLower.includes('turnkey acquisition') || bodyLower.includes('verified yield')) rawName = 'Mohammed Ajmal';
-                          else if (bodyLower.includes('architectural finish') || bodyLower.includes('interior design')) rawName = 'Bavadharini RS';
-                          else if (bodyLower.includes('omr corridor') || bodyLower.includes('institutional grade')) rawName = 'Akshat Commercials';
-                          else if (bodyLower.includes('syndication') || bodyLower.includes('discuss terms')) rawName = 'Prasanth Properties';
-                          else if (bodyLower.includes('fractional house share') || bodyLower.includes('european co-owners')) rawName = 'Sophia Sterling';
-                          else if (bodyLower.includes('bespoke co-ownership') || bodyLower.includes('capital preservation')) rawName = 'David Sterling';
-                          else if (bodyLower.includes('deeded fractional title') || bodyLower.includes('dm sent')) rawName = 'Marcus Vance';
-                          else {
+                          } else {
                             const fallbackNames = ['Logeshwaran A', 'Shreekutti', 'Mohammed Ajmal', 'Bavadharini RS', 'Akshat Commercials', 'Prasanth Properties'];
                             rawName = fallbackNames[cIdx % fallbackNames.length];
                           }
@@ -1588,9 +1848,9 @@ export default function ProfessionalSocialFeedScreen() {
 
                         const cName = rawName;
 
-                        let targetUserId = cAuthor._id || cAuthor.id || cAuthor.username;
-                        const clean = cName.toLowerCase().trim();
-                        if (!targetUserId || clean.includes('member')) {
+                        let targetUserId = cAuthor.username || cAuthor._id || cAuthor.id;
+                        if (!targetUserId || /^[0-9a-fA-F]{24}$/.test(String(targetUserId)) || String(targetUserId).includes('member')) {
+                          const clean = cName.toLowerCase().trim();
                           if (clean.includes('shree')) targetUserId = 'shreekutti';
                           else if (clean.includes('logesh')) targetUserId = 'logeshwarana';
                           else if (clean.includes('ajmal')) targetUserId = 'ajmal';
@@ -1799,15 +2059,15 @@ export default function ProfessionalSocialFeedScreen() {
         onRequestClose={() => setIsCreateModalOpen(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={[styles.modalBox, { backgroundColor: cardBg, borderColor }]}>
+          <View style={[styles.modalBox, { backgroundColor: cardBg, borderColor, maxWidth: 540 }]}>
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <UserAvatar user={user} size={40} style={styles.modalHeaderAvatar} />
                 <View style={{ marginLeft: 10 }}>
                   <Text style={styles.modalAuthorName}>
-                    {user?.fullName || 'Sai Vimenthan'}
+                    {user?.fullName || 'Real Estate Lead'}
                   </Text>
-                  <Text style={styles.modalAuthorPrivacy}>🌐 Post to Anyone</Text>
+                  <Text style={styles.modalAuthorPrivacy}>🌐 Post to Boolok Real Estate Network</Text>
                 </View>
               </View>
               <Pressable onPress={() => setIsCreateModalOpen(false)}>
@@ -1815,18 +2075,92 @@ export default function ProfessionalSocialFeedScreen() {
               </Pressable>
             </View>
 
+            {/* Post Type Selector Tabs */}
+            <View style={{ flexDirection: 'row', gap: 8, marginVertical: 10, borderBottomWidth: 1, borderBottomColor: borderColor, paddingBottom: 10 }}>
+              <Pressable
+                onPress={() => setPostListingType('standard')}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 16,
+                  backgroundColor: postListingType === 'standard' ? goldPrimary : (isDark ? '#1a273c' : '#f1f5f9'),
+                }}
+              >
+                <MaterialIcons name="article" size={16} color={postListingType === 'standard' ? '#000000' : (isDark ? '#ffffff' : '#0f172a')} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: postListingType === 'standard' ? '#000000' : (isDark ? '#ffffff' : '#0f172a') }}>
+                  General Post
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setPostListingType('listing')}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 16,
+                  backgroundColor: postListingType === 'listing' ? goldPrimary : (isDark ? '#1a273c' : '#f1f5f9'),
+                }}
+              >
+                <MaterialIcons name="apartment" size={16} color={postListingType === 'listing' ? '#000000' : (isDark ? '#ffffff' : '#0f172a')} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: postListingType === 'listing' ? '#000000' : (isDark ? '#ffffff' : '#0f172a') }}>
+                  Property / Commercial Listing
+                </Text>
+              </Pressable>
+            </View>
+
+            {postListingType === 'listing' && (
+              <View style={{ gap: 8, marginBottom: 8 }}>
+                <TextInput
+                  placeholder="Property Title (e.g. Outer Ring Road Tech Campus)..."
+                  placeholderTextColor="#66768f"
+                  style={[styles.modalUrlInput, { borderColor }]}
+                  value={postTitle}
+                  onChangeText={setPostTitle}
+                />
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TextInput
+                    placeholder="Asking Price (e.g. $14,500,000)..."
+                    placeholderTextColor="#66768f"
+                    style={[styles.modalUrlInput, { flex: 1, borderColor }]}
+                    value={postPrice}
+                    onChangeText={setPostPrice}
+                  />
+                  <TextInput
+                    placeholder="Location (e.g. Bangalore, KA)..."
+                    placeholderTextColor="#66768f"
+                    style={[styles.modalUrlInput, { flex: 1, borderColor }]}
+                    value={postLocation}
+                    onChangeText={setPostLocation}
+                  />
+                </View>
+                <TextInput
+                  placeholder="Specs / Key Highlights (e.g. 8.4% Cap Rate · 92,000 sq ft · LEED Platinum)..."
+                  placeholderTextColor="#66768f"
+                  style={[styles.modalUrlInput, { borderColor }]}
+                  value={postSpecs}
+                  onChangeText={setPostSpecs}
+                />
+              </View>
+            )}
+
             <TextInput
-              placeholder="What commercial property or market insight do you want to share?"
+              placeholder={postListingType === 'listing' ? "Property overview, tenancy covenants, zoning, or investment highlights..." : "What commercial property or market insight do you want to share?"}
               placeholderTextColor="#66768f"
               multiline
-              numberOfLines={5}
-              style={styles.modalTextInput}
+              numberOfLines={postListingType === 'listing' ? 3 : 5}
+              style={[styles.modalTextInput, postListingType === 'listing' && { minHeight: 80 }]}
               value={newPostText}
               onChangeText={setNewPostText}
             />
 
             <TextInput
-              placeholder="Or paste property image URL (e.g. https://...)..."
+              placeholder="Paste property image URL (e.g. https://images.unsplash.com/...)..."
               placeholderTextColor="#66768f"
               style={[styles.modalUrlInput, { borderColor }]}
               value={newPostImage || ''}
@@ -1850,7 +2184,9 @@ export default function ProfessionalSocialFeedScreen() {
                 {isPublishing ? (
                   <ActivityIndicator size="small" color="#000000" />
                 ) : (
-                  <Text style={styles.modalPublishBtnText}>Post</Text>
+                  <Text style={styles.modalPublishBtnText}>
+                    {postListingType === 'listing' ? 'Publish Listing' : 'Post'}
+                  </Text>
                 )}
               </Pressable>
             </View>

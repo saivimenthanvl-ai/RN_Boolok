@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const Post = require('../models/Post');
+const User = require('../models/User');
 const upload = require('../config/localUpload');
 const authMiddleware = require('../middleware/auth');
 
@@ -49,6 +50,8 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
         return res.status(500).json({ message: 'Failed to publish post.', error: error.message });
     }
 });
+
+const COMMUNITY_LIKE_IDS = ['the_akshtr_estate', 'logeshwarana', 'ajmal', 'bavadharini_rs', 'prasanth_properties', 'shreekutti'];
 
 const COMMUNITY_DEFAULT_COMMENTS = [
     {
@@ -228,14 +231,43 @@ router.get('/', authMiddleware, async (req, res) => {
             return true;
         });
 
-        const COMMUNITY_LIKE_IDS = ['shreekutti', '6a8af34812ef34aed25ae8d2', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'];
-
         // Combine unique user posts with agent property listings
         const allPosts = [...userPosts, ...AGENT_POSTS].map((p) => {
             const pObj = typeof p.toObject === 'function' ? p.toObject() : { ...p };
-            const existingLikes = Array.isArray(pObj.likes)
-                ? pObj.likes.map((l) => (l && l._id ? l._id.toString() : String(l)))
+
+            const isSaiPost = String(pObj._id) === '6a85cf218c87a5020393129b' ||
+                String(pObj._id) === 'sai-luxury-prime-p-1' ||
+                (pObj.author && ((pObj.author.username || '').toLowerCase() === 'saivimenthanvl' || (pObj.author.fullName || '').toLowerCase() === 'sai'));
+
+            if (isSaiPost) {
+                pObj.title = pObj.title || 'Luxury Prime Commercial Asset';
+                pObj.price = pObj.price || '$8,900,000';
+                pObj.location = pObj.location || 'Prime Commercial Corridor';
+                pObj.specs = pObj.specs || 'Turnkey Acquisition · High Cap Rate';
+                pObj.content = pObj.content || 'Rare institutional-grade luxury commercial asset with prime corridor access and verified high cap rate. Pre-approved for immediate institutional portfolio integration. 🏢💼';
+                if (!pObj.mediaUrl && (!pObj.mediaUrls || pObj.mediaUrls.length === 0)) {
+                    pObj.mediaUrl = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200';
+                    pObj.mediaUrls = ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200'];
+                }
+                pObj.firstLikerName = 'Akshat Commercials';
+            }
+
+            const rawLikes = demoPostLikes.has(pObj._id)
+                ? demoPostLikes.get(pObj._id)
+                : pObj.likes;
+            let existingLikes = Array.isArray(rawLikes)
+                ? rawLikes.map((l) => (l && l._id ? l._id.toString() : String(l)))
                 : [];
+
+            if (isSaiPost) {
+                // Ensure the 6 community broker likers are always present as the 6 other likers
+                const communitySet = new Set(COMMUNITY_LIKE_IDS);
+                const hasViewer = viewerId ? existingLikes.includes(viewerId.toString()) : false;
+                existingLikes = hasViewer
+                    ? [viewerId.toString(), ...COMMUNITY_LIKE_IDS]
+                    : [...COMMUNITY_LIKE_IDS];
+            }
+
             const hasViewerLiked = viewerId ? existingLikes.includes(viewerId.toString()) : false;
             const count = existingLikes.length;
             const otherBrokersCount = hasViewerLiked ? Math.max(0, count - 1) : count;
@@ -246,7 +278,13 @@ router.get('/', authMiddleware, async (req, res) => {
                     ? `Liked by you and ${otherBrokersCount} other real estate broker${otherBrokersCount > 1 ? 's' : ''}`
                     : `Liked by you`;
             } else if (count > 0) {
-                likesSummaryText = `Liked by ${count} real estate broker${count > 1 ? 's' : ''}`;
+                if (pObj.firstLikerName && count > 1) {
+                    likesSummaryText = `Liked by ${pObj.firstLikerName} and ${count - 1} other${count - 1 > 1 ? 's' : ''}`;
+                } else if (pObj.firstLikerName) {
+                    likesSummaryText = `Liked by ${pObj.firstLikerName}`;
+                } else {
+                    likesSummaryText = `Liked by ${count} real estate broker${count > 1 ? 's' : ''}`;
+                }
             } else {
                 likesSummaryText = `Be the first to like this property`;
             }
@@ -256,8 +294,12 @@ router.get('/', authMiddleware, async (req, res) => {
             pObj.currentUserReaction = hasViewerLiked ? 'like' : null;
             pObj.likesSummary = likesSummaryText;
 
-            if (Array.isArray(pObj.comments) && pObj.comments.length > 0) {
-                pObj.comments = pObj.comments.map((c, cIdx) => {
+            const postComments = demoPostComments.has(pObj._id)
+                ? demoPostComments.get(pObj._id)
+                : pObj.comments;
+
+            if (Array.isArray(postComments) && postComments.length > 0) {
+                pObj.comments = postComments.map((c, cIdx) => {
                     const u = c.user || c.author || {};
                     let fName = u.fullName || null;
                     let uName = u.username || null;
@@ -308,7 +350,22 @@ router.get('/', authMiddleware, async (req, res) => {
             return pObj;
         });
 
-        return res.status(200).json({ posts: allPosts });
+        // Ensure Sai's post is in the second position (index 1) as requested
+        const saiIndex = allPosts.findIndex((p) =>
+            String(p._id) === '6a85cf218c87a5020393129b' ||
+            String(p._id) === 'sai-luxury-prime-p-1' ||
+            (p.author && ((p.author.username || '').toLowerCase() === 'saivimenthanvl' || (p.author.fullName || '').toLowerCase() === 'sai'))
+        );
+
+        let finalPosts = allPosts;
+        if (saiIndex !== -1) {
+            const [saiPostItem] = finalPosts.splice(saiIndex, 1);
+            // Insert in the second position (index 1), or index 0 if only 1 post exists
+            const insertPos = finalPosts.length > 0 ? 1 : 0;
+            finalPosts.splice(insertPos, 0, saiPostItem);
+        }
+
+        return res.status(200).json({ posts: finalPosts });
     } catch (error) {
         console.error('FETCH POSTS ERROR:', error);
         return res.status(500).json({ message: 'Failed to fetch posts.', error: error.message });
@@ -318,13 +375,44 @@ router.get('/', authMiddleware, async (req, res) => {
 // Get posts by a single user (for profile screen)
 router.get('/user/:userId', authMiddleware, async (req, res) => {
     try {
+        const viewerId = getAuthenticatedUserId(req);
         const { userId } = req.params;
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({ message: 'Invalid user id.' });
         }
-        const posts = await Post.find({ author: userId })
+        const rawPosts = await Post.find({ author: userId })
             .populate('author', 'fullName username profilePicture email')
             .sort({ createdAt: -1 });
+
+        const posts = rawPosts.map((p) => {
+            const pObj = typeof p.toObject === 'function' ? p.toObject() : { ...p };
+            const isSaiPost = String(pObj._id) === '6a85cf218c87a5020393129b' ||
+                (pObj.author && ((pObj.author.username || '').toLowerCase() === 'saivimenthanvl' || (pObj.author.fullName || '').toLowerCase() === 'sai'));
+
+            if (isSaiPost) {
+                pObj.title = pObj.title || 'Luxury Prime Commercial Asset';
+                pObj.price = pObj.price || '$8,900,000';
+                pObj.location = pObj.location || 'Prime Commercial Corridor';
+                pObj.specs = pObj.specs || 'Turnkey Acquisition · High Cap Rate';
+                pObj.content = pObj.content || 'Rare institutional-grade luxury commercial asset with prime corridor access and verified high cap rate. Pre-approved for immediate institutional portfolio integration. 🏢💼';
+                if (!pObj.mediaUrl && (!pObj.mediaUrls || pObj.mediaUrls.length === 0)) {
+                    pObj.mediaUrl = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200';
+                    pObj.mediaUrls = ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200'];
+                }
+                pObj.firstLikerName = 'Akshat Commercials';
+
+                const rawExisting = Array.isArray(pObj.likes)
+                    ? pObj.likes.map((l) => (l && l._id ? l._id.toString() : String(l)))
+                    : [];
+                const hasViewer = viewerId ? rawExisting.includes(viewerId.toString()) : false;
+                pObj.likes = hasViewer
+                    ? [viewerId.toString(), ...COMMUNITY_LIKE_IDS]
+                    : [...COMMUNITY_LIKE_IDS];
+                pObj.likesCount = pObj.likes.length;
+            }
+            return pObj;
+        });
+
         return res.status(200).json({ posts });
     } catch (error) {
         console.error('FETCH USER POSTS ERROR:', error);
@@ -563,17 +651,54 @@ router.get('/:id/details', authMiddleware, async (req, res) => {
 
                 const postObj = post.toObject();
                 postObj.comments = formattedComments;
+
+                const isSaiPost = String(postObj._id) === '6a85cf218c87a5020393129b' ||
+                    (postObj.author && ((postObj.author.username || '').toLowerCase() === 'saivimenthanvl' || (postObj.author.fullName || '').toLowerCase() === 'sai'));
+
+                if (isSaiPost) {
+                    postObj.title = postObj.title || 'Luxury Prime Commercial Asset';
+                    postObj.price = postObj.price || '$8,900,000';
+                    postObj.location = postObj.location || 'Prime Commercial Corridor';
+                    postObj.specs = postObj.specs || 'Turnkey Acquisition · High Cap Rate';
+                    postObj.content = postObj.content || 'Rare institutional-grade luxury commercial asset with prime corridor access and verified high cap rate. Pre-approved for immediate institutional portfolio integration. 🏢💼';
+                    if (!postObj.mediaUrl && (!postObj.mediaUrls || postObj.mediaUrls.length === 0)) {
+                        postObj.mediaUrl = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200';
+                        postObj.mediaUrls = ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200'];
+                    }
+                    postObj.firstLikerName = 'Akshat Commercials';
+
+                    const rawExisting = Array.isArray(postObj.likes)
+                        ? postObj.likes.map((l) => (l && l._id ? l._id.toString() : String(l)))
+                        : [];
+                    const hasViewer = viewerId ? rawExisting.includes(viewerId.toString()) : false;
+                    postObj.likes = hasViewer
+                        ? [viewerId.toString(), ...COMMUNITY_LIKE_IDS]
+                        : [...COMMUNITY_LIKE_IDS];
+                    postObj.likesCount = postObj.likes.length;
+                }
+
                 return res.status(200).json({ post: postObj });
             }
         }
 
+        const isSaiPostId = id === 'sai-luxury-prime-p-1';
         const matchedAgentPost = AGENT_POSTS.find((ap) => ap._id === id);
-        const currentLikes = demoPostLikes.get(id) || matchedAgentPost?.likes || ['u1', 'u2'];
+        const currentLikes = isSaiPostId
+            ? (viewerId ? [viewerId.toString(), ...COMMUNITY_LIKE_IDS] : [...COMMUNITY_LIKE_IDS])
+            : (demoPostLikes.get(id) || matchedAgentPost?.likes || ['u1', 'u2']);
         const currentComments = demoPostComments.get(id) || matchedAgentPost?.comments || COMMUNITY_DEFAULT_COMMENTS;
         return res.status(200).json({
             post: {
                 _id: id,
-                ...(matchedAgentPost || {}),
+                ...(isSaiPostId ? {
+                    title: 'Luxury Prime Commercial Asset',
+                    price: '$8,900,000',
+                    location: 'Prime Commercial Corridor',
+                    specs: 'Turnkey Acquisition · High Cap Rate',
+                    content: 'Rare institutional-grade luxury commercial asset with prime corridor access and verified high cap rate. Pre-approved for immediate institutional portfolio integration. 🏢💼',
+                    mediaUrl: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200',
+                    firstLikerName: 'Akshat Commercials',
+                } : (matchedAgentPost || {})),
                 likes: currentLikes,
                 comments: currentComments,
             },
@@ -623,20 +748,28 @@ router.put('/:id/like', authMiddleware, async (req, res) => {
 router.post('/:id/comment', authMiddleware, async (req, res) => {
     try {
         const userId = getAuthenticatedUserId(req);
-        const user = req.user || {};
         const { id } = req.params;
         const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
         if (!text) return res.status(400).json({ message: 'Comment text is required.' });
+
+        let commenterUser = null;
+        if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+            commenterUser = await User.findById(userId).select('fullName username profilePicture email');
+        }
+        const authorName = commenterUser?.fullName || req.user?.fullName || 'Real Estate Professional';
+        const authorUsername = commenterUser?.username || req.user?.username || (commenterUser?.email ? commenterUser.email.split('@')[0] : 'member');
+        const authorAvatar = commenterUser?.profilePicture || req.user?.profilePicture || null;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
             // Handle demo post
             const currentComments = demoPostComments.get(id) || [];
             const newComment = {
+                _id: `c-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
                 author: {
                     _id: userId,
-                    fullName: user.fullName || 'Sai',
-                    username: user.username || 'saivimenthanvl',
-                    profilePicture: user.profilePicture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+                    fullName: authorName,
+                    username: authorUsername,
+                    profilePicture: authorAvatar,
                 },
                 text,
                 time: 'Just now',
@@ -656,7 +789,7 @@ router.post('/:id/comment', authMiddleware, async (req, res) => {
         const populated = await Post.findById(id).populate('comments.user', 'fullName username profilePicture');
         const formattedComments = (populated.comments || []).map((c) => ({
             _id: c._id,
-            author: c.user || { fullName: user.fullName || 'Sai', username: user.username || 'saivimenthanvl' },
+            author: c.user || { fullName: authorName, username: authorUsername, profilePicture: authorAvatar },
             text: c.text,
             time: 'Just now',
         }));
