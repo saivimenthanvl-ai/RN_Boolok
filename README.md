@@ -5,7 +5,6 @@
 [![Node.js](https://img.shields.io/badge/Node.js-Express%20API-green?style=for-the-badge&logo=node.js)](https://nodejs.org)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-darkgreen?style=for-the-badge&logo=mongodb)](https://mongodb.com)
 
-> **Live Production Web App**: [https://boolokgpt.vercel.app](https://boolokgpt.vercel.app)
 
 ---
 
@@ -36,11 +35,6 @@
 
 ---
 
-## 🔗 Live Deployments
-
-- **Web Application (Vercel)**: [https://boolokgpt.vercel.app](https://boolokgpt.vercel.app)
-- **GitHub Repository**: [https://github.com/saivimenthanvl-ai/RN_Boolok](https://github.com/saivimenthanvl-ai/RN_Boolok)
-
 ---
 
 ## 🛠️ Tech Stack
@@ -59,7 +53,7 @@ cd backend
 npm install
 node server.js
 ```
-The API server runs on `http://localhost:5000`.
+The API server runs on ``.
 
 ### 2. Frontend Setup
 ```bash
