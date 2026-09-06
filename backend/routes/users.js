@@ -57,17 +57,34 @@ function sanitizeUserProfile(user, viewerId = null) {
   const followerCount = followers.length > 0 ? followers.length : 4;
   const followingCount = rawFollowing.length > 0 ? rawFollowing.length : 4;
 
+  let sanitizedFullName = user.fullName;
+  let sanitizedUsername = user.username || user.fullName?.replace(/\s+/g, '').toLowerCase() || 'user';
+
+  if (sanitizedUsername === 'ig_vicky16' || sanitizedUsername === 'ig_vicky.16' || sanitizedUsername === 'vicky' || (sanitizedFullName && sanitizedFullName.includes('Vicky'))) {
+    sanitizedFullName = 'Vigneshwaran';
+    sanitizedUsername = 'vignesh';
+  }
+  if (sanitizedUsername === 'yashwanth_realty' || sanitizedUsername === 'cinemahub.live' || sanitizedUsername === 'cinemahub' || (sanitizedFullName && (sanitizedFullName.includes('Yashwanth Realty') || sanitizedFullName.includes('cinemahub')))) {
+    sanitizedFullName = 'Yashwanth';
+    sanitizedUsername = 'yashwanth';
+  }
+
+  if (sanitizedUsername === 'aswin.realty' || sanitizedUsername === 'aswin.realty' || sanitizedUsername === 'aswin.realty' || (sanitizedFullName && sanitizedFullName.includes('Aswin'))) {
+    sanitizedFullName = 'Aswin Real Estate';
+    sanitizedUsername = 'aswin';
+  }
+
   return {
     id: user._id.toString(),
     _id: user._id.toString(),
-    fullName: user.fullName,
-    username: user.username || user.fullName?.replace(/\s+/g, '').toLowerCase() || 'user',
+    fullName: sanitizedFullName,
+    username: sanitizedUsername,
     bio: user.bio || '',
     headline: user.headline || 'Real Estate Professional & Boolok Member',
     location: user.location || 'Chennai, Tamil Nadu · Prime Assets',
     coverImage: user.coverImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-    profilePicture: user.profilePicture || ((user.username || '').includes('sai') ? 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' : null),
-    closedDeals: user.closedDeals || '12',
+    profilePicture: user.profilePicture || ((sanitizedUsername || '').includes('sai') ? 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' : null),
+    closedDeals: user.closedDeals || '0',
     followerCount,
     followingCount,
     isFollowing,
@@ -100,12 +117,19 @@ router.get('/search', async (req, res) => {
     const regex = new RegExp(q, 'i');
 
     const users = await User.find({
-      $or: [
-        { fullName: regex },
-        { username: regex },
-        { email: regex },
-        { headline: regex },
-        { location: regex },
+      $and: [
+        // Exclude the advisor placeholder user from all search results
+        { username: { $nin: ['advisor'] } },
+        { fullName: { $not: /^Advisor$/i } },
+        {
+          $or: [
+            { fullName: regex },
+            { username: regex },
+            { email: regex },
+            { headline: regex },
+            { location: regex },
+          ],
+        },
       ],
     })
       .select('fullName username profilePicture bio headline location closedDeals followers following')
@@ -140,7 +164,17 @@ router.get('/search', async (req, res) => {
       }
     }
 
-    return res.status(200).json({ results });
+    // Filter out blacklisted/duplicate legacy usernames
+    const BANNED_SEARCH_USERNAMES = new Set(['aswin.realty', 'aswin_realty', 'ig_vicky16', 'ig_vicky.16', 'vicky', 'vicky_luxury', 'yashwanth_realty', 'cinemahub.live', 'cinemahub', 'advisor']);
+    const filteredResults = results.filter((r) => {
+      const u = (r.username || '').toLowerCase();
+      const fn = (r.fullName || '').toLowerCase();
+      if (BANNED_SEARCH_USERNAMES.has(u)) return false;
+      if (fn.includes('vicky') || fn.includes('cinemahub')) return false;
+      return true;
+    });
+
+    return res.status(200).json({ results: filteredResults });
   } catch (error) {
     console.error('SEARCH USERS ERROR:', error);
     return res.status(500).json({ message: 'Search failed.', error: error.message });
@@ -153,10 +187,10 @@ const COMMUNITY_MEMBERS = [
     aliases: ['shreekutti'],
     fullName: 'Shreekutti',
     email: 'shreekutti@boolok.ai',
-    headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Realty',
+    headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok',
     location: 'Bangalore, Karnataka · Tech Parks',
     bio: 'Specialized in commercial land development and Grade-A tech hub transactions across South India.',
-    closedDeals: '18',
+    closedDeals: '4',
     profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
   },
@@ -168,7 +202,7 @@ const COMMUNITY_MEMBERS = [
     headline: 'Architectural Consultant & Real Estate Lead',
     location: 'Western Australia',
     bio: 'Focused on precision cap-rate calculations, commercial yield optimization, and real estate investment portfolios.',
-    closedDeals: '22',
+    closedDeals: '3',
     profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
     coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
   },
@@ -180,7 +214,7 @@ const COMMUNITY_MEMBERS = [
     headline: 'Luxury Living & High-End Residential Broker',
     location: 'Dubai & Kochi · Luxury Villas',
     bio: 'Connecting international investors to premier waterfront villas and bespoke residential developments.',
-    closedDeals: '14',
+    closedDeals: '3',
     profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
   },
@@ -192,7 +226,7 @@ const COMMUNITY_MEMBERS = [
     headline: 'Interior Designer & Modern Living Specialist',
     location: 'Chennai, Tamil Nadu · Modern Living',
     bio: 'Bespoke high-end interior architecture, penthouse makeovers, and custom luxury styling.',
-    closedDeals: '16',
+    closedDeals: '2',
     profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200',
   },
@@ -204,7 +238,7 @@ const COMMUNITY_MEMBERS = [
     headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Network',
     location: 'Chennai, Tamil Nadu · Prime Assets',
     bio: 'Specializing in Grade-A IT SEZ parks, commercial lease syndications, and institutional asset acquisitions on OMR Chennai.',
-    closedDeals: '29',
+    closedDeals: '2',
     profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200',
   },
@@ -216,43 +250,79 @@ const COMMUNITY_MEMBERS = [
     headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
     location: 'Miami, Florida · Coastal Estates',
     bio: 'Luxury real estate advisory focused on ultra-prime beachfront residences and waterfront villas.',
-    closedDeals: '11',
+    closedDeals: '2',
     profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=1200',
   },
   {
-    username: 'aswin.realty',
-    aliases: ['agent-2', 'aswin_realty', 'aswin'],
+    username: 'aswin',
+    aliases: ['agent-2', 'aswin'],
     fullName: 'Aswin Real Estate',
-    email: 'aswin.realty@boolok.ai',
+    email: 'aswin@boolok.ai',
     headline: 'Principal Real Estate Broker & Multi-Family Asset Advisor',
     location: 'Chennai, Tamil Nadu · Luxury & Commercial Assets',
     bio: 'Expert commercial multi-family portfolio manager with deep market analytics on cap rates and returns.',
-    closedDeals: '15',
+    closedDeals: '1',
     profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
   },
   {
-    username: 'ig_vicky16',
-    aliases: ['agent-3', 'vicky_luxury', 'ig_vicky16', 'vicky'],
-    fullName: 'Vicky Luxury Living',
-    email: 'vicky.luxury@boolok.ai',
+    username: 'vignesh',
+    aliases: ['agent-3', 'vignesh', 'vigneshwaran'],
+    fullName: 'Vigneshwaran',
+    email: 'vigneshwaran@boolok.ai',
     headline: 'Prime Architectural Estates & Beverly Hills Luxury Specialist',
     location: 'Beverly Hills, California · Ultra Luxury',
     bio: 'Curating custom luxury properties, penthouses, and architectural landmarks for high net worth clients.',
-    closedDeals: '11',
+    closedDeals: '1',
     profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
   },
   {
-    username: 'yashwanth_realty',
-    aliases: ['yashwanth_realty', 'cinemahub.live', 'cinemahub', 'yashwanth'],
-    fullName: 'Yashwanth Realty',
-    email: 'yashwanth.realty@boolok.ai',
+    username: 'yashwanth',
+    aliases: ['yashwanth'],
+    fullName: 'Yashwanth',
+    email: 'yashwanth@boolok.ai',
     headline: 'Prime Commercial Hubs & Institutional Realty Lead',
     location: 'Chennai & Bangalore · Commercial Hubs',
     bio: 'Acquiring prime commercial buildings, corporate hubs, and investment estates across South India.',
-    closedDeals: '16',
+    closedDeals: '1',
+    profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
+  },
+  {
+    username: 'sophia_luxury',
+    aliases: ['sophia_sterling', 'sophia_luxury', 'sophia'],
+    fullName: 'Sophia Sterling',
+    email: 'sophia.sterling@sterlingholdings.eu',
+    headline: 'European Family Office Principal & Luxury Syndication Client',
+    location: 'Geneva, Switzerland & London · Private Capital',
+    bio: 'Managing cross-border real estate acquisitions and luxury fractional syndicates for European private wealth clients.',
+    closedDeals: '2',
+    profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
+  },
+  {
+    username: 'david_sterling',
+    aliases: ['david_sterling', 'david'],
+    fullName: 'David Sterling',
+    email: 'david.sterling@sterlingholdings.eu',
+    headline: 'Managing Director · Sterling Global Capital & Asset Co-Owner',
+    location: 'London, UK & Beverly Hills · Private Equity',
+    bio: 'Directing private equity allocation in architectural landmarks, luxury fractional estates, and prime commercial assets.',
+    closedDeals: '3',
+    profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
+  },
+  {
+    username: 'marcus_vance',
+    aliases: ['marcus_vance', 'marcus'],
+    fullName: 'Marcus Vance',
+    email: 'marcus.vance@vanceacquisitions.com',
+    headline: 'Institutional Real Estate Syndicate Lead & Co-Ownership Client',
+    location: 'New York, NY · Real Estate Private Equity',
+    bio: 'Partnering in deeded fractional syndicates, commercial co-ownership models, and turnkey trophy estate acquisitions.',
+    closedDeals: '2',
     profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
   },
@@ -264,7 +334,7 @@ const COMMUNITY_MEMBERS = [
     headline: 'Principal Real Estate Broker & Portfolio Advisor',
     location: 'Chennai, Tamil Nadu · Prime Assets',
     bio: 'Principal Broker overseeing premium residential estates, commercial office syndication, and institutional real estate acquisitions.',
-    closedDeals: '12',
+    closedDeals: '3',
     profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c',
     coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
   },
@@ -386,11 +456,40 @@ async function resolveOrSeedUser(id) {
 
 async function ensureCommunityConnections() {
   try {
+    // 0. Update and delete any duplicate/legacy MongoDB documents
+    await User.deleteMany({
+      $or: [
+        { username: { $in: ['vicky', 'vicky_luxury', 'ig_vicky.16', 'ig_vicky16'] } },
+        { fullName: /Vicky/i },
+        { email: /vicky/i },
+        { username: 'aswin.realty' },
+      ],
+    });
+
+    await User.updateMany(
+      { username: 'vignesh' },
+      { $set: { username: 'vignesh', fullName: 'Vigneshwaran', email: 'vigneshwaran@boolok.ai' } }
+    );
+    await User.updateMany(
+      { username: 'yashwanth' },
+      { $set: { username: 'yashwanth', fullName: 'Yashwanth', email: 'yashwanth@boolok.ai' } }
+    );
+    await User.updateMany(
+      { username: 'aswin' },
+      { $set: { username: 'aswin', fullName: 'Aswin Real Estate', email: 'aswin@boolok.ai' } }
+    );
+
     // 1. Ensure all community members are in MongoDB with their full details
     for (const m of COMMUNITY_MEMBERS) {
-      let user = await User.findOne({
-        $or: [{ username: m.username }, { email: m.email }],
-      });
+      const lookupQueries = [
+        { username: m.username },
+        { email: m.email },
+      ];
+      if (m.aliases && m.aliases.length > 0) {
+        lookupQueries.push({ username: { $in: m.aliases } });
+      }
+
+      let user = await User.findOne({ $or: lookupQueries });
       if (!user) {
         await User.create({
           fullName: m.fullName,
@@ -400,15 +499,33 @@ async function ensureCommunityConnections() {
           headline: m.headline,
           location: m.location,
           bio: m.bio,
-          closedDeals: m.closedDeals || '12',
+          closedDeals: m.closedDeals || '0',
           profilePicture: m.profilePicture || null,
           coverImage: m.coverImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
           followers: [],
           following: [],
         });
-      } else if (user.profilePicture && user.profilePicture.includes('images.unsplash.com')) {
-        user.profilePicture = m.profilePicture || null;
-        await user.save();
+      } else {
+        let changed = false;
+        if (user.username !== m.username) {
+          user.username = m.username;
+          changed = true;
+        }
+        if (user.fullName !== m.fullName) {
+          user.fullName = m.fullName;
+          changed = true;
+        }
+        if (user.email !== m.email && !user.email.includes('gmail.com')) {
+          user.email = m.email;
+          changed = true;
+        }
+        if (user.closedDeals !== (m.closedDeals || '0')) {
+          user.closedDeals = m.closedDeals || '0';
+          changed = true;
+        }
+        if (changed) {
+          await user.save();
+        }
       }
     }
 
@@ -460,6 +577,9 @@ router.get('/suggested', authMiddleware, async (req, res) => {
 
     const query = {
       email: { $ne: 'logeshwarana@boolok.ai' },
+      // Exclude the advisor placeholder user from suggestions
+      username: { $nin: ['advisor'] },
+      fullName: { $not: /^Advisor$/i },
       ...(viewerId ? { _id: { $ne: viewerId } } : {}),
     };
 
@@ -914,6 +1034,152 @@ const COMMUNITY_DEALS = {
       icon: 'domain',
     },
   ],
+  aswin: [
+    {
+      id: 'd-aswin-1',
+      title: 'Aswin Real Estate Prime Commercial Acquisition',
+      location: 'Chennai, Tamil Nadu · Luxury & Commercial Assets',
+      price: '$12,500,000',
+      capRate: '8.4% Cap Rate',
+      type: 'Institutional Commercial Asset',
+      date: '2026',
+      status: 'Verified Institutional Settlement',
+      sqft: '45,000 sq ft',
+      icon: 'business',
+    },
+  ],
+  'aswin': [
+    {
+      id: 'd-aswin-1',
+      title: 'Aswin Real Estate Prime Commercial Acquisition',
+      location: 'Chennai, Tamil Nadu · Luxury & Commercial Assets',
+      price: '$12,500,000',
+      capRate: '8.4% Cap Rate',
+      type: 'Institutional Commercial Asset',
+      date: '2026',
+      status: 'Verified Institutional Settlement',
+      sqft: '45,000 sq ft',
+      icon: 'business',
+    },
+  ],
+  vignesh: [
+    {
+      id: 'd-vignesh-1',
+      title: 'Beverly Hills Sunset Estate Acquisition',
+      location: 'Beverly Hills, California',
+      price: '$15,800,000',
+      capRate: '6.4% Yield',
+      type: 'Ultra-Luxury Custom Architectural Landmark',
+      date: '2026',
+      status: 'Verified Institutional Settlement',
+      sqft: '9,500 sq ft',
+      icon: 'villa',
+    },
+  ],
+  yashwanth: [
+    {
+      id: 'd-yashwanth-1',
+      title: 'Yashwanth Realty Grade-A Corporate Hub',
+      location: 'Chennai & Bangalore',
+      price: '$13,200,000',
+      capRate: '8.5% Cap Rate',
+      type: 'Prime Institutional Commercial Hub',
+      date: '2026',
+      status: 'Verified Institutional Settlement',
+      sqft: '50,000 sq ft',
+      icon: 'apartment',
+    },
+  ],
+  sophia_luxury: [
+    {
+      id: 'd-sophia-1',
+      title: 'Beverly Hills Syndicate Share Acquisition',
+      location: 'Beverly Hills, California',
+      price: '$12,500,000',
+      capRate: '6.8% Yield',
+      type: 'Luxury Fractional House Share',
+      date: 'Jul 2026',
+      status: 'Verified Institutional Settlement',
+      sqft: '9,500 sq ft',
+      icon: 'villa',
+    },
+    {
+      id: 'd-sophia-2',
+      title: 'Geneva Lakeside Residence Co-Ownership',
+      location: 'Geneva, Switzerland',
+      price: '$8,900,000',
+      capRate: '5.9% Yield',
+      type: 'Private Family Office Syndicate',
+      date: 'May 2026',
+      status: 'Verified Institutional Settlement',
+      sqft: '6,200 sq ft',
+      icon: 'holiday-village',
+    },
+  ],
+  david_sterling: [
+    {
+      id: 'd-david-1',
+      title: 'Beverly Hills Co-Ownership Landmark',
+      location: 'Beverly Hills, California',
+      price: '$12,500,000',
+      capRate: '6.8% Yield',
+      type: 'Bespoke Co-Ownership Syndicate',
+      date: 'Aug 2026',
+      status: 'Verified Institutional Settlement',
+      sqft: '9,500 sq ft',
+      icon: 'villa',
+    },
+    {
+      id: 'd-david-2',
+      title: 'Mayfair Commercial Townhouse',
+      location: 'London, United Kingdom',
+      price: '$18,500,000',
+      capRate: '6.2% Cap Rate',
+      type: 'Prime Commercial Co-Ownership',
+      date: 'Jun 2026',
+      status: 'Verified Institutional Settlement',
+      sqft: '8,400 sq ft',
+      icon: 'business',
+    },
+    {
+      id: 'd-david-3',
+      title: 'Kensington High Street Retail Hub',
+      location: 'London, United Kingdom',
+      price: '$14,200,000',
+      capRate: '7.1% Cap Rate',
+      type: 'Institutional Asset Settlement',
+      date: 'Mar 2026',
+      status: 'Verified Institutional Settlement',
+      sqft: '12,000 sq ft',
+      icon: 'store',
+    },
+  ],
+  marcus_vance: [
+    {
+      id: 'd-marcus-1',
+      title: 'Manhattan Mixed-Use Asset Syndicate',
+      location: 'New York, NY',
+      price: '$22,000,000',
+      capRate: '7.4% Cap Rate',
+      type: 'Commercial Syndicate Settlement',
+      date: 'Aug 2026',
+      status: 'Verified Institutional Settlement',
+      sqft: '35,000 sq ft',
+      icon: 'apartment',
+    },
+    {
+      id: 'd-marcus-2',
+      title: 'Beverly Hills House Share Deeded Title',
+      location: 'Beverly Hills, California',
+      price: '$12,500,000',
+      capRate: '6.8% Yield',
+      type: 'Deeded Fractional Title',
+      date: 'Jul 2026',
+      status: 'Verified Institutional Settlement',
+      sqft: '9,500 sq ft',
+      icon: 'villa',
+    },
+  ],
 };
 
 // ── GET /api/users/:id/deals (Get completed transaction history) ───────────
@@ -930,28 +1196,45 @@ router.get('/:id/deals', authMiddleware, async (req, res) => {
     let deals = [];
     if (COMMUNITY_DEALS[key]) {
       deals = COMMUNITY_DEALS[key];
+    } else if (key.includes('shree')) {
+      deals = COMMUNITY_DEALS.shreekutti || [];
+    } else if (key.includes('logesh')) {
+      deals = COMMUNITY_DEALS.logeshwarana || [];
+    } else if (key.includes('ajmal')) {
+      deals = COMMUNITY_DEALS.ajmal || [];
+    } else if (key.includes('bava')) {
+      deals = COMMUNITY_DEALS.bavadharini_rs || [];
+    } else if (key.includes('akshat') || key.includes('akshtr')) {
+      deals = COMMUNITY_DEALS.the_akshtr_estate || [];
+    } else if (key.includes('prasanth')) {
+      deals = COMMUNITY_DEALS.prasanth_properties || [];
+    } else if (key.includes('aswin')) {
+      deals = COMMUNITY_DEALS.aswin || [];
+    } else if (key.includes('vignesh') || key.includes('vicky')) {
+      deals = COMMUNITY_DEALS.vignesh || [];
+    } else if (key.includes('yashwanth') || key.includes('cinemahub')) {
+      deals = COMMUNITY_DEALS.yashwanth || [];
+    } else if (key.includes('sophia')) {
+      deals = COMMUNITY_DEALS.sophia_luxury || [];
+    } else if (key.includes('david')) {
+      deals = COMMUNITY_DEALS.david_sterling || [];
+    } else if (key.includes('marcus')) {
+      deals = COMMUNITY_DEALS.marcus_vance || [];
     } else if (key.includes('sai') || profileUser._id.toString() === getAuthenticatedUserId(req)?.toString()) {
-      deals = COMMUNITY_DEALS.sai;
+      deals = COMMUNITY_DEALS.sai || [];
     } else {
-      deals = [
-        {
-          id: `d-${key}-1`,
-          title: `${profileUser.fullName || 'Member'} Prime Commercial Acquisition`,
-          location: profileUser.location || 'Global Real Estate Network',
-          price: '$12,500,000',
-          capRate: '8.4% Cap Rate',
-          type: 'Institutional Commercial Asset',
-          date: '2026',
-          status: 'Verified Institutional Settlement',
-          sqft: '45,000 sq ft',
-          icon: 'business',
-        },
-      ];
+      deals = [];
+    }
+
+    const totalDeals = deals.length.toString();
+    if (profileUser.closedDeals !== totalDeals) {
+      profileUser.closedDeals = totalDeals;
+      await profileUser.save().catch(() => { });
     }
 
     return res.status(200).json({
       deals,
-      totalDeals: profileUser.closedDeals || deals.length.toString(),
+      totalDeals,
       fullName: profileUser.fullName,
     });
   } catch (error) {
@@ -1020,8 +1303,8 @@ const SAI_REELS = [
     thumbnail: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     comments: [
-      { _id: 'c4-1', user: { fullName: 'Logeshwaran A' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
-      { _id: 'c4-2', user: { fullName: 'Shreekutti' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
+      { _id: 'c4-1', user: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
+      { _id: 'c4-2', user: { fullName: 'Shreekutti', username: 'shreekutti' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
     ],
   },
 ];
@@ -1124,6 +1407,53 @@ const COMMUNITY_POSTS_MAP = {
       comments: [
         { author: { fullName: 'Mohammed Ajmal', username: 'ajmal' }, text: 'Deepwater dock specs and yacht clearance are remarkable.' },
       ],
+    },
+  ],
+  vignesh: [
+    {
+      _id: 'vignesh-p-1',
+      title: 'Beverly Hills Modern Architectural Masterpiece',
+      price: '$12,500,000',
+      location: 'Beverly Hills, California',
+      specs: '8 Beds · 11 Baths · Zero-Edge Pool',
+      content: 'New architectural masterpiece in Beverly Hills. 8 Bedrooms, 11 Baths, custom Italian marble, and zero-edge cascading pool. 🏆✨ Price: $12.5M.',
+      image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
+      mediaUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
+      likes: ['sai', 'logeshwarana', 'shreekutti'],
+      comments: [
+        {
+          _id: 'vg-c1',
+          author: { fullName: 'Sophia Sterling', username: 'sophia_luxury' },
+          text: 'Are 1/8th fractional house share syndicate slots still available for European co-owners? 🏡✨',
+          time: '09:15 am',
+        },
+        {
+          _id: 'vg-c2',
+          author: { fullName: 'David Sterling', username: 'david_sterling' },
+          text: 'Bespoke co-ownership model on Beverly Hills estates provides exceptional capital preservation.',
+          time: '11:40 am',
+        },
+        {
+          _id: 'vg-c3',
+          author: { fullName: 'Marcus Vance', username: 'marcus_vance' },
+          text: 'Deeded fractional title and seasonal syndicate booking structure looks turnkey. DM sent! 🔑',
+          time: '01:25 pm',
+        },
+      ],
+    },
+  ],
+  aswin: [
+    {
+      _id: 'aswin-p-1',
+      title: 'Prime Multi-Family Commercial Asset',
+      price: '$12,500,000',
+      location: 'Chennai, Tamil Nadu',
+      specs: '45,000 sq ft · 8.4% Cap Rate',
+      content: 'High-yield commercial multi-family portfolio with pre-verified institutional efficiency ratings.',
+      image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200',
+      mediaUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200',
+      likes: ['sai', 'ajmal'],
+      comments: [],
     },
   ],
   sai: [

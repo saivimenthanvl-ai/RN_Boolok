@@ -122,9 +122,9 @@ const COMMUNITY_FALLBACK_REACTIONS = [
   {
     id: 'shreekutti',
     _id: 'shreekutti',
-    fullName: 'shreekutti',
+    fullName: 'Shreekutti',
     username: 'shreekutti',
-    headline: 'Tech Park Campus Acquisitions Lead @ Boolok Realty',
+    headline: 'Tech Park Campus Acquisitions Lead @ Boolok',
     location: 'Bangalore, Karnataka',
     profilePicture: null,
     reactionType: 'like',

@@ -32,6 +32,45 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     }
 });
 
+const COMMUNITY_DEFAULT_COMMENTS = [
+    {
+        _id: 'c-1',
+        author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
+        text: 'Exceptional cap rate and prime commercial footprint! This is exactly what institutional investors look for. 🏢🚀',
+        time: '06:10 pm',
+    },
+    {
+        _id: 'c-2',
+        author: { fullName: 'Shreekutti', username: 'shreekutti' },
+        text: 'Grade-A specs with strong tenant covenant structure. Solid long-term hold! 💼✨',
+        time: '07:10 pm',
+    },
+    {
+        _id: 'c-3',
+        author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
+        text: 'Turnkey acquisition with verified yield — exactly our portfolio criteria. DM for interest! 🔑',
+        time: '07:40 pm',
+    },
+    {
+        _id: 'c-4',
+        author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
+        text: 'The architectural finish and interior design elements are world-class on this asset. 🌿',
+        time: '08:10 pm',
+    },
+    {
+        _id: 'c-5',
+        author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
+        text: 'OMR corridor premium commercial — this checks all our institutional grade requirements.',
+        time: '08:40 pm',
+    },
+    {
+        _id: 'c-6',
+        author: { fullName: 'Prasanth Properties', username: 'prasanth_properties' },
+        text: 'Is this available for syndication? Would love to discuss terms. 🏛️',
+        time: '08:55 pm',
+    },
+];
+
 const AGENT_POSTS = [
     {
         _id: 're-post-4',
@@ -44,7 +83,20 @@ const AGENT_POSTS = [
         content: 'Grade-A Tech Park Space available on OMR Chennai. LEED Platinum Certified, 24/7 power backup, and metro connectivity. 🏢💼',
         mediaUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
         likes: ['u1', 'u4'],
-        comments: [{ text: 'Available immediately for tech enterprise lease.' }],
+        comments: [
+            {
+                _id: 'ap4-1',
+                author: { fullName: 'Shreekutti', username: 'shreekutti' },
+                text: '8.9% yield on OMR expressway frontage with institutional covenants is prime! 🏢💼',
+                time: '10:30 am',
+            },
+            {
+                _id: 'ap4-2',
+                author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
+                text: 'Floorplate load ratios and multi-level parking verify Grade-A compliance.',
+                time: '12:15 pm',
+            },
+        ],
         verified: true,
         createdAt: new Date(Date.now() - 3600000).toISOString(),
     },
@@ -60,8 +112,18 @@ const AGENT_POSTS = [
         mediaUrl: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
         likes: ['u1', 'u2', 'u3', 'u4', 'u5'],
         comments: [
-            { text: 'Is this available for lease or only purchase?' },
-            { text: 'Incredible architecture!' },
+            {
+                _id: 'ap1-1',
+                author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
+                text: 'Direct ocean access and private mega-yacht clearance make Star Island unmatched. 🌊🛥️',
+                time: '02:15 pm',
+            },
+            {
+                _id: 'ap1-2',
+                author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
+                text: 'Floor-to-ceiling glass integration brings uninterrupted Miami sunsets indoors.',
+                time: '04:00 pm',
+            },
         ],
         verified: true,
         createdAt: new Date(Date.now() - 7200000).toISOString(),
@@ -71,13 +133,26 @@ const AGENT_POSTS = [
         author: {
             _id: 'agent-2',
             fullName: 'Aswin Real Estate',
-            username: 'aswin.realty',
+            username: 'aswin',
             profilePicture: null,
         },
         content: 'Market update: Commercial cap rates in urban metros have compressed by 45bps this quarter. Investors are rotating aggressively into high-yield multi-family assets. 📈🏙️',
         mediaUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200',
         likes: ['u1', 'u3'],
-        comments: [{ text: 'Spot on analysis! We are seeing similar cap rate shifts.' }],
+        comments: [
+            {
+                _id: 'ap2-1',
+                author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
+                text: '8.4% cap rate on a 45,000 sq ft multi-family asset offers high capital security. 📈',
+                time: '01:45 pm',
+            },
+            {
+                _id: 'ap2-2',
+                author: { fullName: 'Shreekutti', username: 'shreekutti' },
+                text: 'Solid cash flow profile. Let us connect regarding investor syndication terms.',
+                time: '03:10 pm',
+            },
+        ],
         verified: true,
         createdAt: new Date(Date.now() - 14400000).toISOString(),
     },
@@ -85,14 +160,33 @@ const AGENT_POSTS = [
         _id: 're-post-3',
         author: {
             _id: 'agent-3',
-            fullName: 'Vicky Luxury Living',
-            username: 'ig_vicky16',
+            fullName: 'Vigneshwaran',
+            username: 'vignesh',
             profilePicture: null,
         },
         content: 'New architectural masterpiece in Beverly Hills. 8 Bedrooms, 11 Baths, custom Italian marble, and zero-edge cascading pool. 🏆✨ Price: $12.5M.',
         mediaUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
         likes: ['u2', 'u4', 'u5'],
-        comments: [],
+        comments: [
+            {
+                _id: 'vg-c1',
+                author: { fullName: 'Sophia Sterling', username: 'sophia_luxury' },
+                text: 'Are 1/8th fractional house share syndicate slots still available for European co-owners? 🏡✨',
+                time: '09:15 am',
+            },
+            {
+                _id: 'vg-c2',
+                author: { fullName: 'David Sterling', username: 'david_sterling' },
+                text: 'Bespoke co-ownership model on Beverly Hills estates provides exceptional capital preservation.',
+                time: '11:40 am',
+            },
+            {
+                _id: 'vg-c3',
+                author: { fullName: 'Marcus Vance', username: 'marcus_vance' },
+                text: 'Deeded fractional title and seasonal syndicate booking structure looks turnkey. DM sent! 🔑',
+                time: '01:25 pm',
+            },
+        ],
         verified: true,
         createdAt: new Date(Date.now() - 28800000).toISOString(),
     },
@@ -104,6 +198,7 @@ router.get('/', authMiddleware, async (req, res) => {
         const viewerId = getAuthenticatedUserId(req);
         const rawPosts = await Post.find({})
             .populate('author', 'fullName username profilePicture email')
+            .populate('comments.user', 'fullName username profilePicture')
             .sort({ createdAt: -1 });
 
         // Deduplicate user posts (keep unique content only to prevent repeating test posts)
@@ -134,6 +229,55 @@ router.get('/', authMiddleware, async (req, res) => {
             pObj.likesSummary = hasViewerLiked
                 ? `Liked by you and 6 other real estate brokers`
                 : `Liked by 6 real estate brokers`;
+
+            if (Array.isArray(pObj.comments) && pObj.comments.length > 0) {
+                pObj.comments = pObj.comments.map((c, cIdx) => {
+                    const u = c.user || c.author || {};
+                    let fName = u.fullName || null;
+                    let uName = u.username || null;
+                    const text = c.text || '';
+                    const bodyLower = text.toLowerCase();
+
+                    // If author is an unpopulated ObjectId / hex string or missing, resolve proper real estate broker profile
+                    if (!fName || /^[0-9a-fA-F]{24}$/.test(fName) || fName.toLowerCase() === 'advisor' || fName.toLowerCase() === 'member') {
+                        if (bodyLower.includes('cap rate') && bodyLower.includes('institutional')) { fName = 'Logeshwaran A'; uName = 'logeshwarana'; }
+                        else if (bodyLower.includes('tenant covenant') || bodyLower.includes('specs')) { fName = 'Shreekutti'; uName = 'shreekutti'; }
+                        else if (bodyLower.includes('turnkey acquisition') || bodyLower.includes('verified yield')) { fName = 'Mohammed Ajmal'; uName = 'ajmal'; }
+                        else if (bodyLower.includes('architectural finish') || bodyLower.includes('interior design')) { fName = 'Bavadharini RS'; uName = 'bavadharini_rs'; }
+                        else if (bodyLower.includes('omr corridor') || bodyLower.includes('institutional grade')) { fName = 'Akshat Commercials'; uName = 'the_akshtr_estate'; }
+                        else if (bodyLower.includes('syndication') || bodyLower.includes('discuss terms')) { fName = 'Prasanth Properties'; uName = 'prasanth_properties'; }
+                        else if (bodyLower.includes('fractional house share') || bodyLower.includes('european co-owners')) { fName = 'Sophia Sterling'; uName = 'sophia_luxury'; }
+                        else if (bodyLower.includes('bespoke co-ownership') || bodyLower.includes('capital preservation')) { fName = 'David Sterling'; uName = 'david_sterling'; }
+                        else if (bodyLower.includes('deeded fractional title') || bodyLower.includes('dm sent')) { fName = 'Marcus Vance'; uName = 'marcus_vance'; }
+                        else {
+                            const fallbackBrokers = [
+                                { name: 'Logeshwaran A', uname: 'logeshwarana' },
+                                { name: 'Shreekutti', uname: 'shreekutti' },
+                                { name: 'Mohammed Ajmal', uname: 'ajmal' },
+                                { name: 'Bavadharini RS', uname: 'bavadharini_rs' },
+                                { name: 'Akshat Commercials', uname: 'the_akshtr_estate' },
+                                { name: 'Prasanth Properties', uname: 'prasanth_properties' },
+                            ];
+                            const picked = fallbackBrokers[cIdx % fallbackBrokers.length];
+                            fName = picked.name;
+                            uName = picked.uname;
+                        }
+                    }
+
+                    return {
+                        _id: c._id,
+                        author: {
+                            _id: uName || u._id || u.id,
+                            fullName: fName,
+                            username: uName,
+                            profilePicture: u.profilePicture || null,
+                        },
+                        text: c.text,
+                        time: c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (c.time || '1h ago'),
+                        createdAt: c.createdAt,
+                    };
+                });
+            }
 
             return pObj;
         });
@@ -172,7 +316,7 @@ const COMMUNITY_FALLBACK_REACTIONS = [
         _id: 'shreekutti',
         fullName: 'Shreekutti',
         username: 'shreekutti',
-        headline: 'Tech Park Campus Acquisitions Lead @ Boolok Realty',
+        headline: 'Tech Park Campus Acquisitions Lead @ Boolok',
         location: 'Bangalore, Karnataka',
         profilePicture: null,
         reactionType: 'like',
@@ -300,15 +444,65 @@ router.get('/:id/details', authMiddleware, async (req, res) => {
                 .populate('comments.user', 'fullName username profilePicture headline');
 
             if (post) {
-                return res.status(200).json({ post });
+                const formattedComments = (post.comments || []).map((c, cIdx) => {
+                    const userObj = c.user || {};
+                    let fName = userObj.fullName || null;
+                    let uName = userObj.username || null;
+                    const text = c.text || '';
+                    const bodyLower = text.toLowerCase();
+
+                    if (!fName || /^[0-9a-fA-F]{24}$/.test(fName) || fName.toLowerCase() === 'advisor' || fName.toLowerCase() === 'member') {
+                        if (bodyLower.includes('cap rate') && bodyLower.includes('institutional')) { fName = 'Logeshwaran A'; uName = 'logeshwarana'; }
+                        else if (bodyLower.includes('tenant covenant') || bodyLower.includes('specs')) { fName = 'Shreekutti'; uName = 'shreekutti'; }
+                        else if (bodyLower.includes('turnkey acquisition') || bodyLower.includes('verified yield')) { fName = 'Mohammed Ajmal'; uName = 'ajmal'; }
+                        else if (bodyLower.includes('architectural finish') || bodyLower.includes('interior design')) { fName = 'Bavadharini RS'; uName = 'bavadharini_rs'; }
+                        else if (bodyLower.includes('omr corridor') || bodyLower.includes('institutional grade')) { fName = 'Akshat Commercials'; uName = 'the_akshtr_estate'; }
+                        else if (bodyLower.includes('syndication') || bodyLower.includes('discuss terms')) { fName = 'Prasanth Properties'; uName = 'prasanth_properties'; }
+                        else if (bodyLower.includes('fractional house share') || bodyLower.includes('european co-owners')) { fName = 'Sophia Sterling'; uName = 'sophia_luxury'; }
+                        else if (bodyLower.includes('bespoke co-ownership') || bodyLower.includes('capital preservation')) { fName = 'David Sterling'; uName = 'david_sterling'; }
+                        else if (bodyLower.includes('deeded fractional title') || bodyLower.includes('dm sent')) { fName = 'Marcus Vance'; uName = 'marcus_vance'; }
+                        else {
+                            const fallbackBrokers = [
+                                { name: 'Logeshwaran A', uname: 'logeshwarana' },
+                                { name: 'Shreekutti', uname: 'shreekutti' },
+                                { name: 'Mohammed Ajmal', uname: 'ajmal' },
+                                { name: 'Bavadharini RS', uname: 'bavadharini_rs' },
+                                { name: 'Akshat Commercials', uname: 'the_akshtr_estate' },
+                                { name: 'Prasanth Properties', uname: 'prasanth_properties' },
+                            ];
+                            const picked = fallbackBrokers[cIdx % fallbackBrokers.length];
+                            fName = picked.name;
+                            uName = picked.uname;
+                        }
+                    }
+
+                    return {
+                        _id: c._id,
+                        author: {
+                            _id: uName || userObj._id,
+                            fullName: fName,
+                            username: uName,
+                            profilePicture: userObj.profilePicture || null,
+                        },
+                        text: c.text,
+                        time: c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '1h ago',
+                        createdAt: c.createdAt,
+                    };
+                });
+
+                const postObj = post.toObject();
+                postObj.comments = formattedComments;
+                return res.status(200).json({ post: postObj });
             }
         }
 
-        const currentLikes = demoPostLikes.get(id) || ['u1', 'u2'];
-        const currentComments = demoPostComments.get(id) || [];
+        const matchedAgentPost = AGENT_POSTS.find((ap) => ap._id === id);
+        const currentLikes = demoPostLikes.get(id) || matchedAgentPost?.likes || ['u1', 'u2'];
+        const currentComments = demoPostComments.get(id) || matchedAgentPost?.comments || COMMUNITY_DEFAULT_COMMENTS;
         return res.status(200).json({
             post: {
                 _id: id,
+                ...(matchedAgentPost || {}),
                 likes: currentLikes,
                 comments: currentComments,
             },

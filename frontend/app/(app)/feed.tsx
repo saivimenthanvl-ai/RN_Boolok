@@ -186,6 +186,66 @@ const UserAvatar = ({
 };
 
 // ── Default Professional Real Estate Posts ──────────────────────────────────
+const COMMUNITY_DEFAULT_COMMENTS = [
+  {
+    _id: 'c-1',
+    author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
+    text: 'Exceptional cap rate and prime commercial footprint! This is exactly what institutional investors look for. 🏢🚀',
+    time: '06:10 pm',
+  },
+  {
+    _id: 'c-2',
+    author: { fullName: 'Shreekutti', username: 'shreekutti' },
+    text: 'Grade-A specs with strong tenant covenant structure. Solid long-term hold! 💼✨',
+    time: '07:10 pm',
+  },
+  {
+    _id: 'c-3',
+    author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
+    text: 'Turnkey acquisition with verified yield — exactly our portfolio criteria. DM for interest! 🔑',
+    time: '07:40 pm',
+  },
+  {
+    _id: 'c-4',
+    author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
+    text: 'The architectural finish and interior design elements are world-class on this asset. 🌿',
+    time: '08:10 pm',
+  },
+  {
+    _id: 'c-5',
+    author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
+    text: 'OMR corridor premium commercial — this checks all our institutional grade requirements.',
+    time: '08:40 pm',
+  },
+  {
+    _id: 'c-6',
+    author: { fullName: 'Prasanth Properties', username: 'prasanth_properties' },
+    text: 'Is this available for syndication? Would love to discuss terms. 🏛️',
+    time: '08:55 pm',
+  },
+];
+
+const VIGNESH_HOUSE_SHARE_COMMENTS = [
+  {
+    _id: 'vg-c1',
+    author: { fullName: 'Sophia Sterling', username: 'sophia_luxury' },
+    text: 'Are 1/8th fractional house share syndicate slots still available for European co-owners? 🏡✨',
+    time: '09:15 am',
+  },
+  {
+    _id: 'vg-c2',
+    author: { fullName: 'David Sterling', username: 'david_sterling' },
+    text: 'Bespoke co-ownership model on Beverly Hills estates provides exceptional capital preservation.',
+    time: '11:40 am',
+  },
+  {
+    _id: 'vg-c3',
+    author: { fullName: 'Marcus Vance', username: 'marcus_vance' },
+    text: 'Deeded fractional title and seasonal syndicate booking structure looks turnkey. DM sent! 🔑',
+    time: '01:25 pm',
+  },
+];
+
 const DUMMY_REAL_ESTATE_POSTS = [
   {
     _id: 'post-shreekutti-1',
@@ -193,7 +253,7 @@ const DUMMY_REAL_ESTATE_POSTS = [
       _id: 'shreekutti',
       fullName: 'Shreekutti',
       username: 'shreekutti',
-      title: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Realty',
+      title: 'Commercial Property & Tech Park Portfolio Lead @ Boolok',
       degree: '1st',
       profilePicture: null,
     },
@@ -206,27 +266,25 @@ const DUMMY_REAL_ESTATE_POSTS = [
     likes: ['shreekutti', 'logeshwarana', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'],
     likesSummary: 'Liked by 6 real estate brokers',
     likesCount: 6,
-    commentsCount: 2,
+    commentsCount: 3,
     comments: [
       {
-        _id: 'c1',
-        author: {
-          fullName: 'Logeshwaran A',
-          username: 'logeshwarana',
-          profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
-        },
-        text: 'Clean zoning and strong cap rate numbers. Congratulations on the closing!',
-        time: '3d ago',
+        _id: 'sc-p-1',
+        author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
+        text: '8.4% cap rate on Outer Ring Road is solid institutional yield. Top tier campus! 🏢',
+        time: '04:15 pm',
       },
       {
-        _id: 'c2',
-        author: {
-          fullName: 'Mohammed Ajmal',
-          username: 'ajmal',
-          profilePicture: null,
-        },
-        text: 'Outstanding acquisition! The architectural footprint is world-class.',
-        time: '5d ago',
+        _id: 'sc-p-2',
+        author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
+        text: 'Pre-verified covenants make this an immediate fit for REIT portfolios.',
+        time: '05:30 pm',
+      },
+      {
+        _id: 'sc-p-3',
+        author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
+        text: 'Are full floorplate blueprints available for international client syndication?',
+        time: '06:05 pm',
       },
     ],
   },
@@ -249,24 +307,16 @@ const DUMMY_REAL_ESTATE_POSTS = [
     commentsCount: 2,
     comments: [
       {
-        _id: 'c3',
-        author: {
-          fullName: 'Shreekutti',
-          username: 'shreekutti',
-          profilePicture: null,
-        },
-        text: 'The natural lighting on this waterfront build is stunning!',
-        time: '1h ago',
+        _id: 'pp-p-1',
+        author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
+        text: 'Direct ocean access and private mega-yacht clearance make Star Island unmatched. 🌊🛥️',
+        time: '02:15 pm',
       },
       {
-        _id: 'c4',
-        author: {
-          fullName: 'Yashwanth Realty',
-          username: 'yashwanth_realty',
-          profilePicture: null,
-        },
-        text: 'Spectacular location and panoramic backdrop.',
-        time: '45m ago',
+        _id: 'pp-p-2',
+        author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
+        text: 'Floor-to-ceiling glass integration brings uninterrupted Miami sunsets indoors.',
+        time: '04:00 pm',
       },
     ],
   },
@@ -286,17 +336,19 @@ const DUMMY_REAL_ESTATE_POSTS = [
     likes: ['shreekutti', '6a8af34812ef34aed25ae8d2', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'],
     likesSummary: 'Liked by 6 real estate brokers',
     likesCount: 6,
-    commentsCount: 1,
+    commentsCount: 2,
     comments: [
       {
-        _id: 'c5',
-        author: {
-          fullName: 'Logeshwaran A',
-          username: 'logeshwarana',
-          profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
-        },
-        text: 'Stunning cabinetry and seamless marble alignment!',
-        time: '6h ago',
+        _id: 'bv-p-1',
+        author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
+        text: 'Flawless Italian joinery and natural lighting control. Remarkable penthouse execution! ✨',
+        time: '11:20 am',
+      },
+      {
+        _id: 'bv-p-2',
+        author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
+        text: 'Private elevator access and uninterrupted sea views command top-tier pricing.',
+        time: '01:05 pm',
       },
     ],
   },
@@ -308,7 +360,7 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     _id: 'shreekutti',
     fullName: 'Shreekutti',
     username: 'shreekutti',
-    headline: 'Tech Park Campus Acquisitions Lead @ Boolok Realty',
+    headline: 'Tech Park Campus Acquisitions Lead @ Boolok',
     distance: '0.8 km away',
     location: 'Outer Ring Road, Bangalore',
     deals: '18 deals closed',
@@ -454,7 +506,7 @@ export default function ProfessionalSocialFeedScreen() {
           return;
         }
       }
-    } catch (e) {}
+    } catch (e) { }
     // Default fallback so user sees realistic saved property reels if none saved yet
     setSavedReelsList([
       {
@@ -491,11 +543,11 @@ export default function ProfessionalSocialFeedScreen() {
     if (Platform.OS === 'web') {
       try {
         localStorage.setItem('boolok_saved_reels', JSON.stringify(updated));
-      } catch (e) {}
+      } catch (e) { }
     } else {
       try {
         await SecureStore.setItemAsync('boolok_saved_reels', JSON.stringify(updated));
-      } catch (e) {}
+      } catch (e) { }
     }
   };
 
@@ -655,11 +707,29 @@ export default function ProfessionalSocialFeedScreen() {
         const rawCount = typeof p.likesCount === 'number' ? p.likesCount : baseLikes.length;
         const communityCount = Math.max(6, isPersistedLiked ? rawCount - 1 : rawCount);
 
+        let authorObj = p.author ? { ...p.author } : {};
+        let authorUname = (authorObj.username || authorObj._id || authorObj.id || '').toLowerCase();
+        let authorFname = authorObj.fullName || '';
+
+        if (authorUname.includes('vicky') || authorUname.includes('vignesh') || authorFname.includes('Vicky') || authorFname.includes('Vignesh')) {
+          authorObj.fullName = 'Vigneshwaran';
+          authorObj.username = 'vignesh';
+        }
+        if (authorUname.includes('aswin') || authorFname.includes('Aswin')) {
+          authorObj.fullName = 'Aswin Real Estate';
+          authorObj.username = 'aswin';
+        }
+        if (authorUname.includes('yashwanth') || authorUname.includes('cinemahub') || authorFname.includes('Yashwanth') || authorFname.includes('cinemahub')) {
+          authorObj.fullName = 'Yashwanth';
+          authorObj.username = 'yashwanth';
+        }
+
         if (isPersistedLiked) {
           const nextLikes = baseLikes.includes(viewerId) ? baseLikes : [viewerId, ...baseLikes];
           const nextCount = communityCount + 1; // Always 7 (Sai + 6 advisors)
           return {
             ...p,
+            author: authorObj,
             currentUserReaction: 'like',
             likes: nextLikes,
             likesCount: nextCount,
@@ -668,6 +738,7 @@ export default function ProfessionalSocialFeedScreen() {
         }
         return {
           ...p,
+          author: authorObj,
           currentUserReaction: null,
           likes: baseLikes.filter((id: string) => id !== viewerId),
           likesCount: communityCount,
@@ -683,16 +754,34 @@ export default function ProfessionalSocialFeedScreen() {
 
       if (suggestedRes.status === 'fulfilled' && Array.isArray(suggestedRes.value.data?.suggested)) {
         const seen = new Set<string>();
-        const uniqueSuggested = suggestedRes.value.data.suggested.filter((u: any) => {
-          const uname = (u.username || u.id || u._id || '').toLowerCase();
-          const email = (u.email || '').toLowerCase();
-          const fullName = (u.fullName || '').toLowerCase();
-          if (email.includes('logeshwarana@boolok.ai')) return false;
-          if (uname.includes('6a8dc') || fullName.includes('6a8dc') || /^[0-9a-fA-F]{24}$/.test(uname)) return false;
-          if (seen.has(uname)) return false;
-          seen.add(uname);
-          return true;
-        });
+        const uniqueSuggested = suggestedRes.value.data.suggested
+          .map((u: any) => {
+            let uname = (u.username || u.id || u._id || '').toLowerCase();
+            let fname = u.fullName || '';
+            if (uname === 'ig_vicky16' || uname === 'ig_vicky.16' || uname === 'vicky' || uname === 'vignesh' || fname.includes('Vicky') || fname.includes('Vignesh')) {
+              uname = 'vignesh';
+              fname = 'Vigneshwaran';
+            }
+            if (uname === 'aswin.realty' || uname === 'aswin_realty' || uname === 'aswin' || fname.includes('Aswin')) {
+              uname = 'aswin';
+              fname = 'Aswin Real Estate';
+            }
+            if (uname === 'yashwanth_realty' || uname === 'cinemahub.live' || uname === 'cinemahub' || uname === 'yashwanth' || fname.includes('Yashwanth') || fname.includes('cinemahub')) {
+              uname = 'yashwanth';
+              fname = 'Yashwanth';
+            }
+            return { ...u, username: uname, fullName: fname };
+          })
+          .filter((u: any) => {
+            const uname = (u.username || '').toLowerCase();
+            const email = (u.email || '').toLowerCase();
+            const fullName = (u.fullName || '').toLowerCase();
+            if (email.includes('logeshwarana@boolok.ai')) return false;
+            if (uname.includes('6a8dc') || fullName.includes('6a8dc') || /^[0-9a-fA-F]{24}$/.test(uname)) return false;
+            if (seen.has(uname)) return false;
+            seen.add(uname);
+            return true;
+          });
         setSuggestedUsers(uniqueSuggested);
         const map: Record<string, boolean> = {};
         uniqueSuggested.forEach((u: any) => {
@@ -1104,8 +1193,24 @@ export default function ProfessionalSocialFeedScreen() {
 
           {/* ── Feed Posts Stream ────────────────────────────────────────────── */}
           {posts.map((post) => {
-            const author = post.author || {};
-            const authorName = author.fullName || author.username || 'Real Estate Lead';
+            let author = post.author || {};
+            let authorName = author.fullName || author.username || 'Real Estate Lead';
+            let authorUsername = (author.username || author._id || author.id || '').toLowerCase();
+
+            if (authorUsername.includes('vicky') || authorUsername.includes('vignesh') || authorName.includes('Vicky') || authorName.includes('Vignesh')) {
+              authorName = 'Vigneshwaran';
+              authorUsername = 'vignesh';
+              author = { ...author, fullName: 'Vigneshwaran', username: 'vignesh' };
+            } else if (authorUsername.includes('aswin') || authorName.includes('Aswin')) {
+              authorName = 'Aswin Real Estate';
+              authorUsername = 'aswin';
+              author = { ...author, fullName: 'Aswin Real Estate', username: 'aswin' };
+            } else if (authorUsername.includes('yashwanth') || authorUsername.includes('cinemahub') || authorName.includes('Yashwanth') || authorName.includes('cinemahub')) {
+              authorName = 'Yashwanth';
+              authorUsername = 'yashwanth';
+              author = { ...author, fullName: 'Yashwanth', username: 'yashwanth' };
+            }
+
             const authorTitle =
               author.title ||
               'Commercial Property & Real Estate Advisor @ Boolok Network';
@@ -1337,29 +1442,109 @@ export default function ProfessionalSocialFeedScreen() {
                     </View>
 
                     {/* Existing Comments with Named Profiles */}
-                    {commentsList.map((c: any, cIdx: number) => {
-                      const fallbackNames = ['shreekutti', 'logeshwarana', 'ajmal', 'yashwanth_realty'];
-                      const fallbackName = fallbackNames[cIdx % fallbackNames.length];
-                      const cAuthor = c.author || {};
-                      const rawName = cAuthor.fullName || cAuthor.username || (typeof c.author === 'string' ? c.author : '');
-                      const cName = (!rawName || rawName === 'Advisor' || rawName === 'Agent') ? fallbackName : rawName;
-                      const commentBody = c.text || 'Clean zoning and strong cap rate numbers.';
-
-                      let targetUserId = cAuthor._id || cAuthor.id || cAuthor.username;
-                      if (!targetUserId && cName) {
-                        const clean = cName.toLowerCase().trim();
-                        if (clean.includes('shree')) targetUserId = 'shreekutti';
-                        else if (clean.includes('logesh')) targetUserId = 'logeshwarana';
-                        else if (clean.includes('ajmal')) targetUserId = 'ajmal';
-                        else if (clean.includes('bava')) targetUserId = 'bavadharini_rs';
-                        else if (clean.includes('akshat')) targetUserId = 'the_akshtr_estate';
-                        else if (clean.includes('prasanth')) targetUserId = 'prasanth_properties';
-                        else if (clean.includes('sai')) targetUserId = 'sai';
-                        else targetUserId = clean.replace(/\s+/g, '_');
+                    {(() => {
+                      let activeComments = commentsList;
+                      if (!activeComments || activeComments.length === 0) {
+                        const isVignesh = authorUsername === 'vignesh' || authorName.toLowerCase().includes('vignesh');
+                        if (isVignesh) {
+                          activeComments = VIGNESH_HOUSE_SHARE_COMMENTS;
+                        } else if (isSelfPost || authorUsername === 'sai' || authorUsername === 'saivimenthanvl') {
+                          activeComments = COMMUNITY_DEFAULT_COMMENTS;
+                        } else if (authorUsername === 'prasanth_properties' || authorName.toLowerCase().includes('prasanth')) {
+                          activeComments = [
+                            {
+                              _id: 'pp-p-1',
+                              author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
+                              text: 'Direct ocean access and private mega-yacht clearance make Star Island unmatched. 🌊🛥️',
+                              time: '02:15 pm',
+                            },
+                            {
+                              _id: 'pp-p-2',
+                              author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
+                              text: 'Floor-to-ceiling glass integration brings uninterrupted Miami sunsets indoors.',
+                              time: '04:00 pm',
+                            },
+                          ];
+                        } else if (authorUsername === 'aswin' || authorName.toLowerCase().includes('aswin')) {
+                          activeComments = [
+                            {
+                              _id: 'ap2-1',
+                              author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
+                              text: '8.4% cap rate on a 45,000 sq ft multi-family asset offers high capital security. 📈',
+                              time: '01:45 pm',
+                            },
+                            {
+                              _id: 'ap2-2',
+                              author: { fullName: 'Shreekutti', username: 'shreekutti' },
+                              text: 'Solid cash flow profile. Let us connect regarding investor syndication terms.',
+                              time: '03:10 pm',
+                            },
+                          ];
+                        } else if (authorUsername === 'the_akshtr_estate' || authorName.toLowerCase().includes('akshat')) {
+                          activeComments = [
+                            {
+                              _id: 'ap4-1',
+                              author: { fullName: 'Shreekutti', username: 'shreekutti' },
+                              text: '8.9% yield on OMR expressway frontage with institutional covenants is prime! 🏢💼',
+                              time: '10:30 am',
+                            },
+                            {
+                              _id: 'ap4-2',
+                              author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
+                              text: 'Floorplate load ratios and multi-level parking verify Grade-A compliance.',
+                              time: '12:15 pm',
+                            },
+                          ];
+                        } else {
+                          activeComments = COMMUNITY_DEFAULT_COMMENTS;
+                        }
                       }
 
+                      return activeComments.map((c: any, cIdx: number) => {
+                        const cAuthor = c.author || c.user || {};
+                        let rawName = cAuthor.fullName || cAuthor.username || (typeof c.author === 'string' ? c.author : '') || (typeof c.user === 'string' ? c.user : '');
+                        const commentBody = c.text || 'Clean zoning and strong cap rate numbers.';
+                        const commentTime = c.time || (c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '1h ago');
+
+                        // If rawName is missing, hex ID, placeholder 'Member' or empty, derive the real advisor name from the comment text or index
+                        const bodyLower = commentBody.toLowerCase();
+                        if (!rawName || /^[0-9a-fA-F]{24}$/.test(rawName) || rawName.startsWith('6a8') || rawName.toLowerCase() === 'member' || rawName.toLowerCase() === 'advisor') {
+                          if (bodyLower.includes('cap rate') && bodyLower.includes('institutional')) rawName = 'Logeshwaran A';
+                          else if (bodyLower.includes('tenant covenant') || bodyLower.includes('specs')) rawName = 'Shreekutti';
+                          else if (bodyLower.includes('turnkey acquisition') || bodyLower.includes('verified yield')) rawName = 'Mohammed Ajmal';
+                          else if (bodyLower.includes('architectural finish') || bodyLower.includes('interior design')) rawName = 'Bavadharini RS';
+                          else if (bodyLower.includes('omr corridor') || bodyLower.includes('institutional grade')) rawName = 'Akshat Commercials';
+                          else if (bodyLower.includes('syndication') || bodyLower.includes('discuss terms')) rawName = 'Prasanth Properties';
+                          else if (bodyLower.includes('fractional house share') || bodyLower.includes('european co-owners')) rawName = 'Sophia Sterling';
+                          else if (bodyLower.includes('bespoke co-ownership') || bodyLower.includes('capital preservation')) rawName = 'David Sterling';
+                          else if (bodyLower.includes('deeded fractional title') || bodyLower.includes('dm sent')) rawName = 'Marcus Vance';
+                          else {
+                            const fallbackNames = ['Logeshwaran A', 'Shreekutti', 'Mohammed Ajmal', 'Bavadharini RS', 'Akshat Commercials', 'Prasanth Properties'];
+                            rawName = fallbackNames[cIdx % fallbackNames.length];
+                          }
+                        }
+
+                        const cName = rawName;
+
+                        let targetUserId = cAuthor._id || cAuthor.id || cAuthor.username;
+                        const clean = cName.toLowerCase().trim();
+                        if (!targetUserId || clean.includes('member')) {
+                          if (clean.includes('shree')) targetUserId = 'shreekutti';
+                          else if (clean.includes('logesh')) targetUserId = 'logeshwarana';
+                          else if (clean.includes('ajmal')) targetUserId = 'ajmal';
+                          else if (clean.includes('bava')) targetUserId = 'bavadharini_rs';
+                          else if (clean.includes('akshat')) targetUserId = 'the_akshtr_estate';
+                          else if (clean.includes('prasanth')) targetUserId = 'prasanth_properties';
+                          else if (clean.includes('sai')) targetUserId = 'sai';
+                          else if (clean.includes('vignesh')) targetUserId = 'vignesh';
+                          else if (clean.includes('sophia')) targetUserId = 'sophia_luxury';
+                          else if (clean.includes('david')) targetUserId = 'david_sterling';
+                          else if (clean.includes('marcus')) targetUserId = 'marcus_vance';
+                          else targetUserId = clean.replace(/\s+/g, '_');
+                        }
+
                       return (
-                        <View key={c._id || cIdx} style={styles.commentItemBlock}>
+                        <View key={c._id || cIdx} style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
                           <Pressable
                             onPress={() => {
                               if (targetUserId) {
@@ -1370,26 +1555,32 @@ export default function ProfessionalSocialFeedScreen() {
                               (pressed || hovered) && { opacity: 0.8 },
                             ]}
                           >
-                            <UserAvatar user={cAuthor?.profilePicture ? cAuthor : { fullName: cName }} size={32} style={styles.commentItemAvatar} />
+                            <UserAvatar user={cAuthor?.profilePicture ? cAuthor : { fullName: cName, username: targetUserId }} size={34} />
                           </Pressable>
-                          <View style={styles.commentItemBubble}>
-                            <Pressable
-                              onPress={() => {
-                                if (targetUserId) {
-                                  router.push({ pathname: '/(app)/profile', params: { id: targetUserId } });
-                                }
-                              }}
-                              style={({ pressed, hovered }: any) => [
-                                (pressed || hovered) && { opacity: 0.7 },
-                              ]}
-                            >
-                              <Text style={[styles.commentItemAuthorName, { textDecorationLine: 'underline' }]}>{cName}</Text>
-                            </Pressable>
-                            <Text style={styles.commentItemText}>{commentBody}</Text>
+                          <View style={{ flex: 1, backgroundColor: '#131e30', padding: 10, borderRadius: 10, borderWidth: 1, borderColor: '#1b2a40' }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                              <Pressable
+                                onPress={() => {
+                                  if (targetUserId) {
+                                    router.push({ pathname: '/(app)/profile', params: { id: targetUserId } });
+                                  }
+                                }}
+                                style={({ pressed, hovered }: any) => [
+                                  (pressed || hovered) && { opacity: 0.7 },
+                                ]}
+                              >
+                                <Text style={{ color: goldPrimary, fontWeight: '800', fontSize: 13, textDecorationLine: 'underline' }}>
+                                  {cName}
+                                </Text>
+                              </Pressable>
+                              <Text style={{ color: '#64748b', fontSize: 10 }}>{commentTime}</Text>
+                            </View>
+                            <Text style={{ color: '#e2e8f0', fontSize: 12.5, lineHeight: 17 }}>{commentBody}</Text>
                           </View>
                         </View>
                       );
-                    })}
+                      });
+                    })()}
                   </View>
                 )}
               </View>
@@ -1455,22 +1646,38 @@ export default function ProfessionalSocialFeedScreen() {
                 suggestedUsers.map((adv) => {
                   const advId = adv.id || adv._id;
                   const isF = Boolean(followingMap[advId]);
-                  const initial = (adv.fullName || adv.username || 'U')[0]?.toUpperCase();
+                  let advFullName = adv.fullName;
+                  let advUsername = adv.username;
+
+                  if (advUsername === 'ig_vicky16' || advUsername === 'ig_vicky.16' || advUsername === 'vicky' || advUsername === 'vignesh' || (advFullName && advFullName.includes('Vicky'))) {
+                    advFullName = 'Vigneshwaran';
+                    advUsername = 'vignesh';
+                  }
+                  if (advUsername === 'aswin.realty' || advUsername === 'aswin_realty' || advUsername === 'aswin' || (advFullName && advFullName.includes('Aswin'))) {
+                    advFullName = 'Aswin Real Estate';
+                    advUsername = 'aswin';
+                  }
+                  if (advUsername === 'yashwanth_realty' || advUsername === 'cinemahub.live' || advUsername === 'cinemahub' || (advFullName && (advFullName.includes('Yashwanth Realty') || advFullName.includes('cinemahub')))) {
+                    advFullName = 'Yashwanth';
+                    advUsername = 'yashwanth';
+                  }
+
+                  const initial = (advFullName || advUsername || 'U')[0]?.toUpperCase();
                   return (
                     <View key={advId} style={styles.advisorRow}>
                       <Pressable
                         onPress={() =>
-                          router.push({ pathname: '/(app)/profile', params: { id: advId } })
+                          router.push({ pathname: '/(app)/profile', params: { id: advUsername || advId } })
                         }
                         style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
                       >
-                        <UserAvatar user={adv} size={40} style={styles.advisorAvatar} />
+                        <UserAvatar user={{ ...adv, fullName: advFullName, username: advUsername }} size={40} style={styles.advisorAvatar} />
                         <View style={{ marginLeft: 10, flex: 1 }}>
                           <Text style={styles.advisorName} numberOfLines={1}>
-                            {adv.fullName}
+                            {advFullName}
                           </Text>
                           <Text style={styles.advisorSubtitle} numberOfLines={1}>
-                            @{adv.username} · {adv.followerCount || 0} followers
+                            @{advUsername} · {adv.followerCount || 0} followers
                           </Text>
                         </View>
                       </Pressable>

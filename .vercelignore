@@ -1,9 +1,10 @@
 node_modules
-frontend/node_modules
-backend/node_modules
+**/node_modules
 .expo
-frontend/.expo
-backend/uploads
+**/.expo
+android
+ios
 dist
-frontend/dist
-.git
+**/.git
+*.log
+backend/uploads

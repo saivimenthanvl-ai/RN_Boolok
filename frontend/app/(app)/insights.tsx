@@ -40,7 +40,7 @@ const DUMMY_VIDEOS = [
     comments: [
       { _id: 'c1-1', user: { fullName: 'shreekutti' }, text: 'The terroir and climate suitability metrics are exceptional here! 🍇✨', createdAt: new Date() },
       { _id: 'c1-2', user: { fullName: 'ajmal' }, text: '50-year pre-verified water rights make this a bulletproof acquisition. 🍷', createdAt: new Date() },
-      { _id: 'c1-3', user: { fullName: 'cinemahub.live' }, text: 'Incredible drone framing! Would love to feature this estate portfolio. 🎥', createdAt: new Date() },
+      { _id: 'c1-3', user: { fullName: 'yashwanth' }, text: 'Incredible drone framing! Would love to feature this estate portfolio. 🎥', createdAt: new Date() },
     ],
   },
   {
@@ -53,7 +53,7 @@ const DUMMY_VIDEOS = [
     poster: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
     comments: [
-      { _id: 'c2-1', user: { fullName: 'cinemahub.live' }, text: 'Breathtaking ocean cliff views! Perfect setting for luxury resort hospitality. 🌅🏖️', createdAt: new Date() },
+      { _id: 'c2-1', user: { fullName: 'yashwanth' }, text: 'Breathtaking ocean cliff views! Perfect setting for luxury resort hospitality. 🌅🏖️', createdAt: new Date() },
       { _id: 'c2-2', user: { fullName: 'shreekutti' }, text: '14% YoY tourism surge matches our regional Bali portfolio forecast. 📈', createdAt: new Date() },
       { _id: 'c2-3', user: { fullName: 'ajmal' }, text: 'Zoning approvals for boutique development add immediate upside. 🔑', createdAt: new Date() },
     ],
@@ -70,7 +70,7 @@ const DUMMY_VIDEOS = [
     comments: [
       { _id: 'c3-1', user: { fullName: 'ajmal' }, text: 'Thermal zoning and serene forested topography are hard to find in Kyoto! ⛩️🍃', createdAt: new Date() },
       { _id: 'c3-2', user: { fullName: 'shreekutti' }, text: 'Eco-luxury cabins here will command top-tier international ADRs. 🏡✨', createdAt: new Date() },
-      { _id: 'c3-3', user: { fullName: 'cinemahub.live' }, text: 'Stunning cinematography and pagoda vista backdrop. 🎬', createdAt: new Date() },
+      { _id: 'c3-3', user: { fullName: 'yashwanth' }, text: 'Stunning cinematography and pagoda vista backdrop. 🎬', createdAt: new Date() },
     ],
   },
   {
@@ -85,7 +85,7 @@ const DUMMY_VIDEOS = [
     comments: [
       { _id: 'c4-1', user: { fullName: 'Logeshwaran A' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
       { _id: 'c4-2', user: { fullName: 'shreekutti' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
-      { _id: 'c4-3', user: { fullName: 'cinemahub.live' }, text: 'Clean architectural lines and modern corporate facade. ✨', createdAt: new Date() },
+      { _id: 'c4-3', user: { fullName: 'yashwanth' }, text: 'Clean architectural lines and modern corporate facade. ✨', createdAt: new Date() },
     ],
   },
 ];
@@ -191,9 +191,9 @@ const MarketIntelligenceSidebar = ({ theme, isDark }: { theme: any, isDark: bool
 const SHARE_CONTACTS = [
   { id: '1', name: 'shreekutti', role: 'Residential Architect · Chennai', avatar: 'S' },
   { id: '2', name: 'ajmal', role: 'CRE Advisory & Multi-Family', avatar: 'A' },
-  { id: '3', name: 'cinemahub.live', role: 'Studio & Commercial Spaces', avatar: 'C' },
-  { id: '4', name: 'Logeshwaran A', role: 'Architectural Consultant · Tech Parks', avatar: 'L' },
-  { id: '5', name: 'Sai Vimenthan', role: 'Principal Broker · Commercial Assets', avatar: 'S' },
+  { id: '3', name: 'yashwanth', role: 'Commercial Realty · Tech Hubs', avatar: 'Y' },
+  { id: '4', name: 'Logeshwaran A', role: 'Architectural Consultant · Tech Parks', avatar: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
+  { id: '5', name: 'Sai Vimenthan', role: 'Principal Broker · Commercial Assets', avatar: 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' },
 ];
 
 const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }: any) => {
@@ -211,7 +211,7 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
           const parsed = JSON.parse(savedRaw);
           return Array.isArray(parsed) && parsed.some((r: any) => r._id === item._id || r.id === item._id);
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     return false;
   });
@@ -229,7 +229,7 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
             }
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     })();
   }, [item._id]);
 
@@ -266,7 +266,7 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
             autoPlayTimerRef.current = setTimeout(() => {
               if (webVideoRef.current) {
                 webVideoRef.current.currentTime = 0;
-                webVideoRef.current.play().catch(() => {});
+                webVideoRef.current.play().catch(() => { });
               }
             }, 8000);
           }).catch((e: any) => {
@@ -304,11 +304,11 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
           p.then(() => {
             setIsPlaying(true);
             // Optionally try unmuting once user has interacted
-            try { vid.muted = false; } catch (_) {}
+            try { vid.muted = false; } catch (_) { }
           }).catch(() => {
             vid.muted = true;
             vid.load();
-            vid.play().then(() => setIsPlaying(true)).catch(() => {});
+            vid.play().then(() => setIsPlaying(true)).catch(() => { });
           });
         }
       } else {
@@ -369,7 +369,7 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
           list = list.filter((r) => r._id !== item._id && r.id !== item._id);
         }
         localStorage.setItem('boolok_saved_reels', JSON.stringify(list));
-      } catch (e) {}
+      } catch (e) { }
     } else {
       try {
         const raw = await SecureStore.getItemAsync('boolok_saved_reels');
@@ -382,7 +382,7 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
           list = list.filter((r) => r._id !== item._id && r.id !== item._id);
         }
         await SecureStore.setItemAsync('boolok_saved_reels', JSON.stringify(list));
-      } catch (e) {}
+      } catch (e) { }
     }
   };
 
@@ -648,9 +648,13 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
                     }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                      <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center' }}>
-                        <Text style={{ color: '#000000', fontWeight: '800', fontSize: 14 }}>{contact.avatar}</Text>
-                      </View>
+                      {contact.avatar && (contact.avatar.startsWith('http') || contact.avatar.startsWith('data:')) ? (
+                        <Image source={{ uri: contact.avatar }} style={{ width: 36, height: 36, borderRadius: 18 }} resizeMode="cover" />
+                      ) : (
+                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center' }}>
+                          <Text style={{ color: '#000000', fontWeight: '800', fontSize: 14 }}>{contact.avatar || (contact.name || 'U').charAt(0).toUpperCase()}</Text>
+                        </View>
+                      )}
                       <View>
                         <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>{contact.name}</Text>
                         <Text style={{ color: '#8b9bb4', fontSize: 11.5 }}>{contact.role}</Text>
@@ -744,16 +748,28 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
                 const cUser = c.user || c.author || {};
                 const cName = cUser.fullName || cUser.username || (typeof c.user === 'string' ? c.user : 'Advisor');
                 let targetId = cUser._id || cUser.id || cUser.username;
+                const clean = cName ? cName.toLowerCase().trim() : '';
                 if (!targetId && cName) {
-                  const clean = cName.toLowerCase().trim();
                   if (clean.includes('shree')) targetId = 'shreekutti';
                   else if (clean.includes('logesh')) targetId = 'logeshwarana';
                   else if (clean.includes('ajmal')) targetId = 'ajmal';
+                  else if (clean.includes('yashwanth') || clean.includes('cinema')) targetId = 'yashwanth';
+                  else if (clean.includes('vignesh') || clean.includes('vicky')) targetId = 'vignesh';
                   else if (clean.includes('bava')) targetId = 'bavadharini_rs';
                   else if (clean.includes('akshat')) targetId = 'the_akshtr_estate';
                   else if (clean.includes('prasanth')) targetId = 'prasanth_properties';
+                  else if (clean.includes('aswin')) targetId = 'aswin';
                   else if (clean.includes('sai')) targetId = 'sai';
                   else targetId = clean.replace(/\s+/g, '_');
+                }
+
+                let photoUri = cUser.profilePicture || cUser.avatar;
+                if (!photoUri || !photoUri.startsWith('http')) {
+                  if (clean.includes('logesh')) {
+                    photoUri = 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c';
+                  } else if (clean.includes('sai')) {
+                    photoUri = 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c';
+                  }
                 }
 
                 return (
@@ -765,11 +781,17 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
                           router.push({ pathname: '/(app)/profile', params: { id: targetId } });
                         }
                       }}
-                      style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center' }}
+                      style={{ width: 34, height: 34, borderRadius: 17, overflow: 'hidden' }}
                     >
-                      <Text style={{ color: '#000000', fontWeight: '800', fontSize: 14 }}>
-                        {(cName || 'U').charAt(0).toUpperCase()}
-                      </Text>
+                      {photoUri && (photoUri.startsWith('http') || photoUri.startsWith('data:')) ? (
+                        <Image source={{ uri: photoUri }} style={{ width: 34, height: 34, borderRadius: 17 }} resizeMode="cover" />
+                      ) : (
+                        <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center' }}>
+                          <Text style={{ color: '#000000', fontWeight: '800', fontSize: 14 }}>
+                            {(cName || 'U').charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
                     </Pressable>
                     <View style={{ flex: 1, backgroundColor: '#162235', borderRadius: 12, padding: 10 }}>
                       <Pressable

@@ -36,10 +36,21 @@ const UserAvatar = ({ user, size = 40, style }: { user?: any; size?: number; sty
   if (photo && typeof photo === 'string' && photo.includes('images.unsplash.com')) {
     photo = null;
   }
-  const name = user?.fullName || user?.username || 'User';
-  const initial = name[0]?.toUpperCase() || 'U';
+  const name = user?.fullName || user?.username || (typeof user === 'string' ? user : 'User');
+  const cleanName = String(name).toLowerCase();
 
-  if (photo && typeof photo === 'string' && photo.trim()) {
+  // Preserve genuine Google-authenticated profile images
+  if (!photo || !photo.startsWith('http')) {
+    if (cleanName.includes('logesh')) {
+      photo = 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c';
+    } else if (cleanName.includes('sai')) {
+      photo = 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c';
+    }
+  }
+
+  const initial = (name[0] || 'U').toUpperCase();
+
+  if (photo && typeof photo === 'string' && (photo.startsWith('http') || photo.startsWith('data:'))) {
     const uri = photo.startsWith('http') || photo.startsWith('data:')
       ? photo
       : `${API_BASE_URL}${photo}`;
@@ -79,12 +90,12 @@ const COMMUNITY_MEMBERS = [
   {
     id: 'shreekutti',
     _id: 'shreekutti',
-    fullName: 'shreekutti',
+    fullName: 'Shreekutti',
     username: 'shreekutti',
-    headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Realty',
-    location: 'Chennai, Tamilnadu · Tech Parks',
+    headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok',
+    location: 'Bangalore, Karnataka · Tech Parks',
     bio: 'Specialized in commercial land development, Grade-A tech hub transactions, and IT SEZ acquisitions across South India.',
-    closedDeals: '12',
+    closedDeals: '4',
     profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
     reels: [
@@ -115,7 +126,27 @@ const COMMUNITY_MEMBERS = [
         image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
         mediaUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
         likesCount: 142,
-        commentsCount: 18,
+        commentsCount: 3,
+        comments: [
+          {
+            _id: 'sc-p-1',
+            author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
+            text: '8.4% cap rate on Outer Ring Road is solid institutional yield. Top tier campus! 🏢',
+            time: '04:15 pm',
+          },
+          {
+            _id: 'sc-p-2',
+            author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
+            text: 'Pre-verified covenants make this an immediate fit for REIT portfolios.',
+            time: '05:30 pm',
+          },
+          {
+            _id: 'sc-p-3',
+            author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
+            text: 'Are full floorplate blueprints available for international client syndication?',
+            time: '06:05 pm',
+          },
+        ],
       },
     ],
   },
@@ -127,7 +158,7 @@ const COMMUNITY_MEMBERS = [
     headline: 'Architectural Consultant & Real Estate Lead',
     location: 'Western Australia · Vineyard Estates',
     bio: 'Focused on precision cap-rate calculations, commercial yield optimization, and real estate investment portfolios.',
-    closedDeals: '18',
+    closedDeals: '3',
     followerCount: 1,
     followingCount: 1,
     mutuals: 'Followed by Sai',
@@ -161,6 +192,22 @@ const COMMUNITY_MEMBERS = [
         videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
         comments: [
           { _id: 'c2-1', user: { fullName: 'Mohammed Ajmal' }, text: 'Thermal zoning and serene forested topography are hard to find in Kyoto! ⛩️🍃', createdAt: new Date() },
+          { _id: 'c2-2', user: { fullName: 'Shreekutti' }, text: 'Eco-luxury cabins here will command top-tier international ADRs. 🏡✨', createdAt: new Date() },
+        ],
+      },
+      {
+        _id: 'logesh-reel-3',
+        title: 'Uluwatu Cliffside',
+        location: 'Bali, Indonesia',
+        aiMatch: 92,
+        insight: 'Tourism growth in this sector is up 14% YoY. Zoning allows for luxury boutique resort development.',
+        likes: 1800,
+        poster: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200',
+        thumbnail: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+        comments: [
+          { _id: 'c3-1', user: { fullName: 'Akshat Commercials' }, text: 'Breathtaking ocean cliff views! Perfect setting for luxury resort hospitality. 🌅🏖️', createdAt: new Date() },
+          { _id: 'c3-2', user: { fullName: 'Shreekutti' }, text: '14% YoY tourism surge matches our regional Bali portfolio forecast. 📈', createdAt: new Date() },
         ],
       },
     ],
@@ -175,7 +222,21 @@ const COMMUNITY_MEMBERS = [
         image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
         mediaUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
         likesCount: 98,
-        commentsCount: 12,
+        commentsCount: 2,
+        comments: [
+          {
+            _id: 'lp-1',
+            author: { fullName: 'Shreekutti', username: 'shreekutti' },
+            text: 'Deeded 50-year water rights on 140 acres of prime Cabernet Sauvignon terroir is a rare find! 🍷',
+            time: '03:20 pm',
+          },
+          {
+            _id: 'lp-2',
+            author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
+            text: 'Unmatched estate footprint. Touring this with our hospitality group next week.',
+            time: '05:45 pm',
+          },
+        ],
       },
     ],
   },
@@ -183,11 +244,11 @@ const COMMUNITY_MEMBERS = [
     id: 'ajmal',
     _id: 'ajmal',
     fullName: 'Mohammed Ajmal',
-    username: 'mohammedajmal',
+    username: 'ajmal',
     headline: 'Luxury Living & High-End Residential Broker',
-    location: 'Dubai · Luxury Villas',
+    location: 'Dubai & Kochi · Luxury Villas',
     bio: 'Connecting international investors to premier waterfront villas and bespoke residential developments.',
-    closedDeals: '9',
+    closedDeals: '3',
     profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
     reels: [
@@ -217,7 +278,21 @@ const COMMUNITY_MEMBERS = [
         image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
         mediaUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
         likesCount: 215,
-        commentsCount: 31,
+        commentsCount: 2,
+        comments: [
+          {
+            _id: 'aj-p-1',
+            author: { fullName: 'Prasanth Properties', username: 'prasanth_properties' },
+            text: 'Direct beach access and private marina berths are the gold standard on the Palm! 🏖️🛥️',
+            time: '01:10 pm',
+          },
+          {
+            _id: 'aj-p-2',
+            author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
+            text: 'The double-height infinity pool framing the Marina skyline is architectural perfection.',
+            time: '02:40 pm',
+          },
+        ],
       },
     ],
   },
@@ -229,7 +304,7 @@ const COMMUNITY_MEMBERS = [
     headline: 'Interior Designer & Modern Living Specialist',
     location: 'Chennai, Tamil Nadu · Modern Living',
     bio: 'Bespoke high-end interior architecture, penthouse makeovers, and custom luxury styling.',
-    closedDeals: '14',
+    closedDeals: '2',
     profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200',
     reels: [
@@ -259,7 +334,21 @@ const COMMUNITY_MEMBERS = [
         image: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1200',
         mediaUrl: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1200',
         likesCount: 164,
-        commentsCount: 22,
+        commentsCount: 2,
+        comments: [
+          {
+            _id: 'bv-p-1',
+            author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
+            text: 'Flawless Italian joinery and natural lighting control. Remarkable penthouse execution! ✨',
+            time: '11:20 am',
+          },
+          {
+            _id: 'bv-p-2',
+            author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
+            text: 'Private elevator access and uninterrupted sea views command top-tier pricing.',
+            time: '01:05 pm',
+          },
+        ],
       },
     ],
   },
@@ -271,7 +360,7 @@ const COMMUNITY_MEMBERS = [
     headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Network',
     location: 'Chennai, Tamil Nadu · Prime Assets',
     bio: 'Specializing in Grade-A IT SEZ parks, commercial lease syndications, and institutional asset acquisitions on OMR Chennai.',
-    closedDeals: '21',
+    closedDeals: '2',
     profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200',
     reels: [
@@ -301,7 +390,21 @@ const COMMUNITY_MEMBERS = [
         image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200',
         mediaUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200',
         likesCount: 188,
-        commentsCount: 26,
+        commentsCount: 2,
+        comments: [
+          {
+            _id: 'ak-p-1',
+            author: { fullName: 'Shreekutti', username: 'shreekutti' },
+            text: '8.9% yield on OMR expressway frontage with institutional covenants is prime! 🏢💼',
+            time: '10:30 am',
+          },
+          {
+            _id: 'ak-p-2',
+            author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
+            text: 'Floorplate load ratios and multi-level parking verify Grade-A compliance.',
+            time: '12:15 pm',
+          },
+        ],
       },
     ],
   },
@@ -313,7 +416,7 @@ const COMMUNITY_MEMBERS = [
     headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
     location: 'Miami, Florida · Coastal Estates',
     bio: 'Luxury real estate advisory focused on ultra-prime beachfront residences and waterfront villas.',
-    closedDeals: '8',
+    closedDeals: '2',
     profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=1200',
     reels: [
@@ -343,9 +446,167 @@ const COMMUNITY_MEMBERS = [
         image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=1200',
         mediaUrl: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=1200',
         likesCount: 290,
-        commentsCount: 44,
+        commentsCount: 2,
+        comments: [
+          {
+            _id: 'pp-p-1',
+            author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
+            text: 'Direct ocean access and private mega-yacht clearance make Star Island unmatched. 🌊🛥️',
+            time: '02:15 pm',
+          },
+          {
+            _id: 'pp-p-2',
+            author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
+            text: 'Floor-to-ceiling glass integration brings uninterrupted Miami sunsets indoors.',
+            time: '04:00 pm',
+          },
+        ],
       },
     ],
+  },
+  {
+    id: 'aswin',
+    _id: 'aswin',
+    fullName: 'Aswin Real Estate',
+    username: 'aswin',
+    headline: 'Principal Real Estate Broker & Multi-Family Asset Advisor',
+    location: 'Chennai, Tamil Nadu · Luxury & Commercial Assets',
+    bio: 'Expert commercial multi-family portfolio manager with deep market analytics on cap rates and returns.',
+    closedDeals: '1',
+    profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
+    reels: [],
+    posts: [
+      {
+        _id: 'aswin-p-1',
+        title: 'Prime Multi-Family Commercial Asset',
+        price: '$12,500,000',
+        location: 'Chennai, Tamil Nadu',
+        specs: '45,000 sq ft · 8.4% Cap Rate',
+        content: 'High-yield commercial multi-family portfolio with pre-verified institutional efficiency ratings.',
+        image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200',
+        mediaUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200',
+        likesCount: 115,
+        commentsCount: 2,
+        comments: [
+          {
+            _id: 'asw-p-1',
+            author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
+            text: '8.4% cap rate on a 45,000 sq ft multi-family asset offers high capital security. 📈',
+            time: '01:45 pm',
+          },
+          {
+            _id: 'asw-p-2',
+            author: { fullName: 'Shreekutti', username: 'shreekutti' },
+            text: 'Solid cash flow profile. Let us connect regarding investor syndication terms.',
+            time: '03:10 pm',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'vignesh',
+    _id: 'vignesh',
+    fullName: 'Vigneshwaran',
+    username: 'vignesh',
+    headline: 'Prime Architectural Estates & Beverly Hills Luxury Specialist',
+    location: 'Beverly Hills, California · Ultra Luxury',
+    bio: 'Curating custom luxury properties, penthouses, and architectural landmarks for high net worth clients.',
+    closedDeals: '1',
+    profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
+    reels: [],
+    posts: [
+      {
+        _id: 'vignesh-p-1',
+        title: 'Beverly Hills Modern Architectural Masterpiece',
+        price: '$12,500,000',
+        location: 'Beverly Hills, California',
+        specs: '8 Beds · 11 Baths · Zero-Edge Pool',
+        content: 'New architectural masterpiece in Beverly Hills. 8 Bedrooms, 11 Baths, custom Italian marble, and zero-edge cascading pool. 🏆✨ Price: $12.5M.',
+        image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
+        mediaUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
+        likesCount: 178,
+        commentsCount: 3,
+        comments: [
+          {
+            _id: 'vg-p-1',
+            author: { fullName: 'Sophia Sterling', username: 'sophia_luxury' },
+            text: 'Are 1/8th fractional house share syndicate slots still available for European co-owners? 🏡✨',
+            time: '09:15 am',
+          },
+          {
+            _id: 'vg-p-2',
+            author: { fullName: 'David Sterling', username: 'david_sterling' },
+            text: 'Bespoke co-ownership model on Beverly Hills estates provides exceptional capital preservation.',
+            time: '11:40 am',
+          },
+          {
+            _id: 'vg-p-3',
+            author: { fullName: 'Marcus Vance', username: 'marcus_vance' },
+            text: 'Deeded fractional title and seasonal syndicate booking structure looks turnkey. DM sent! 🔑',
+            time: '01:25 pm',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'yashwanth',
+    _id: 'yashwanth',
+    fullName: 'Yashwanth',
+    username: 'yashwanth',
+    headline: 'Prime Commercial Hubs & Institutional Realty Lead',
+    location: 'Chennai & Bangalore · Commercial Hubs',
+    bio: 'Acquiring prime commercial buildings, corporate hubs, and investment estates across South India.',
+    closedDeals: '1',
+    profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
+    reels: [],
+    posts: [],
+  },
+  {
+    id: 'sophia_luxury',
+    _id: 'sophia_luxury',
+    fullName: 'Sophia Sterling',
+    username: 'sophia_luxury',
+    headline: 'European Family Office Principal & Luxury Syndication Client',
+    location: 'Geneva, Switzerland & London · Private Capital',
+    bio: 'Managing cross-border real estate acquisitions and luxury fractional syndicates for European private wealth clients.',
+    closedDeals: '2',
+    profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
+    reels: [],
+    posts: [],
+  },
+  {
+    id: 'david_sterling',
+    _id: 'david_sterling',
+    fullName: 'David Sterling',
+    username: 'david_sterling',
+    headline: 'Managing Director · Sterling Global Capital & Asset Co-Owner',
+    location: 'London, UK & Beverly Hills · Private Equity',
+    bio: 'Directing private equity allocation in architectural landmarks, luxury fractional estates, and prime commercial assets.',
+    closedDeals: '3',
+    profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
+    reels: [],
+    posts: [],
+  },
+  {
+    id: 'marcus_vance',
+    _id: 'marcus_vance',
+    fullName: 'Marcus Vance',
+    username: 'marcus_vance',
+    headline: 'Institutional Real Estate Syndicate Lead & Co-Ownership Client',
+    location: 'New York, NY · Real Estate Private Equity',
+    bio: 'Partnering in deeded fractional syndicates, commercial co-ownership models, and turnkey trophy estate acquisitions.',
+    closedDeals: '2',
+    profilePicture: null,
+    coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
+    reels: [],
+    posts: [],
   },
 ];
 
@@ -390,8 +651,8 @@ const SAI_REELS = [
     thumbnail: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     comments: [
-      { _id: 'c4-1', user: { fullName: 'Logeshwaran A' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
-      { _id: 'c4-2', user: { fullName: 'Shreekutti' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
+      { _id: 'c4-1', user: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' }, text: 'Grade-A office specs with strong institutional tenant appeal. 🏢💼', createdAt: new Date() },
+      { _id: 'c4-2', user: { fullName: 'Shreekutti', username: 'shreekutti' }, text: 'High floor efficiency and convenient transit access. 🚆', createdAt: new Date() },
     ],
   },
 ];
@@ -418,7 +679,7 @@ function resolveMemberProfile(targetId: string, viewer: any) {
       bio: viewer?.bio || 'Real estate professional and advisor on the Boolok AI network.',
       profilePicture: viewer?.profilePicture || 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c',
       coverImage: viewer?.coverImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-      closedDeals: viewer?.closedDeals || '12',
+      closedDeals: viewer?.closedDeals || '3',
       followerCount: 4,
       followingCount: 4,
       mutuals: '4 followers in Boolok Real Estate Network',
@@ -695,19 +956,22 @@ const ProfileReelItem = ({ reel }: { reel: any }) => {
 
             {/* Comments List */}
             <ScrollView style={styles.commentsScrollView} showsVerticalScrollIndicator={false}>
-              {comments.map((c, idx) => (
-                <View key={c._id || idx} style={styles.commentRow}>
-                  <View style={styles.commentAvatar}>
-                    <Text style={styles.commentAvatarText}>
-                      {(c.user?.fullName || 'U').charAt(0).toUpperCase()}
-                    </Text>
+              {comments.map((c, idx) => {
+                const commentUser = c.user || c.author || { fullName: typeof c.user === 'string' ? c.user : 'User' };
+                const authorName = commentUser.fullName || commentUser.username || (typeof c.user === 'string' ? c.user : 'User');
+                return (
+                  <View key={c._id || idx} style={styles.commentRow}>
+                    <UserAvatar
+                      user={commentUser}
+                      size={34}
+                    />
+                    <View style={styles.commentBubble}>
+                      <Text style={styles.commentAuthorName}>{authorName}</Text>
+                      <Text style={styles.commentContentText}>{c.text}</Text>
+                    </View>
                   </View>
-                  <View style={styles.commentBubble}>
-                    <Text style={styles.commentAuthorName}>{c.user?.fullName || 'User'}</Text>
-                    <Text style={styles.commentContentText}>{c.text}</Text>
-                  </View>
-                </View>
-              ))}
+                );
+              })}
             </ScrollView>
 
             {/* Input Row */}
@@ -840,30 +1104,72 @@ export default function ProfessionalUserProfileScreen() {
     setHasLikedPostDetails(false);
     setPostDetailReaction(null);
     setActivePostDetailReactionPicker(false);
-    setPostDetailsComments(
-      post.comments && post.comments.length > 0
-        ? post.comments
-        : [
+
+    const postAuthorName = (post.author?.fullName || post.author?.username || '').toLowerCase();
+    const isVigneshPost = postAuthorName.includes('vignesh') || post._id === 'vignesh-p-1' || post._id === 're-post-3';
+
+    const initialComments = Array.isArray(post.comments) && post.comments.length > 0
+      ? post.comments
+      : isVigneshPost
+        ? [
           {
-            _id: 'c-1',
-            author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
-            text: 'Prime commercial location with solid cap rate numbers.',
-            time: '2h ago',
+            _id: 'vg-p-1',
+            author: { fullName: 'Sophia Sterling', username: 'sophia_luxury' },
+            text: 'Are 1/8th fractional house share syndicate slots still available for European co-owners? 🏡✨',
+            time: '09:15 am',
           },
           {
-            _id: 'c-2',
-            author: { fullName: 'Logeshwaran A', username: 'logeshwarana' },
-            text: 'Zoning approvals and floor area ratio look optimal.',
-            time: '1h ago',
+            _id: 'vg-p-2',
+            author: { fullName: 'David Sterling', username: 'david_sterling' },
+            text: 'Bespoke co-ownership model on Beverly Hills estates provides exceptional capital preservation.',
+            time: '11:40 am',
           },
           {
-            _id: 'c-3',
-            author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
-            text: 'The architectural façade and finish are exceptional.',
-            time: '30m ago',
+            _id: 'vg-p-3',
+            author: { fullName: 'Marcus Vance', username: 'marcus_vance' },
+            text: 'Deeded fractional title and seasonal syndicate booking structure looks turnkey. DM sent! 🔑',
+            time: '01:25 pm',
           },
         ]
-    );
+        : [
+        {
+          _id: 'c-1',
+          author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
+          text: 'Exceptional cap rate and prime commercial footprint! This is exactly what institutional investors look for. 🏢🚀',
+          time: '06:10 pm',
+        },
+        {
+          _id: 'c-2',
+          author: { fullName: 'Shreekutti', username: 'shreekutti' },
+          text: 'Grade-A specs with strong tenant covenant structure. Solid long-term hold! 💼✨',
+          time: '07:10 pm',
+        },
+        {
+          _id: 'c-3',
+          author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
+          text: 'Turnkey acquisition with verified yield — exactly our portfolio criteria. DM for interest! 🔑',
+          time: '07:40 pm',
+        },
+        {
+          _id: 'c-4',
+          author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
+          text: 'The architectural finish and interior design elements are world-class on this asset. 🌿',
+          time: '08:10 pm',
+        },
+        {
+          _id: 'c-5',
+          author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
+          text: 'OMR corridor premium commercial — this checks all our institutional grade requirements.',
+          time: '08:40 pm',
+        },
+        {
+          _id: 'c-6',
+          author: { fullName: 'Prasanth Properties', username: 'prasanth_properties' },
+          text: 'Is this available for syndication? Would love to discuss terms. 🏛️',
+          time: '08:55 pm',
+        },
+      ];
+    setPostDetailsComments(initialComments);
     setIsPostDetailsModalOpen(true);
 
     try {
@@ -969,22 +1275,12 @@ export default function ProfessionalUserProfileScreen() {
         setAllPostLikesUsers(res.data.all);
         setPostLikesUsersList(res.data.all);
       } else {
-        const fallbacks = [
-          { ...COMMUNITY_MEMBERS[0], reactionType: 'like' },
-          { ...COMMUNITY_MEMBERS[1], reactionType: 'love' },
-          { ...COMMUNITY_MEMBERS[2], reactionType: 'like' },
-          { ...COMMUNITY_MEMBERS[3], reactionType: 'love' },
-        ];
+        const fallbacks = COMMUNITY_MEMBERS.map((m) => ({ ...m, reactionType: 'like' }));
         setAllPostLikesUsers(fallbacks);
         setPostLikesUsersList(fallbacks);
       }
     } catch (error) {
-      const fallbacks = [
-        { ...COMMUNITY_MEMBERS[0], reactionType: 'like' },
-        { ...COMMUNITY_MEMBERS[1], reactionType: 'love' },
-        { ...COMMUNITY_MEMBERS[2], reactionType: 'like' },
-        { ...COMMUNITY_MEMBERS[3], reactionType: 'love' },
-      ];
+      const fallbacks = COMMUNITY_MEMBERS.map((m) => ({ ...m, reactionType: 'like' }));
       setAllPostLikesUsers(fallbacks);
       setPostLikesUsersList(fallbacks);
     } finally {
@@ -1011,6 +1307,9 @@ export default function ProfessionalUserProfileScreen() {
         setData(res.data);
         setFollowerCountState(res.data.followerCount || 4);
         setIsFollowingState(Boolean(res.data.isFollowing || GLOBAL_FOLLOWED_USERS.has(userId)));
+        if (isSelf && res.data.user) {
+          updateUser({ closedDeals: res.data.user.closedDeals || '3' });
+        }
       }
     } catch (e) {
       // silent background refresh
@@ -1019,25 +1318,8 @@ export default function ProfessionalUserProfileScreen() {
 
   useEffect(() => {
     if (isSelf) {
-      const activeId = viewer?.id || viewer?._id || 'self';
-      if (activeId && activeId !== 'self') {
-        fetchProfile(activeId);
-      } else {
-        const fallbackUser = resolveMemberProfile('self', viewer);
-        setData({
-          user: fallbackUser,
-          postCount: (fallbackUser.posts || []).length,
-          reelCount: (fallbackUser.reels || []).length,
-          followerCount: 4,
-          followingCount: GLOBAL_FOLLOWED_USERS.size || 4,
-          isFollowing: false,
-          isSelf: true,
-          posts: fallbackUser.posts || [],
-          reels: fallbackUser.reels || [],
-        });
-        setFollowerCountState(4);
-        setLoading(false);
-      }
+      const activeId = viewer?.id || viewer?._id || viewer?.username || 'self';
+      fetchProfile(activeId);
     } else {
       fetchProfile(targetId);
       const interval = setInterval(() => {
@@ -1045,7 +1327,7 @@ export default function ProfessionalUserProfileScreen() {
       }, 4000);
       return () => clearInterval(interval);
     }
-  }, [targetId, isSelf, viewer?.id, viewer?._id]);
+  }, [targetId, isSelf, viewer?.id, viewer?._id, viewer?.username]);
 
   const fetchProfile = async (lookupId: string) => {
     setLoading(true);
@@ -1205,11 +1487,48 @@ export default function ProfessionalUserProfileScreen() {
         { id: '2', title: 'Fisher Island Luxury Penthouse', location: 'Fisher Island, Miami, FL', price: '$14,500,000', capRate: '6.9% Yield', type: 'Private Island Luxury Condo', date: 'May 2026', status: 'Verified Institutional Settlement', sqft: '8,200 sq ft' },
       ];
     }
-    return [
-      { id: '1', title: 'Coventry Corporate Headquarters', location: 'Coventry, United Kingdom', price: '$16,500,000', capRate: '8.2% Cap Rate', type: 'Institutional Grade-A Office Hub', date: 'Aug 2026', status: 'Verified Institutional Settlement', sqft: '52,000 sq ft' },
-      { id: '2', title: 'Anna Nagar Prime Retail Flagship', location: 'Chennai, Tamil Nadu', price: '$9,200,000', capRate: '8.9% Cap Rate', type: 'High-Street Multi-Brand Retail', date: 'Jun 2026', status: 'Verified Institutional Settlement', sqft: '34,000 sq ft' },
-      { id: '3', title: 'OMR Expressway IT Campus Block A', location: 'Chennai, Tamil Nadu', price: '$26,000,000', capRate: '8.6% Cap Rate', type: 'Commercial Tech Park Syndication', date: 'Apr 2026', status: 'Verified Institutional Settlement', sqft: '88,000 sq ft' },
-    ];
+    if (key.includes('aswin')) {
+      return [
+        { id: '1', title: 'Aswin Real Estate Prime Commercial Acquisition', location: 'Chennai, Tamil Nadu · Luxury & Commercial Assets', price: '$12,500,000', capRate: '8.4% Cap Rate', type: 'Institutional Commercial Asset', date: '2026', status: 'Verified Institutional Settlement', sqft: '45,000 sq ft' },
+      ];
+    }
+    if (key.includes('vignesh') || key.includes('vicky')) {
+      return [
+        { id: '1', title: 'Beverly Hills Sunset Estate Acquisition', location: 'Beverly Hills, California', price: '$15,800,000', capRate: '6.4% Yield', type: 'Ultra-Luxury Custom Architectural Landmark', date: '2026', status: 'Verified Institutional Settlement', sqft: '9,500 sq ft' },
+      ];
+    }
+    if (key.includes('yashwanth') || key.includes('cinemahub')) {
+      return [
+        { id: '1', title: 'Yashwanth Realty Grade-A Corporate Hub', location: 'Chennai & Bangalore', price: '$13,200,000', capRate: '8.5% Cap Rate', type: 'Prime Institutional Commercial Hub', date: '2026', status: 'Verified Institutional Settlement', sqft: '50,000 sq ft' },
+      ];
+    }
+    if (key.includes('sophia')) {
+      return [
+        { id: '1', title: 'Beverly Hills Syndicate Share Acquisition', location: 'Beverly Hills, California', price: '$12,500,000', capRate: '6.8% Yield', type: 'Luxury Fractional House Share', date: 'Jul 2026', status: 'Verified Institutional Settlement', sqft: '9,500 sq ft' },
+        { id: '2', title: 'Geneva Lakeside Residence Co-Ownership', location: 'Geneva, Switzerland', price: '$8,900,000', capRate: '5.9% Yield', type: 'Private Family Office Syndicate', date: 'May 2026', status: 'Verified Institutional Settlement', sqft: '6,200 sq ft' },
+      ];
+    }
+    if (key.includes('david')) {
+      return [
+        { id: '1', title: 'Beverly Hills Co-Ownership Landmark', location: 'Beverly Hills, California', price: '$12,500,000', capRate: '6.8% Yield', type: 'Bespoke Co-Ownership Syndicate', date: 'Aug 2026', status: 'Verified Institutional Settlement', sqft: '9,500 sq ft' },
+        { id: '2', title: 'Mayfair Commercial Townhouse', location: 'London, United Kingdom', price: '$18,500,000', capRate: '6.2% Cap Rate', type: 'Prime Commercial Co-Ownership', date: 'Jun 2026', status: 'Verified Institutional Settlement', sqft: '8,400 sq ft' },
+        { id: '3', title: 'Kensington High Street Retail Hub', location: 'London, United Kingdom', price: '$14,200,000', capRate: '7.1% Cap Rate', type: 'Institutional Asset Settlement', date: 'Mar 2026', status: 'Verified Institutional Settlement', sqft: '12,000 sq ft' },
+      ];
+    }
+    if (key.includes('marcus')) {
+      return [
+        { id: '1', title: 'Manhattan Mixed-Use Asset Syndicate', location: 'New York, NY', price: '$22,000,000', capRate: '7.4% Cap Rate', type: 'Commercial Syndicate Settlement', date: 'Aug 2026', status: 'Verified Institutional Settlement', sqft: '35,000 sq ft' },
+        { id: '2', title: 'Beverly Hills House Share Deeded Title', location: 'Beverly Hills, California', price: '$12,500,000', capRate: '6.8% Yield', type: 'Deeded Fractional Title', date: 'Jul 2026', status: 'Verified Institutional Settlement', sqft: '9,500 sq ft' },
+      ];
+    }
+    if (key.includes('sai') || key === 'self') {
+      return [
+        { id: '1', title: 'Coventry Corporate Headquarters', location: 'Coventry, United Kingdom', price: '$16,500,000', capRate: '8.2% Cap Rate', type: 'Institutional Grade-A Office Hub', date: 'Aug 2026', status: 'Verified Institutional Settlement', sqft: '52,000 sq ft' },
+        { id: '2', title: 'Anna Nagar Prime Retail Flagship', location: 'Chennai, Tamil Nadu', price: '$9,200,000', capRate: '8.9% Cap Rate', type: 'High-Street Multi-Brand Retail', date: 'Jun 2026', status: 'Verified Institutional Settlement', sqft: '34,000 sq ft' },
+        { id: '3', title: 'OMR Expressway IT Campus Block A', location: 'Chennai, Tamil Nadu', price: '$26,000,000', capRate: '8.6% Cap Rate', type: 'Commercial Tech Park Syndication', date: 'Apr 2026', status: 'Verified Institutional Settlement', sqft: '88,000 sq ft' },
+      ];
+    }
+    return [];
   };
 
   const handleOpenFollowersModal = async () => {
@@ -1548,17 +1867,28 @@ export default function ProfessionalUserProfileScreen() {
   if (loading) return <LoadingScreen />;
 
   const fallbackUser = resolveMemberProfile(isSelf ? 'self' : targetId, viewer);
-  const profileUser = isSelf
+  const baseProfileUser = isSelf
     ? (data?.user || viewer || fallbackUser)
     : (data?.user && data.user.id !== viewer?.id && data.user.username !== viewer?.username
       ? { ...fallbackUser, ...data.user }
       : fallbackUser);
 
-  const reelsToDisplay = (profileUser.reels && profileUser.reels.length > 0)
-    ? profileUser.reels
-    : ((data?.reels && data.reels.length > 0)
+  const calculatedClosedDeals = String(
+    baseProfileUser?.closedDeals && baseProfileUser.closedDeals !== '0'
+      ? baseProfileUser.closedDeals
+      : (getFallbackDeals(baseProfileUser?.username || 'sai').length.toString())
+  );
+
+  const profileUser = {
+    ...baseProfileUser,
+    closedDeals: calculatedClosedDeals,
+  };
+
+  const reelsToDisplay = isSelf
+    ? (userReels.length > 0 ? userReels : SAI_REELS)
+    : (Array.isArray(data?.reels)
       ? data.reels
-      : (isSelf ? (userReels.length > 0 ? userReels : SAI_REELS) : (fallbackUser.reels || [])));
+      : (Array.isArray(profileUser.reels) ? profileUser.reels : (fallbackUser.reels || [])));
 
   const postsToDisplay = (data?.posts && data.posts.length > 0)
     ? data.posts
@@ -1779,7 +2109,7 @@ export default function ProfessionalUserProfileScreen() {
                     <Text style={{ fontWeight: '800', color: goldPrimary, textDecorationLine: 'underline' }}>
                       {profileUser.closedDeals || '0'}
                     </Text>{' '}
-                    Closed Deals
+                    {Number(profileUser.closedDeals || '0') === 1 ? 'Closed Deal' : 'Closed Deals'}
                   </Text>
                 </Pressable>
               </View>
@@ -2126,53 +2456,69 @@ export default function ProfessionalUserProfileScreen() {
 
           {/* Properties Display */}
           {activeTab === 'properties' ? (
-            <View style={styles.propertiesGrid}>
-              {posts.map((post: any) => (
-                <Pressable
-                  key={post._id}
-                  onPress={() => handleOpenPostDetailsModal(post)}
-                  style={({ pressed, hovered }: any) => [
-                    styles.propertyCard,
-                    { borderColor, cursor: 'pointer' },
-                    (pressed || hovered) && { borderColor: goldPrimary, transform: [{ translateY: -2 }] },
-                  ]}
-                >
-                  <Image
-                    source={{
-                      uri: resolvePropertyImage(post),
-                    }}
-                    style={styles.propertyImage}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.propertyDetailsBox}>
-                    <Text style={styles.propertyPriceText}>
-                      {post.price || '$8,900,000'}
-                    </Text>
-                    <Text style={styles.propertyTitleText} numberOfLines={1}>
-                      {post.title || (post.content ? post.content.slice(0, 45) + '...' : 'Luxury Waterfront Residence')}
-                    </Text>
-                    <Text style={styles.propertyLocationText}>
-                      📍 {post.location || 'Prime Commercial Corridor'}
-                    </Text>
-                    <Text style={styles.propertySpecsText}>
-                      {post.specs || 'Turnkey Acquisition · High Cap Rate'}
-                    </Text>
+            posts && posts.length > 0 ? (
+              <View style={styles.propertiesGrid}>
+                {posts.map((post: any) => (
+                  <Pressable
+                    key={post._id}
+                    onPress={() => handleOpenPostDetailsModal(post)}
+                    style={({ pressed, hovered }: any) => [
+                      styles.propertyCard,
+                      { borderColor, cursor: 'pointer' },
+                      (pressed || hovered) && { borderColor: goldPrimary, transform: [{ translateY: -2 }] },
+                    ]}
+                  >
+                    <Image
+                      source={{
+                        uri: resolvePropertyImage(post),
+                      }}
+                      style={styles.propertyImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.propertyDetailsBox}>
+                      <Text style={styles.propertyPriceText}>
+                        {post.price || '$8,900,000'}
+                      </Text>
+                      <Text style={styles.propertyTitleText} numberOfLines={1}>
+                        {post.title || (post.content ? post.content.slice(0, 45) + '...' : 'Luxury Waterfront Residence')}
+                      </Text>
+                      <Text style={styles.propertyLocationText}>
+                        📍 {post.location || 'Prime Commercial Corridor'}
+                      </Text>
+                      <Text style={styles.propertySpecsText}>
+                        {post.specs || 'Turnkey Acquisition · High Cap Rate'}
+                      </Text>
 
-                    <View style={styles.propertyFooterRow}>
-                      <Text style={styles.propertyLikesText}>❤️ {post.likes?.length || 1}</Text>
-                      <Text style={styles.propertyCommentsText}>💬 {post.comments?.length || 6}</Text>
+                      <View style={styles.propertyFooterRow}>
+                        <Text style={styles.propertyLikesText}>❤️ {post.likes?.length || 1}</Text>
+                        <Text style={styles.propertyCommentsText}>💬 {post.comments?.length || 6}</Text>
+                      </View>
                     </View>
-                  </View>
-                </Pressable>
-              ))}
-            </View>
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <View style={{ paddingVertical: 48, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: cardBg, borderRadius: 16, borderWidth: 1, borderColor, width: '100%', marginVertical: 8 }}>
+                <MaterialCommunityIcons name="office-building-outline" size={44} color="#64748b" style={{ marginBottom: 12 }} />
+                <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '700', marginBottom: 6 }}>No properties & listings available for now</Text>
+                <Text style={{ color: '#8b9bb4', fontSize: 13, textAlign: 'center' }}>This advisor has not listed any commercial or residential properties yet.</Text>
+              </View>
+            )
           ) : (
-            /* Reels Display - 5-10s sample house front view, back view, and luxury walkthroughs */
-            <View style={styles.reelsGridContainer}>
-              {(reels && reels.length > 0 ? reels : userReels).map((reel: any) => (
-                <ProfileReelItem key={reel._id} reel={reel} />
-              ))}
-            </View>
+            /* Reels Display */
+            reels && reels.length > 0 ? (
+              <View style={styles.reelsGridContainer}>
+                {reels.map((reel: any) => (
+                  <ProfileReelItem key={reel._id} reel={reel} />
+                ))}
+              </View>
+            ) : (
+              <View style={{ paddingVertical: 48, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: cardBg, borderRadius: 16, borderWidth: 1, borderColor, width: '100%', marginVertical: 8 }}>
+                <MaterialCommunityIcons name="play-box-multiple-outline" size={44} color="#64748b" style={{ marginBottom: 12 }} />
+                <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '700', marginBottom: 6 }}>No video tours & reels available for now</Text>
+                <Text style={{ color: '#8b9bb4', fontSize: 13, textAlign: 'center' }}>This advisor has not published any property walkthroughs yet.</Text>
+              </View>
+            )
           )}
         </View>
 
@@ -2399,7 +2745,9 @@ export default function ProfessionalUserProfileScreen() {
                     </Text>
                   </View>
                   <Text style={{ color: '#8b9bb4', fontSize: 12, marginTop: 2 }}>
-                    {profileUser.closedDeals || closedDealsList.length || '0'} verified institutional & commercial transactions
+                    {closedDealsList.length === 0
+                      ? 'Currently no deals are closed'
+                      : `${closedDealsList.length} verified institutional & commercial ${closedDealsList.length === 1 ? 'transaction' : 'transactions'}`}
                   </Text>
                 </View>
                 <Pressable onPress={() => setIsClosedDealsModalOpen(false)} style={{ padding: 4 }}>
@@ -2465,7 +2813,7 @@ export default function ProfessionalUserProfileScreen() {
                   <View style={{ paddingVertical: 36, alignItems: 'center' }}>
                     <MaterialIcons name="handshake" size={44} color="#64748b" />
                     <Text style={{ color: '#ffffff', fontSize: 15, fontWeight: '700', marginTop: 12 }}>
-                      No deals recorded yet
+                      Currently no deals are closed
                     </Text>
                     <Text style={{ color: '#8b9bb4', fontSize: 12.5, textAlign: 'center', marginTop: 6, paddingHorizontal: 20 }}>
                       When {profileUser.fullName} closes commercial or residential syndications, they will be verified and recorded here.
@@ -2653,12 +3001,9 @@ export default function ProfessionalUserProfileScreen() {
                         <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#3b82f6', justifyContent: 'center', alignItems: 'center' }}>
                           <MaterialIcons name="thumb-up" size={10} color="#ffffff" />
                         </View>
-                        <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: '#ef4444', justifyContent: 'center', alignItems: 'center', marginLeft: -5 }}>
-                          <MaterialIcons name="favorite" size={10} color="#ffffff" />
-                        </View>
                       </View>
                       <Text style={{ fontSize: 12.5, color: '#93c5fd', textDecorationLine: 'underline', fontWeight: '600' }}>
-                        Akshat Commercials and {postDetailsLikesCount > 1 ? `${postDetailsLikesCount - 1} others` : 'others'}
+                        Akshat Commercials and 5 others
                       </Text>
                     </Pressable>
 
@@ -2711,9 +3056,33 @@ export default function ProfessionalUserProfileScreen() {
                     </View>
 
                     {/* Comments List */}
-                    {postDetailsComments.map((c: any, cIdx: number) => {
+                    {postDetailsComments.filter((c: any) => {
+                      const a = c.author || c.user || {};
+                      const name = (a.fullName || a.username || c.fullName || '').toLowerCase();
+                      return name !== 'advisor';
+                    }).map((c: any, cIdx: number) => {
                       const cAuthor = c.author || c.user || {};
-                      const cName = cAuthor.fullName || cAuthor.username || c.fullName || 'Advisor';
+                      let rawName = cAuthor.fullName || cAuthor.username || c.fullName || (typeof c.author === 'string' ? c.author : '') || (typeof c.user === 'string' ? c.user : '');
+                      const commentBody = c.text || '';
+                      const bodyLower = (commentBody || '').toLowerCase();
+
+                      if (!rawName || /^[0-9a-fA-F]{24}$/.test(rawName) || rawName.startsWith('6a8') || rawName.toLowerCase() === 'member' || rawName.toLowerCase() === 'advisor') {
+                        if (bodyLower.includes('cap rate') && bodyLower.includes('institutional')) rawName = 'Logeshwaran A';
+                        else if (bodyLower.includes('tenant covenant') || bodyLower.includes('specs')) rawName = 'Shreekutti';
+                        else if (bodyLower.includes('turnkey acquisition') || bodyLower.includes('verified yield')) rawName = 'Mohammed Ajmal';
+                        else if (bodyLower.includes('architectural finish') || bodyLower.includes('interior design')) rawName = 'Bavadharini RS';
+                        else if (bodyLower.includes('omr corridor') || bodyLower.includes('institutional grade')) rawName = 'Akshat Commercials';
+                        else if (bodyLower.includes('syndication') || bodyLower.includes('discuss terms')) rawName = 'Prasanth Properties';
+                        else if (bodyLower.includes('fractional house share') || bodyLower.includes('european co-owners')) rawName = 'Sophia Sterling';
+                        else if (bodyLower.includes('bespoke co-ownership') || bodyLower.includes('capital preservation')) rawName = 'David Sterling';
+                        else if (bodyLower.includes('deeded fractional title') || bodyLower.includes('dm sent')) rawName = 'Marcus Vance';
+                        else {
+                          const fallbackNames = ['Logeshwaran A', 'Shreekutti', 'Mohammed Ajmal', 'Bavadharini RS', 'Akshat Commercials', 'Prasanth Properties'];
+                          rawName = fallbackNames[cIdx % fallbackNames.length];
+                        }
+                      }
+
+                      const cName = rawName;
                       return (
                         <View key={c._id || cIdx} style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
                           <Pressable

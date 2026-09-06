@@ -240,7 +240,7 @@ export default function AppLayout() {
       try {
         await axios.put(`${API_BASE_URL}/api/users/notifications/read-all`);
         setUnreadCount(0);
-      } catch (e) {}
+      } catch (e) { }
     }
   };
 
@@ -262,75 +262,141 @@ export default function AppLayout() {
       profilePicture: string | null;
       followerCount: number;
     }> = [
-      {
-        id: 'shreekutti',
-        _id: 'shreekutti',
-        fullName: 'shreekutti',
-        username: 'shreekutti',
-        headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Realty',
-        location: 'Bangalore, Karnataka · Tech Parks',
-        profilePicture: null,
-        followerCount: 4,
-      },
-      {
-        id: '6a8af34812ef34aed25ae8d2',
-        _id: '6a8af34812ef34aed25ae8d2',
-        fullName: 'Logeshwaran A',
-        username: 'logeshwarana',
-        headline: 'Architectural Consultant & Real Estate Lead',
-        location: 'Western Australia',
-        profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
-        followerCount: 2,
-      },
-      {
-        id: 'ajmal',
-        _id: 'ajmal',
-        fullName: 'ajmal',
-        username: 'ajmal',
-        headline: 'Luxury Living & High-End Residential Broker',
-        location: 'Dubai & Kochi · Luxury Villas',
-        profilePicture: null,
-        followerCount: 4,
-      },
-      {
-        id: 'bavadharini_rs',
-        _id: 'bavadharini_rs',
-        fullName: 'Bavadharini RS',
-        username: 'bavadharini_rs',
-        headline: 'Interior Designer & Modern Living Specialist',
-        location: 'Chennai, Tamil Nadu · Modern Living',
-        profilePicture: null,
-        followerCount: 4,
-      },
-      {
-        id: 'the_akshtr_estate',
-        _id: 'the_akshtr_estate',
-        fullName: 'Akshat Commercials',
-        username: 'the_akshtr_estate',
-        headline: 'Commercial Property & Tech Park Portfolio Lead',
-        location: 'Chennai, Tamil Nadu · Prime Assets',
-        profilePicture: null,
-        followerCount: 4,
-      },
-      {
-        id: 'prasanth_properties',
-        _id: 'prasanth_properties',
-        fullName: 'Prasanth Properties',
-        username: 'prasanth_properties',
-        headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
-        location: 'Miami, Florida · Coastal Estates',
-        profilePicture: null,
-        followerCount: 4,
-      },
-    ];
+        {
+          id: 'shreekutti',
+          _id: 'shreekutti',
+          fullName: 'Shreekutti',
+          username: 'shreekutti',
+          headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok',
+          location: 'Bangalore, Karnataka · Tech Parks',
+          profilePicture: null,
+          followerCount: 4,
+        },
+        {
+          id: '6a8af34812ef34aed25ae8d2',
+          _id: '6a8af34812ef34aed25ae8d2',
+          fullName: 'Logeshwaran A',
+          username: 'logeshwarana',
+          headline: 'Architectural Consultant & Real Estate Lead',
+          location: 'Western Australia',
+          profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
+          followerCount: 2,
+        },
+        {
+          id: 'ajmal',
+          _id: 'ajmal',
+          fullName: 'Mohammed Ajmal',
+          username: 'ajmal',
+          headline: 'Luxury Living & High-End Residential Broker',
+          location: 'Dubai & Kochi · Luxury Villas',
+          profilePicture: null,
+          followerCount: 4,
+        },
+        {
+          id: 'bavadharini_rs',
+          _id: 'bavadharini_rs',
+          fullName: 'Bavadharini RS',
+          username: 'bavadharini_rs',
+          headline: 'Interior Designer & Modern Living Specialist',
+          location: 'Chennai, Tamil Nadu · Modern Living',
+          profilePicture: null,
+          followerCount: 4,
+        },
+        {
+          id: 'the_akshtr_estate',
+          _id: 'the_akshtr_estate',
+          fullName: 'Akshat Commercials',
+          username: 'the_akshtr_estate',
+          headline: 'Commercial Property & Tech Park Portfolio Lead',
+          location: 'Chennai, Tamil Nadu · Prime Assets',
+          profilePicture: null,
+          followerCount: 4,
+        },
+        {
+          id: 'prasanth_properties',
+          _id: 'prasanth_properties',
+          fullName: 'Prasanth Properties',
+          username: 'prasanth_properties',
+          headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
+          location: 'Miami, Florida · Coastal Estates',
+          profilePicture: null,
+          followerCount: 4,
+        },
+        {
+          id: 'aswin',
+          _id: 'aswin',
+          fullName: 'Aswin Real Estate',
+          username: 'aswin',
+          headline: 'Principal Real Estate Broker & Multi-Family Asset Advisor',
+          location: 'Chennai, Tamil Nadu · Luxury & Commercial Assets',
+          profilePicture: null,
+          followerCount: 3,
+        },
+        {
+          id: 'vignesh',
+          _id: 'vignesh',
+          fullName: 'Vigneshwaran',
+          username: 'vignesh',
+          headline: 'Prime Architectural Estates & Beverly Hills Luxury Specialist',
+          location: 'Beverly Hills, California · Ultra Luxury',
+          profilePicture: null,
+          followerCount: 3,
+        },
+        {
+          id: 'yashwanth',
+          _id: 'yashwanth',
+          fullName: 'Yashwanth',
+          username: 'yashwanth',
+          headline: 'Prime Commercial Hubs & Institutional Realty Lead',
+          location: 'Chennai & Bangalore · Commercial Hubs',
+          profilePicture: null,
+          followerCount: 4,
+        },
+        {
+          id: 'sophia_luxury',
+          _id: 'sophia_luxury',
+          fullName: 'Sophia Sterling',
+          username: 'sophia_luxury',
+          headline: 'European Family Office Principal & Luxury Syndication Client',
+          location: 'Geneva, Switzerland & London · Private Capital',
+          profilePicture: null,
+          followerCount: 5,
+        },
+        {
+          id: 'david_sterling',
+          _id: 'david_sterling',
+          fullName: 'David Sterling',
+          username: 'david_sterling',
+          headline: 'Managing Director · Sterling Global Capital & Asset Co-Owner',
+          location: 'London, UK & Beverly Hills · Private Equity',
+          profilePicture: null,
+          followerCount: 6,
+        },
+        {
+          id: 'marcus_vance',
+          _id: 'marcus_vance',
+          fullName: 'Marcus Vance',
+          username: 'marcus_vance',
+          headline: 'Institutional Real Estate Syndicate Lead & Co-Ownership Client',
+          location: 'New York, NY · Real Estate Private Equity',
+          profilePicture: null,
+          followerCount: 4,
+        },
+      ];
 
-    const localMatches = COMMUNITY_ADVISORS.filter(
-      (a) =>
+    const BANNED_HANDLES = new Set(['aswin.realty', 'aswin_realty', 'ig_vicky16', 'ig_vicky.16', 'vicky', 'vicky_luxury', 'yashwanth_realty', 'cinemahub.live', 'cinemahub']);
+
+    const localMatches = COMMUNITY_ADVISORS.filter((a) => {
+      const u = (a.username || '').toLowerCase();
+      const fn = (a.fullName || '').toLowerCase();
+      if (BANNED_HANDLES.has(u) || fn.includes('vicky') || fn.includes('cinemahub')) return false;
+      return (
         a.fullName.toLowerCase().includes(q) ||
         a.username.toLowerCase().includes(q) ||
         a.headline.toLowerCase().includes(q) ||
         (a.location && a.location.toLowerCase().includes(q))
-    );
+      );
+    });
 
     if (user && ((user.fullName && user.fullName.toLowerCase().includes(q)) || (user.username && user.username.toLowerCase().includes(q)))) {
       localMatches.unshift({
@@ -355,9 +421,14 @@ export default function AppLayout() {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (res.data && Array.isArray(res.data.results) && res.data.results.length > 0) {
-          const seen = new Set(res.data.results.map((r: any) => (r.username || r.id || r._id).toLowerCase()));
+          const sanitizedApiResults = res.data.results.filter((r: any) => {
+            const u = (r.username || '').toLowerCase();
+            const fn = (r.fullName || '').toLowerCase();
+            return !BANNED_HANDLES.has(u) && !fn.includes('vicky') && !fn.includes('cinemahub');
+          });
+          const seen = new Set(sanitizedApiResults.map((r: any) => (r.username || r.id || r._id).toLowerCase()));
           const combined = [
-            ...res.data.results,
+            ...sanitizedApiResults,
             ...localMatches.filter((m) => !seen.has((m.username || m.id).toLowerCase())),
           ];
           setSearchResults(combined);
