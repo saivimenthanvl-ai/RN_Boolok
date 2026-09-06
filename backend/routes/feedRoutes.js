@@ -9,21 +9,39 @@ const router = express.Router();
 const getAuthenticatedUserId = (req) =>
     req.user?.id || req.user?._id || req.userId || null;
 
-// Create post
+// Create post / property listing
 router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     try {
         const userId = getAuthenticatedUserId(req);
         if (!userId) return res.status(401).json({ message: 'Authenticated user ID is missing.' });
 
         const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
+        const title = typeof req.body.title === 'string' ? req.body.title.trim() : '';
+        const price = typeof req.body.price === 'string' ? req.body.price.trim() : '';
+        const location = typeof req.body.location === 'string' ? req.body.location.trim() : '';
+        const specs = typeof req.body.specs === 'string' ? req.body.specs.trim() : '';
         const mediaUrl = req.file ? `/uploads/posts/${req.file.filename}` : (req.body.mediaUrl || null);
+        const mediaUrls = Array.isArray(req.body.mediaUrls) ? req.body.mediaUrls : (mediaUrl ? [mediaUrl] : []);
 
-        if (!content && !mediaUrl) {
-            return res.status(400).json({ message: 'Add text or upload an image.' });
+        const finalContent = content || (title ? `${title}${price ? ` · ${price}` : ''}${location ? ` · ${location}` : ''}` : '');
+
+        if (!finalContent && !mediaUrl && mediaUrls.length === 0) {
+            return res.status(400).json({ message: 'Add property details, text description, or upload an image.' });
         }
 
-        const createdPost = await Post.create({ author: userId, content, mediaUrl, likes: [], comments: [] });
-        const populatedPost = await Post.findById(createdPost._id).populate('author', 'fullName username profilePicture email');
+        const createdPost = await Post.create({
+            author: userId,
+            title,
+            price,
+            location,
+            specs,
+            content: finalContent,
+            mediaUrl,
+            mediaUrls,
+            likes: [],
+            comments: [],
+        });
+        const populatedPost = await Post.findById(createdPost._id).populate('author', 'fullName username profilePicture email headline');
 
         return res.status(201).json({ message: 'Post published successfully', post: populatedPost });
     } catch (error) {
@@ -215,20 +233,28 @@ router.get('/', authMiddleware, async (req, res) => {
         // Combine unique user posts with agent property listings
         const allPosts = [...userPosts, ...AGENT_POSTS].map((p) => {
             const pObj = typeof p.toObject === 'function' ? p.toObject() : { ...p };
-            const existingLikes = Array.isArray(pObj.likes) ? pObj.likes.map((l) => (l && l._id ? l._id.toString() : String(l))) : [];
+            const existingLikes = Array.isArray(pObj.likes)
+                ? pObj.likes.map((l) => (l && l._id ? l._id.toString() : String(l)))
+                : [];
             const hasViewerLiked = viewerId ? existingLikes.includes(viewerId.toString()) : false;
+            const count = existingLikes.length;
+            const otherBrokersCount = hasViewerLiked ? Math.max(0, count - 1) : count;
 
-            const combinedLikes = hasViewerLiked
-                ? [viewerId.toString(), ...COMMUNITY_LIKE_IDS]
-                : [...COMMUNITY_LIKE_IDS];
+            let likesSummaryText = '';
+            if (hasViewerLiked) {
+                likesSummaryText = otherBrokersCount > 0
+                    ? `Liked by you and ${otherBrokersCount} other real estate broker${otherBrokersCount > 1 ? 's' : ''}`
+                    : `Liked by you`;
+            } else if (count > 0) {
+                likesSummaryText = `Liked by ${count} real estate broker${count > 1 ? 's' : ''}`;
+            } else {
+                likesSummaryText = `Be the first to like this property`;
+            }
 
-            const count = hasViewerLiked ? 7 : 6;
-            pObj.likes = combinedLikes;
+            pObj.likes = existingLikes;
             pObj.likesCount = count;
             pObj.currentUserReaction = hasViewerLiked ? 'like' : null;
-            pObj.likesSummary = hasViewerLiked
-                ? `Liked by you and 6 other real estate brokers`
-                : `Liked by 6 real estate brokers`;
+            pObj.likesSummary = likesSummaryText;
 
             if (Array.isArray(pObj.comments) && pObj.comments.length > 0) {
                 pObj.comments = pObj.comments.map((c, cIdx) => {
@@ -392,8 +418,53 @@ router.get('/:id/reactions', async (req, res) => {
 });
 
 // ── PUT /api/feed/:id/react (Live reaction toggle endpoint) ───────────────────
-router.put('/:id/react', async (req, res) => {
-    return res.status(200).json({ success: true, reaction: 'like' });
+router.put('/:id/react', authMiddleware, async (req, res) => {
+    try {
+        const userId = getAuthenticatedUserId(req);
+        const { id } = req.params;
+        const requestedReaction = req.body?.type || 'like';
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            const currentLikes = demoPostLikes.get(id) || ['u1', 'u2'];
+            const alreadyLiked = currentLikes.includes(userId);
+            const nextLikes = alreadyLiked
+                ? currentLikes.filter((u) => u !== userId)
+                : [...currentLikes, userId];
+            demoPostLikes.set(id, nextLikes);
+            return res.status(200).json({
+                success: true,
+                liked: !alreadyLiked,
+                reaction: !alreadyLiked ? requestedReaction : null,
+                likes: nextLikes,
+                likesCount: nextLikes.length,
+            });
+        }
+
+        const post = await Post.findById(id);
+        if (!post) return res.status(404).json({ message: 'Post not found.' });
+
+        const alreadyLiked = post.likes.some((u) => u.toString() === userId);
+        let nextLiked = false;
+        if (alreadyLiked) {
+            post.likes = post.likes.filter((u) => u.toString() !== userId);
+            nextLiked = false;
+        } else {
+            post.likes.push(userId);
+            nextLiked = true;
+        }
+        await post.save();
+
+        return res.status(200).json({
+            success: true,
+            liked: nextLiked,
+            reaction: nextLiked ? requestedReaction : null,
+            likes: post.likes,
+            likesCount: post.likes.length,
+        });
+    } catch (error) {
+        console.error('REACT ENDPOINT ERROR:', error);
+        return res.status(500).json({ message: 'Failed to toggle reaction.', error: error.message });
+    }
 });
 
 // ── GET /api/feed/:id/likes (Get all users who liked a post) ────────────────

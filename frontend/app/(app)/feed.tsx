@@ -263,9 +263,9 @@ const DUMMY_REAL_ESTATE_POSTS = [
       'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
       'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200',
     ],
-    likes: ['shreekutti', 'logeshwarana', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'],
-    likesSummary: 'Liked by 6 real estate brokers',
-    likesCount: 6,
+    likes: ['shreekutti', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'],
+    likesSummary: 'Liked by 5 real estate brokers',
+    likesCount: 5,
     commentsCount: 3,
     comments: [
       {
@@ -301,9 +301,9 @@ const DUMMY_REAL_ESTATE_POSTS = [
     time: '2h · 🌐',
     content: 'Just listed! 🌟 Stunning modern beachfront villa with private infinity pool and direct access to crystal waters. Turnkey luxury investment ready for immediate handover! DM for private walkthroughs. 🏖️🔑',
     mediaUrls: ['https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200'],
-    likes: ['shreekutti', '6a8af34812ef34aed25ae8d2', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'],
-    likesSummary: 'Liked by 6 real estate brokers',
-    likesCount: 6,
+    likes: ['shreekutti', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'],
+    likesSummary: 'Liked by 5 real estate brokers',
+    likesCount: 5,
     commentsCount: 2,
     comments: [
       {
@@ -333,9 +333,9 @@ const DUMMY_REAL_ESTATE_POSTS = [
     time: '1d · 🌐',
     content: 'Bespoke custom kitchen & dining makeover completed for our luxury penthouse client. Custom Italian marble countertops, hidden smart refrigeration, and brass accents. ✨🍽️',
     mediaUrls: ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200'],
-    likes: ['shreekutti', '6a8af34812ef34aed25ae8d2', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'],
-    likesSummary: 'Liked by 6 real estate brokers',
-    likesCount: 6,
+    likes: ['shreekutti', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'],
+    likesSummary: 'Liked by 5 real estate brokers',
+    likesCount: 5,
     commentsCount: 2,
     comments: [
       {
@@ -579,16 +579,16 @@ export default function ProfessionalSocialFeedScreen() {
     setIsLikesModalOpen(true);
     setIsLoadingLikes(true);
 
-    const viewerId = user?.id || user?._id || 'sai';
-    const isCurrentlyLiked = currentPost.currentUserReaction === 'like' || (Array.isArray(currentPost.likes) && currentPost.likes.includes(viewerId));
+    const viewerId = user?.id || user?._id;
+    const isCurrentlyLiked = currentPost.currentUserReaction === 'like' || (viewerId && Array.isArray(currentPost.likes) && currentPost.likes.includes(String(viewerId)));
     const viewerObj = {
-      id: viewerId,
-      _id: viewerId,
-      fullName: user?.fullName || 'Sai Vimenthan',
-      username: user?.username || 'saivimenthanvl',
-      headline: user?.headline || 'Elite Real Estate Broker & Commercial Portfolio Lead',
-      location: user?.location || 'Chennai, Tamil Nadu · Prime Assets',
-      profilePicture: user?.profilePicture || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800',
+      id: viewerId || 'user',
+      _id: viewerId || 'user',
+      fullName: user?.fullName || 'Real Estate Lead',
+      username: user?.username || 'member',
+      headline: user?.headline || 'Certified Real Estate Advisor @ Boolok Network',
+      location: user?.location || 'Global Real Estate Network',
+      profilePicture: user?.profilePicture || null,
       reactionType: 'like',
     };
 
@@ -663,11 +663,7 @@ export default function ProfessionalSocialFeedScreen() {
     if (Platform.OS === 'web') {
       try {
         const map = getStoredLikedPosts();
-        if (isLiked) {
-          map[postId] = true;
-        } else {
-          delete map[postId];
-        }
+        map[postId] = isLiked;
         localStorage.setItem('boolok_user_liked_posts', JSON.stringify(map));
       } catch (e) { }
     }
@@ -699,13 +695,33 @@ export default function ProfessionalSocialFeedScreen() {
         ...DUMMY_REAL_ESTATE_POSTS.filter((dp) => !rawPosts.some((fp: any) => fp._id === dp._id)),
       ];
 
-      const viewerId = user?.id || user?._id || 'sai';
+      const viewerId = user?.id || user?._id || null;
+      const viewerUsername = user?.username ? String(user?.username).toLowerCase() : null;
 
       const merged = baseList.map((p) => {
-        const isPersistedLiked = Boolean(likedMap[p._id]) || (Array.isArray(p.likes) && p.likes.includes(viewerId));
-        const baseLikes = Array.isArray(p.likes) ? p.likes : [];
-        const rawCount = typeof p.likesCount === 'number' ? p.likesCount : baseLikes.length;
-        const communityCount = Math.max(6, isPersistedLiked ? rawCount - 1 : rawCount);
+        const baseLikes = Array.isArray(p.likes)
+          ? p.likes.map((l: any) => (typeof l === 'object' && l ? (l._id || l.id) : String(l)))
+          : [];
+
+        const hasViewerInBase = viewerId
+          ? baseLikes.some((id: string) => id === String(viewerId) || (viewerUsername && id.toLowerCase() === viewerUsername))
+          : false;
+
+        const isPersistedLiked = likedMap[p._id] !== undefined
+          ? Boolean(likedMap[p._id])
+          : hasViewerInBase;
+
+        let likesList = baseLikes.filter((id: string) => {
+          if (viewerId && id === String(viewerId)) return false;
+          if (viewerUsername && id.toLowerCase() === viewerUsername) return false;
+          return true;
+        });
+
+        if (isPersistedLiked && viewerId) {
+          likesList = [String(viewerId), ...likesList];
+        }
+
+        const likesCount = likesList.length;
 
         let authorObj = p.author ? { ...p.author } : {};
         let authorUname = (authorObj.username || authorObj._id || authorObj.id || '').toLowerCase();
@@ -724,25 +740,25 @@ export default function ProfessionalSocialFeedScreen() {
           authorObj.username = 'yashwanth';
         }
 
+        const otherBrokersCount = isPersistedLiked ? Math.max(0, likesCount - 1) : likesCount;
+        let summaryText = '';
         if (isPersistedLiked) {
-          const nextLikes = baseLikes.includes(viewerId) ? baseLikes : [viewerId, ...baseLikes];
-          const nextCount = communityCount + 1; // Always 7 (Sai + 6 advisors)
-          return {
-            ...p,
-            author: authorObj,
-            currentUserReaction: 'like',
-            likes: nextLikes,
-            likesCount: nextCount,
-            likesSummary: `Liked by you and ${communityCount} other real estate brokers`,
-          };
+          summaryText = otherBrokersCount > 0
+            ? `Liked by you and ${otherBrokersCount} other real estate broker${otherBrokersCount > 1 ? 's' : ''}`
+            : `Liked by you`;
+        } else if (likesCount > 0) {
+          summaryText = `Liked by ${likesCount} real estate broker${likesCount > 1 ? 's' : ''}`;
+        } else {
+          summaryText = `Be the first to like this property`;
         }
+
         return {
           ...p,
           author: authorObj,
-          currentUserReaction: null,
-          likes: baseLikes.filter((id: string) => id !== viewerId),
-          likesCount: communityCount,
-          likesSummary: `Liked by ${communityCount} real estate brokers`,
+          currentUserReaction: isPersistedLiked ? 'like' : null,
+          likes: likesList,
+          likesCount,
+          likesSummary: summaryText,
         };
       });
 
@@ -785,9 +801,12 @@ export default function ProfessionalSocialFeedScreen() {
         setSuggestedUsers(uniqueSuggested);
         const map: Record<string, boolean> = {};
         uniqueSuggested.forEach((u: any) => {
-          if (u.isFollowing) map[u.id || u._id] = true;
+          const isF = Boolean(u.isFollowing);
+          if (u.id) map[u.id] = isF;
+          if (u._id) map[u._id] = isF;
+          if (u.username) map[u.username] = isF;
         });
-        setFollowingMap((prev) => ({ ...prev, ...map }));
+        setFollowingMap(map);
       }
     } catch (error) {
       console.error('Feed fetch error:', error);
@@ -798,15 +817,32 @@ export default function ProfessionalSocialFeedScreen() {
   };
 
   const toggleFollowAdvisor = async (targetId: string) => {
-    const isCurrentlyFollowing = Boolean(followingMap[targetId]);
+    let targetUsername = targetId;
+    const targetUser = suggestedUsers.find((u) => u.id === targetId || u._id === targetId || u.username === targetId);
+    if (targetUser?.username) targetUsername = targetUser.username;
+
+    const isCurrentlyFollowing = Boolean(
+      followingMap[targetId] ||
+      followingMap[targetUsername] ||
+      (targetUser?.id && followingMap[targetUser.id]) ||
+      (targetUser?._id && followingMap[targetUser._id])
+    );
     const nextState = !isCurrentlyFollowing;
-    setFollowingMap((prev) => ({ ...prev, [targetId]: nextState }));
+
+    const keysToUpdate = [targetId, targetUsername, targetUser?.id, targetUser?._id, targetUser?.username].filter(Boolean);
+    setFollowingMap((prev) => {
+      const next = { ...prev };
+      keysToUpdate.forEach((k) => {
+        next[k as string] = nextState;
+      });
+      return next;
+    });
 
     setSuggestedUsers((prev) =>
       prev.map((u) => {
         const uId = u.id || u._id;
-        if (uId === targetId || u.username === targetId) {
-          const curr = u.followerCount || 0;
+        if (uId === targetId || u.username === targetId || u.username === targetUsername) {
+          const curr = typeof u.followerCount === 'number' ? u.followerCount : 0;
           return {
             ...u,
             followerCount: nextState ? curr + 1 : Math.max(0, curr - 1),
@@ -820,19 +856,30 @@ export default function ProfessionalSocialFeedScreen() {
     try {
       const token = await getToken();
       const res = await axios.post(
-        `${API_BASE_URL}/api/users/${targetId}/follow`,
+        `${API_BASE_URL}/api/users/${targetUsername}/follow`,
         {},
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
-      if (res.data && typeof res.data.followerCount === 'number') {
+      if (res.data) {
+        const actualFollowing = typeof res.data.isFollowing === 'boolean' ? res.data.isFollowing : nextState;
+        const actualCount = typeof res.data.followerCount === 'number' ? res.data.followerCount : undefined;
+
+        setFollowingMap((prev) => {
+          const next = { ...prev };
+          keysToUpdate.forEach((k) => {
+            next[k as string] = actualFollowing;
+          });
+          return next;
+        });
+
         setSuggestedUsers((prev) =>
           prev.map((u) => {
             const uId = u.id || u._id;
-            if (uId === targetId || u.username === targetId) {
+            if (uId === targetId || u.username === targetId || u.username === targetUsername) {
               return {
                 ...u,
-                followerCount: res.data.followerCount,
-                isFollowing: res.data.isFollowing,
+                followerCount: actualCount !== undefined ? actualCount : (actualFollowing ? (u.followerCount || 0) : Math.max(0, (u.followerCount || 1) - 1)),
+                isFollowing: actualFollowing,
               };
             }
             return u;
@@ -846,16 +893,16 @@ export default function ProfessionalSocialFeedScreen() {
 
   const handleReaction = async (postId: string, reactionType: string = 'like') => {
     setActiveReactionPickerPostId(null);
-    const viewerId = user?.id || user?._id || 'sai';
+    const viewerId = user?.id || user?._id;
 
     const viewerObj = {
-      id: viewerId,
-      _id: viewerId,
-      fullName: user?.fullName || 'Sai Vimenthan',
-      username: user?.username || 'saivimenthanvl',
-      headline: user?.headline || 'Elite Real Estate Broker & Commercial Portfolio Lead',
-      location: user?.location || 'Chennai, Tamil Nadu · Prime Assets',
-      profilePicture: user?.profilePicture || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800',
+      id: viewerId || 'user',
+      _id: viewerId || 'user',
+      fullName: user?.fullName || 'Real Estate Lead',
+      username: user?.username || 'member',
+      headline: user?.headline || 'Certified Real Estate Advisor @ Boolok Network',
+      location: user?.location || 'Global Real Estate Network',
+      profilePicture: user?.profilePicture || null,
       reactionType: 'like',
     };
 
@@ -864,34 +911,47 @@ export default function ProfessionalSocialFeedScreen() {
     setPosts((prev) =>
       prev.map((p) => {
         if (p._id === postId) {
-          const isCurrentlyLiked = p.currentUserReaction === 'like' || (Array.isArray(p.likes) && p.likes.includes(viewerId));
+          const isCurrentlyLiked = p.currentUserReaction !== undefined && p.currentUserReaction !== null
+            ? p.currentUserReaction === 'like'
+            : Boolean(viewerId && Array.isArray(p.likes) && p.likes.includes(String(viewerId)));
           const nextReaction = isCurrentlyLiked ? null : 'like';
           willBeLiked = Boolean(nextReaction);
 
-          let nextLikes = Array.isArray(p.likes) ? [...p.likes] : [];
+          let nextLikes = Array.isArray(p.likes)
+            ? p.likes.map((l: any) => (typeof l === 'object' && l ? (l._id || l.id) : String(l)))
+            : [];
           if (nextReaction) {
-            if (!nextLikes.includes(viewerId)) nextLikes = [viewerId, ...nextLikes];
+            if (viewerId && !nextLikes.includes(String(viewerId))) nextLikes = [String(viewerId), ...nextLikes];
           } else {
-            nextLikes = nextLikes.filter((id: string) => id !== viewerId);
+            if (viewerId) nextLikes = nextLikes.filter((id: string) => id !== String(viewerId) && id !== user?.username);
           }
 
-          const newCount = willBeLiked ? 7 : 6;
+          const newCount = nextLikes.length;
+          const otherBrokersCount = willBeLiked ? Math.max(0, newCount - 1) : newCount;
+          let summaryText = '';
+          if (willBeLiked) {
+            summaryText = otherBrokersCount > 0
+              ? `Liked by you and ${otherBrokersCount} other real estate broker${otherBrokersCount > 1 ? 's' : ''}`
+              : `Liked by you`;
+          } else if (newCount > 0) {
+            summaryText = `Liked by ${newCount} real estate broker${newCount > 1 ? 's' : ''}`;
+          } else {
+            summaryText = `Be the first to like this property`;
+          }
 
           return {
             ...p,
             currentUserReaction: nextReaction,
             likes: nextLikes,
             likesCount: newCount,
-            likesSummary: willBeLiked
-              ? `Liked by you and 6 other real estate brokers`
-              : `Liked by 6 real estate brokers`,
+            likesSummary: summaryText,
           };
         }
         return p;
       })
     );
 
-    // Persist to local storage so modal close or re-renders NEVER reset the like button!
+    // Save like status to local storage
     saveStoredLikedPost(postId, willBeLiked);
 
     // Live update open reactions modal if active
@@ -957,9 +1017,9 @@ export default function ProfessionalSocialFeedScreen() {
     try {
       const token = await getToken();
       await axios.post(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/feed/${postId}/comment`,
+        `${API_BASE_URL}/api/feed/${postId}/comment`,
         { text },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
     } catch (error) {
       console.log('Comment retained in feed UI.');
@@ -987,7 +1047,7 @@ export default function ProfessionalSocialFeedScreen() {
       content: newPostText.trim(),
       mediaUrls: newPostImage ? [newPostImage] : [],
       likes: [],
-      likesCount: 1,
+      likesCount: 0,
       commentsCount: 0,
       comments: [],
     };
@@ -997,9 +1057,9 @@ export default function ProfessionalSocialFeedScreen() {
     try {
       const token = await getToken();
       await axios.post(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/feed`,
+        `${API_BASE_URL}/api/feed`,
         { content: newPostText, mediaUrl: newPostImage },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
     } catch (error) {
       console.log('Post published in live state.');
@@ -1340,9 +1400,9 @@ export default function ProfessionalSocialFeedScreen() {
                     </View>
                     <Text style={[styles.socialReactionText, { textDecorationLine: 'underline', marginLeft: 6 }]}>
                       {post.likesSummary ||
-                        (isSelfPost
-                          ? 'Liked by your real estate network'
-                          : `${authorName} and ${totalLikes} others`)}
+                        (post.likesCount > 0
+                          ? `Liked by ${post.likesCount} real estate broker${post.likesCount > 1 ? 's' : ''}`
+                          : 'Be the first to like this property')}
                     </Text>
                   </Pressable>
 
@@ -1360,10 +1420,10 @@ export default function ProfessionalSocialFeedScreen() {
                 <View style={[styles.postActionsBar, { position: 'relative' }]}>
                   {/* Primary Like / Thumbs Up Action Button */}
                   {(() => {
-                    const isPostLiked = Boolean(
-                      post.currentUserReaction === 'like' ||
-                      (Array.isArray(post.likes) && post.likes.includes(user?.id || user?._id || 'sai'))
-                    );
+                    const currentViewerId = user?.id || user?._id;
+                    const isPostLiked = post.currentUserReaction !== undefined && post.currentUserReaction !== null
+                      ? post.currentUserReaction === 'like'
+                      : Boolean(currentViewerId && Array.isArray(post.likes) && post.likes.includes(String(currentViewerId)));
                     return (
                       <Pressable
                         onPress={() => handleReaction(post._id, 'like')}
@@ -1509,7 +1569,9 @@ export default function ProfessionalSocialFeedScreen() {
                         // If rawName is missing, hex ID, placeholder 'Member' or empty, derive the real advisor name from the comment text or index
                         const bodyLower = commentBody.toLowerCase();
                         if (!rawName || /^[0-9a-fA-F]{24}$/.test(rawName) || rawName.startsWith('6a8') || rawName.toLowerCase() === 'member' || rawName.toLowerCase() === 'advisor') {
-                          if (bodyLower.includes('cap rate') && bodyLower.includes('institutional')) rawName = 'Logeshwaran A';
+                          if (cAuthor.username && !/^[0-9a-fA-F]{24}$/.test(cAuthor.username)) {
+                            rawName = cAuthor.username;
+                          } else if (bodyLower.includes('cap rate') && bodyLower.includes('institutional')) rawName = 'Logeshwaran A';
                           else if (bodyLower.includes('tenant covenant') || bodyLower.includes('specs')) rawName = 'Shreekutti';
                           else if (bodyLower.includes('turnkey acquisition') || bodyLower.includes('verified yield')) rawName = 'Mohammed Ajmal';
                           else if (bodyLower.includes('architectural finish') || bodyLower.includes('interior design')) rawName = 'Bavadharini RS';
@@ -1645,9 +1707,17 @@ export default function ProfessionalSocialFeedScreen() {
               {suggestedUsers.length > 0 ? (
                 suggestedUsers.map((adv) => {
                   const advId = adv.id || adv._id;
-                  const isF = Boolean(followingMap[advId]);
                   let advFullName = adv.fullName;
                   let advUsername = adv.username;
+                  const isF = Boolean(
+                    followingMap[advUsername] !== undefined
+                      ? followingMap[advUsername]
+                      : (followingMap[advId] !== undefined
+                          ? followingMap[advId]
+                          : (followingMap[adv._id] !== undefined
+                              ? followingMap[adv._id]
+                              : adv.isFollowing))
+                  );
 
                   if (advUsername === 'ig_vicky16' || advUsername === 'ig_vicky.16' || advUsername === 'vicky' || advUsername === 'vignesh' || (advFullName && advFullName.includes('Vicky'))) {
                     advFullName = 'Vigneshwaran';

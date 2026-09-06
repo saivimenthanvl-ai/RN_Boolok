@@ -1305,7 +1305,8 @@ export default function ProfessionalUserProfileScreen() {
       });
       if (res.data?.user) {
         setData(res.data);
-        setFollowerCountState(res.data.followerCount || 4);
+        const count = typeof res.data.followerCount === 'number' ? res.data.followerCount : (res.data.user?.followerCount ?? 0);
+        setFollowerCountState(count);
         setIsFollowingState(Boolean(res.data.isFollowing || GLOBAL_FOLLOWED_USERS.has(userId)));
         if (isSelf && res.data.user) {
           updateUser({ closedDeals: res.data.user.closedDeals || '3' });
@@ -1339,41 +1340,44 @@ export default function ProfessionalUserProfileScreen() {
       });
       if (res.data && res.data.user) {
         setData(res.data);
-        setFollowerCountState(res.data.followerCount || 4);
+        const count = typeof res.data.followerCount === 'number' ? res.data.followerCount : (res.data.user?.followerCount ?? fallbackUser.followerCount ?? 0);
+        setFollowerCountState(count);
         setIsFollowingState(Boolean(res.data.isFollowing || GLOBAL_FOLLOWED_USERS.has(lookupId)));
 
         if (res.data.user?.username && isSelf) {
           setUsernameInput(res.data.user.username);
         }
       } else {
+        const count = fallbackUser.followerCount ?? 0;
         setData({
           user: fallbackUser,
           postCount: (fallbackUser.posts || []).length,
           reelCount: (fallbackUser.reels || []).length,
-          followerCount: 4,
-          followingCount: isSelf ? (GLOBAL_FOLLOWED_USERS.size || 4) : 12,
+          followerCount: count,
+          followingCount: isSelf ? (GLOBAL_FOLLOWED_USERS.size || 0) : (fallbackUser.followingCount ?? 0),
           isFollowing: GLOBAL_FOLLOWED_USERS.has(lookupId),
           isSelf,
           posts: fallbackUser.posts || [],
           reels: fallbackUser.reels || [],
         });
-        setFollowerCountState(4);
+        setFollowerCountState(count);
         setIsFollowingState(GLOBAL_FOLLOWED_USERS.has(lookupId));
       }
     } catch (error: any) {
       console.warn('Profile loaded via member registry:', error.message);
+      const count = fallbackUser.followerCount ?? 0;
       setData({
         user: fallbackUser,
         postCount: (fallbackUser.posts || []).length,
         reelCount: (fallbackUser.reels || []).length,
-        followerCount: 4,
-        followingCount: isSelf ? (GLOBAL_FOLLOWED_USERS.size || 4) : 12,
+        followerCount: count,
+        followingCount: isSelf ? (GLOBAL_FOLLOWED_USERS.size || 0) : (fallbackUser.followingCount ?? 0),
         isFollowing: GLOBAL_FOLLOWED_USERS.has(lookupId),
         isSelf,
         posts: fallbackUser.posts || [],
         reels: fallbackUser.reels || [],
       });
-      setFollowerCountState(4);
+      setFollowerCountState(count);
       setIsFollowingState(GLOBAL_FOLLOWED_USERS.has(lookupId));
     } finally {
       setLoading(false);
@@ -1825,16 +1829,17 @@ export default function ProfessionalUserProfileScreen() {
     setIsFollowingState(nextState);
     setFollowerCountState((prev) => (nextState ? prev + 1 : Math.max(0, prev - 1)));
 
+    const aliases = [activeTarget, profileUser?.username, profileUser?.id, profileUser?._id].filter(Boolean);
     if (nextState) {
-      GLOBAL_FOLLOWED_USERS.add(activeTarget);
+      aliases.forEach((a) => GLOBAL_FOLLOWED_USERS.add(String(a)));
     } else {
-      GLOBAL_FOLLOWED_USERS.delete(activeTarget);
+      aliases.forEach((a) => GLOBAL_FOLLOWED_USERS.delete(String(a)));
     }
 
     try {
       const token = await getToken();
       const res = await axios.post(
-        `${API_BASE_URL}/api/users/${activeTarget}/follow`,
+        `${API_BASE_URL}/api/users/${profileUser?.username || activeTarget}/follow`,
         {},
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
@@ -1844,6 +1849,11 @@ export default function ProfessionalUserProfileScreen() {
         }
         if (typeof res.data.isFollowing === 'boolean') {
           setIsFollowingState(res.data.isFollowing);
+          if (res.data.isFollowing) {
+            aliases.forEach((a) => GLOBAL_FOLLOWED_USERS.add(String(a)));
+          } else {
+            aliases.forEach((a) => GLOBAL_FOLLOWED_USERS.delete(String(a)));
+          }
         }
       }
       if (isFollowersModalOpen) {

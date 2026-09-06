@@ -8,6 +8,30 @@ const postSchema = new mongoose.Schema(
       required: true,
     },
 
+    title: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+
+    price: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+
+    location: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+
+    specs: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+
     content: {
       type: String,
       default: '',
@@ -18,6 +42,12 @@ const postSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+
+    mediaUrls: [
+      {
+        type: String,
+      },
+    ],
 
     likes: [
       {

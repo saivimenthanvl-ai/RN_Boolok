@@ -54,8 +54,8 @@ function sanitizeUserProfile(user, viewerId = null) {
     mutualsText = `Followed by ${followerNames[0]}, ${followerNames[1]} and ${followerNames.length - 2} others`;
   }
 
-  const followerCount = followers.length > 0 ? followers.length : 4;
-  const followingCount = rawFollowing.length > 0 ? rawFollowing.length : 4;
+  const followerCount = followers.length;
+  const followingCount = rawFollowing.length;
 
   let sanitizedFullName = user.fullName;
   let sanitizedUsername = user.username || user.fullName?.replace(/\s+/g, '').toLowerCase() || 'user';
@@ -536,30 +536,11 @@ async function ensureCommunityConnections() {
 
     if (seeded.length < 2) return;
 
-    // 3. Connect mutual followers for all community members
+    // 3. Connect initial mutual followers only if user has never been initialized
     for (const member of seeded) {
-      if (member.username === 'logeshwarana') {
-        const saiUser = await User.findOne({ username: 'saivimenthanvl' });
-        if (saiUser) {
-          member.followers = [saiUser._id];
-          member.following = [saiUser._id];
-          await member.save();
-        }
-        continue;
-      }
-
-      if (!member.followers || member.followers.length === 0) {
-        const others = seeded.filter((o) => o._id.toString() !== member._id.toString() && o.username !== 'logeshwarana').slice(0, 4);
-        member.followers = others.map((o) => o._id);
+      if (member.followers === undefined || member.followers === null) {
+        member.followers = [];
         await member.save();
-
-        for (const other of others) {
-          if (!other.following) other.following = [];
-          if (!other.following.some((f) => f.toString() === member._id.toString())) {
-            other.following.push(member._id);
-            await other.save();
-          }
-        }
       }
     }
   } catch (err) {
