@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { spacing, typography, radius } from '../../constants/theme';
+import { spacing, typography, radius, shadows } from '../../constants/theme';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import LoadingScreen from '../../components/LoadingScreen';
@@ -92,7 +92,7 @@ export default function FeedScreen() {
       <ScrollView
         style={[
           styles.container,
-          { backgroundColor: theme.surfaceContainerLowest },
+          { backgroundColor: theme.background },
         ]}
         contentContainerStyle={[
           styles.contentContainer,
@@ -113,7 +113,7 @@ export default function FeedScreen() {
                   ? theme.outlineVariant
                   : 'rgba(218, 165, 32, 0.35)',
               },
-              isWide ? { width: 'calc(66.666% - 16px)' } : { width: '100%' },
+              isWide ? { width: Platform.OS === 'web' ? 'calc(66.666% - 16px)' : '65%' } : { width: '100%' },
               styles.searchCard,
               (pressed || hovered) && {
                 transform: [{ scale: 1.01 }],
@@ -258,7 +258,7 @@ export default function FeedScreen() {
                   : 'rgba(218, 165, 32, 0.35)',
                 cursor: 'pointer',
               },
-              isWide ? { width: 'calc(33.333% - 16px)' } : { width: '100%' },
+              isWide ? { width: Platform.OS === 'web' ? 'calc(33.333% - 16px)' : '32%' } : { width: '100%' },
               styles.legalCard,
               (pressed || hovered) && {
                 transform: [{ scale: 1.02 }],
@@ -368,7 +368,7 @@ export default function FeedScreen() {
                   : 'rgba(218, 165, 32, 0.35)',
                 cursor: 'pointer',
               },
-              isWide ? { width: 'calc(33.333% - 16px)' } : { width: '100%' },
+              isWide ? { width: Platform.OS === 'web' ? 'calc(33.333% - 16px)' : '32%' } : { width: '100%' },
               styles.blueprintCard,
               (pressed || hovered) && {
                 transform: [{ scale: 1.02 }],
@@ -450,7 +450,7 @@ export default function FeedScreen() {
                   : 'rgba(218, 165, 32, 0.35)',
                 cursor: 'pointer',
               },
-              isWide ? { width: 'calc(66.666% - 16px)' } : { width: '100%' },
+              isWide ? { width: Platform.OS === 'web' ? 'calc(66.666% - 16px)' : '65%' } : { width: '100%' },
               styles.predictionsCard,
               (pressed || hovered) && {
                 transform: [{ scale: 1.01 }],
@@ -624,10 +624,15 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: radius.xl,
     borderWidth: 1,
-    overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
     ...Platform.select({
       web: {
-        transition: 'all 0.3s ease',
+        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: '0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -1px rgba(15, 23, 42, 0.04)',
       } as any,
     }),
   },

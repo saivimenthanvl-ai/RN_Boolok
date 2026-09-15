@@ -6,9 +6,10 @@ import { MaterialIcons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { spacing, typography, radius } from '../../constants/theme';
+import { spacing, typography, radius, shadows } from '../../constants/theme';
 import BoolokLogo from '../../components/BoolokLogo';
 import axios from 'axios';
 import { API_BASE_URL } from '../../lib/api';
@@ -28,9 +29,12 @@ const NAV_ITEMS = [
 export default function AppLayout() {
   const { width } = useWindowDimensions();
   const isWide = width >= MD_BREAKPOINT;
-  const { user, signOut } = useAuth();
+  const { user, token, signOut } = useAuth();
   const pathname = usePathname();
   const { theme, isDark, toggleTheme } = useTheme();
+
+  const getAuthToken = async () =>
+    token || (Platform.OS === 'web' ? localStorage.getItem('userToken') : await SecureStore.getItemAsync('userToken'));
 
   // Animation for the dark mode icon
   const rotation = useSharedValue(isDark ? 180 : 0);
@@ -219,7 +223,11 @@ export default function AppLayout() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/users/notifications`);
+      const authToken = await getAuthToken();
+      if (!authToken) return;
+      const res = await axios.get(`${API_BASE_URL}/api/users/notifications`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
       setNotifications(res.data?.notifications || []);
       setUnreadCount(res.data?.unreadCount || 0);
     } catch (e) {
@@ -229,16 +237,21 @@ export default function AppLayout() {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 15000);
+    const interval = setInterval(fetchNotifications, 8000);
     return () => clearInterval(interval);
-  }, []);
+  }, [token, user?.id, user?._id]);
 
   const handleToggleNotifications = async () => {
     const nextState = !showNotifications;
     setShowNotifications(nextState);
     if (nextState && unreadCount > 0) {
       try {
-        await axios.put(`${API_BASE_URL}/api/users/notifications/read-all`);
+        const authToken = await getAuthToken();
+        await axios.put(
+          `${API_BASE_URL}/api/users/notifications/read-all`,
+          {},
+          { headers: authToken ? { Authorization: `Bearer ${authToken}` } : {} }
+        );
         setUnreadCount(0);
       } catch (e) { }
     }
@@ -454,38 +467,39 @@ export default function AppLayout() {
     }
   };
 
+  const MOBILE_NAV_ITEMS = [
+    { id: 'dashboard', icon: 'dashboard', label: 'Home', route: '/(app)/dashboard' },
+    { id: 'feed', icon: 'forum', label: 'Social', route: '/(app)/feed' },
+    { id: 'search', icon: 'search', label: 'Search', route: '/(app)/search' },
+    { id: 'insights', icon: 'dynamic-feed', label: 'Reels', route: '/(app)/insights' },
+    { id: 'profile', icon: 'person', label: 'Profile', route: '/(app)/profile' },
+  ];
+
   const BottomNav = () => {
     const insets = useSafeAreaInsets();
+    const activeNavItems = MOBILE_NAV_ITEMS;
+
     return (
-      <View style={[styles.bottomNavContainer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+      <View style={[styles.bottomNavContainer, { paddingBottom: Math.max(insets.bottom, 10), borderTopColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0', ...(!isDark ? shadows.md : {}) }]}>
         <BlurView
           intensity={isDark ? 50 : 80}
           tint={isDark ? 'dark' : 'light'}
-          style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(10, 15, 35, 0.6)' : 'rgba(255, 255, 255, 0.6)' }]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(10, 15, 35, 0.85)' : 'rgba(255, 255, 255, 0.92)' }]}
         />
         <View style={styles.bottomNavInner}>
-          {NAV_ITEMS.slice(0, 5).map(item => {
+          {activeNavItems.map(item => {
             const isActive = pathname === item.route || pathname === item.route.replace('/(app)', '');
-
-            // Map labels for mobile
-            let mobileLabel = item.label;
-            if (item.id === 'dashboard') mobileLabel = 'Home';
-            if (item.id === 'feed') mobileLabel = 'Social';
-            if (item.id === 'insights') mobileLabel = 'Reels';
-            if (item.id === 'predictions') mobileLabel = 'Trends';
-            if (item.id === 'search') mobileLabel = 'Search';
-            if (item.id === 'legal') mobileLabel = 'Legal';
-            if (item.id === 'blueprint') mobileLabel = 'Plan';
 
             return (
               <Pressable
                 key={item.id}
                 style={styles.bottomNavItem}
                 onPress={() => router.push(item.route as any)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <MaterialIcons name={item.icon as any} size={24} color={isActive ? theme.primary : theme.onSurfaceVariant} />
-                <Text style={{ fontSize: 10, marginTop: 4, color: isActive ? theme.primary : theme.onSurfaceVariant, fontWeight: isActive ? '700' : '500' }}>
-                  {mobileLabel}
+                <Text style={{ fontSize: 10, marginTop: 4, color: isActive ? theme.primary : theme.onSurfaceVariant, fontWeight: isActive ? '800' : '500' }}>
+                  {item.label}
                 </Text>
               </Pressable>
             );
@@ -502,21 +516,41 @@ export default function AppLayout() {
       {isWide && <Sidebar />}
       {/* mainContent fills all remaining space; sidebar overlay floats above it */}
       <View style={styles.mainContent}>
-        {/* INLINED HEADER TO PREVENT FOCUS LOSS */}
         <View style={[styles.header, {
-          paddingHorizontal: isWide ? spacing.lg : spacing.md,
-          borderBottomColor: theme.outlineVariant,
-          backgroundColor: isDark ? 'rgba(10, 15, 35, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+          paddingHorizontal: isWide ? spacing.lg : 12,
+          borderBottomColor: isDark ? theme.outlineVariant : '#E2E8F0',
+          backgroundColor: isDark ? 'rgba(10, 15, 35, 0.85)' : '#FFFFFF',
           paddingTop: insets.top,
-          height: 80 + insets.top,
+          height: (isWide ? 80 : 64) + insets.top,
           zIndex: 100,
+          ...(!isDark ? shadows.xs : {}),
         }]}>
-          <View style={{ flexShrink: 0, minWidth: 160, marginRight: spacing.md }}>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: theme.onSurface }} numberOfLines={1}>
-              Welcome back, {user?.fullName?.split(' ')[0] || 'Sai'}
-            </Text>
-            <Text style={{ fontSize: 12, color: theme.onSurfaceVariant, fontWeight: '500' }}>Real Estate Intelligence</Text>
-          </View>
+          {/* Header Left: Brand logo & Greeting */}
+          {isWide ? (
+            <View style={{ flexShrink: 0, minWidth: 160, marginRight: spacing.md }}>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: theme.onSurface }} numberOfLines={1}>
+                Welcome back, {user?.fullName?.split(' ')[0] || 'Sai'}
+              </Text>
+              <Text style={{ fontSize: 12, color: theme.onSurfaceVariant, fontWeight: '500' }}>Real Estate Intelligence</Text>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 8 }}>
+              <Pressable onPress={() => router.push('/(app)/dashboard')} style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
+                <BoolokLogo size={24} color={theme.primary} />
+                <Text style={{ fontSize: 15, fontWeight: '900', color: theme.primary, letterSpacing: 1, marginLeft: 5 }}>
+                  BOOLOK
+                </Text>
+              </Pressable>
+              <View style={{ flexShrink: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: '800', color: theme.onSurface }} numberOfLines={1}>
+                  Hi, {user?.fullName?.split(' ')[0] || 'Sai'}
+                </Text>
+                <Text style={{ fontSize: 9.5, color: theme.onSurfaceVariant, fontWeight: '500' }} numberOfLines={1}>
+                  Elite Advisor
+                </Text>
+              </View>
+            </View>
+          )}
 
           {isWide && (
             <View style={{ position: 'relative', flex: 1, maxWidth: 600, marginHorizontal: spacing.xl, zIndex: 100 }}>
@@ -578,9 +612,16 @@ export default function AppLayout() {
           )}
 
           <View style={styles.headerActions}>
+            {/* Quick search on mobile */}
+            {!isWide && (
+              <Pressable onPress={() => router.push('/(app)/search')} style={styles.iconBtn}>
+                <MaterialIcons name="search" size={22} color={theme.onSurfaceVariant} />
+              </Pressable>
+            )}
+
             <View style={{ position: 'relative' }}>
               <Pressable onPress={handleToggleNotifications} style={styles.iconBtn}>
-                <MaterialIcons name="notifications" size={24} color={showNotifications ? theme.primary : theme.onSurfaceVariant} />
+                <MaterialIcons name="notifications" size={22} color={showNotifications ? theme.primary : theme.onSurfaceVariant} />
                 {unreadCount > 0 && (
                   <View style={[styles.notificationDot, { backgroundColor: '#ef4444', borderColor: theme.surface, width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' }]}>
                     <Text style={{ color: '#ffffff', fontSize: 9, fontWeight: '800' }}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -592,9 +633,9 @@ export default function AppLayout() {
               {showNotifications && (
                 <View style={{
                   position: 'absolute',
-                  top: 48,
-                  right: 0,
-                  width: 320,
+                  top: 44,
+                  right: isWide ? 0 : -60,
+                  width: Math.min(width - 24, 320),
                   maxHeight: 400,
                   backgroundColor: isDark ? '#0c1626' : '#ffffff',
                   borderRadius: 12,
@@ -659,7 +700,7 @@ export default function AppLayout() {
 
             <Pressable onPress={toggleTheme} style={styles.iconBtn}>
               <Animated.View style={animatedIconStyle}>
-                <MaterialIcons name={isDark ? "dark-mode" : "light-mode"} size={24} color={theme.onSurfaceVariant} />
+                <MaterialIcons name={isDark ? "dark-mode" : "light-mode"} size={22} color={theme.onSurfaceVariant} />
               </Animated.View>
             </Pressable>
 
@@ -678,7 +719,7 @@ export default function AppLayout() {
               onPress={() => router.push('/(app)/profile')}
               style={({ pressed, hovered }: any) => [
                 styles.profileSection,
-                { borderLeftColor: theme.outlineVariant },
+                isWide ? { borderLeftColor: theme.outlineVariant } : { borderLeftWidth: 0, paddingLeft: 4 },
                 (pressed || hovered) && { backgroundColor: theme.surfaceContainerLowest }
               ]}
             >
@@ -695,33 +736,43 @@ export default function AppLayout() {
                   return (
                     <Image
                       source={{ uri: navAvatar }}
-                      style={styles.profileImage}
+                      style={[styles.profileImage, !isWide && { width: 34, height: 34, borderRadius: 17 }]}
                     />
                   );
                 }
                 return (
-                  <View style={[styles.profileImage, { backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center', flexShrink: 0 }]}>
-                    <Text style={{ color: theme.onPrimary, fontSize: 18, fontWeight: 'bold' }}>
+                  <View style={[styles.profileImage, !isWide && { width: 34, height: 34, borderRadius: 17 }, { backgroundColor: theme.primary, justifyContent: 'center', alignItems: 'center', flexShrink: 0 }]}>
+                    <Text style={{ color: theme.onPrimary, fontSize: isWide ? 18 : 14, fontWeight: 'bold' }}>
                       {(user?.fullName || 'Agent').charAt(0).toUpperCase()}
                     </Text>
                   </View>
                 );
               })()}
-              <Pressable
-                onPress={() => router.push('/(app)/settings')}
-                style={({ pressed, hovered }: any) => [
-                  { marginLeft: spacing.sm, padding: 4, borderRadius: 20, flexShrink: 0 },
-                  (pressed || hovered) && { backgroundColor: theme.surfaceContainer }
-                ]}
-              >
-                <MaterialIcons name="settings" size={24} color={theme.onSurfaceVariant} />
-              </Pressable>
+
+              {isWide && (
+                <Pressable
+                  onPress={() => router.push('/(app)/settings')}
+                  style={({ pressed, hovered }: any) => [
+                    { marginLeft: spacing.sm, padding: 4, borderRadius: 20, flexShrink: 0 },
+                    (pressed || hovered) && { backgroundColor: theme.surfaceContainer }
+                  ]}
+                >
+                  <MaterialIcons name="settings" size={24} color={theme.onSurfaceVariant} />
+                </Pressable>
+              )}
             </Pressable>
           </View>
         </View>
 
-        <View style={[styles.slotContainer, { backgroundColor: isDark ? '#060b13' : '#ffffff', flex: 1 }]}>
-          <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: isDark ? '#060b13' : '#ffffff' } }} />
+        <View style={[
+          styles.slotContainer,
+          {
+            backgroundColor: isDark ? '#060B13' : '#F8FAFC',
+            flex: 1,
+            paddingBottom: !isWide ? (56 + Math.max(insets.bottom, 10)) : 0,
+          }
+        ]}>
+          <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: isDark ? '#060B13' : '#F8FAFC' } }} />
         </View>
 
         {!isWide && <BottomNav />}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
+  RefreshControl,
   Linking,
 } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -20,16 +21,13 @@ import { useTheme } from '../../context/ThemeContext';
 import { spacing, typography, radius } from '../../constants/theme';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import * as ImagePicker from 'expo-image-picker';
 import LoadingScreen from '../../components/LoadingScreen';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import BoolokLogo from '../../components/BoolokLogo';
 import { API_BASE_URL } from '../../lib/api';
 
-// ── Shared follow tracker ───────────────────────────────────────────────────
-const GLOBAL_FOLLOWED_USERS = new Set<string>();
-
-// ── Real Estate & Buildings For Sale News ───────────────────────────────────
 // ── Real Estate & Buildings For Sale News ───────────────────────────────────
 const DEFAULT_REAL_ESTATE_NEWS = [
   {
@@ -39,9 +37,9 @@ const DEFAULT_REAL_ESTATE_NEWS = [
     readers: '22,392 readers',
     category: 'Commercial Real Estate',
     summary:
-      'Institutional investors and private equity funds have deployed more than $14.6B into trophy Grade-A commercial office towers across London’s City core and New York’s Midtown corridor this quarter. Flight-to-quality remains the dominant investment driver, with top-tier LEED Platinum certified office towers achieving record rental premiums over secondary stock.',
+      'Institutional investors and private equity funds have deployed more than $14.6B into trophy Grade-A commercial office towers across London’s City core and New York’s Midtown corridor this quarter.',
     content:
-      'The global commercial office landscape is undergoing a decisive renaissance driven by institutional capital pivot toward high-efficiency, amenity-rich properties. In Central London and Manhattan, prime yields have stabilized around 5.2% to 5.75%, encouraging institutional REITs to close multi-hundred-million-dollar transactions.\n\nKey drivers highlighted by property advisors include:\n• Unwavering tenant demand for trophy assets featuring net-zero emissions and wellness credentials.\n• Record-setting absorption in Grade-A office footprints despite hybrid work flexibility.\n• Syndicated debt availability easing for prime institutional assets with strong pre-commitments.',
+      'The global commercial office landscape is undergoing a decisive renaissance driven by institutional capital pivot toward high-efficiency, amenity-rich properties. In Central London and Manhattan, prime yields have stabilized around 5.2% to 5.75%, encouraging institutional REITs to close multi-hundred-million-dollar transactions.',
     sourceName: 'Financial Times Property & Bloomberg Real Estate',
     sourceUrl: 'https://www.bloomberg.com/real-estate',
   },
@@ -52,9 +50,9 @@ const DEFAULT_REAL_ESTATE_NEWS = [
     readers: '14,976 readers',
     category: 'Property Listings',
     summary:
-      'Exclusive institutional showcase reveals high-cap-rate tech parks, corporate headquarters, and mixed-use towers currently listed for acquisition across global financial hubs. Starting prices range from $18.5M to $145M with verified RERA covenants and 8.2%–9.4% initial yields.',
+      'Exclusive institutional showcase reveals high-cap-rate tech parks, corporate headquarters, and mixed-use towers currently listed for acquisition across global financial hubs.',
     content:
-      'A curated catalog of premier commercial developments has arrived on the market this quarter, headlined by:\n\n1. Outer Ring Road Tech Campus (Bangalore) – 92,000 sq ft, 8.4% Cap Rate, LEED Platinum.\n2. Margaret River Estate & Commercial Cellar Door (WA, Australia) – 140 Acres prime terroir, $18.5M.\n3. Bishopsgate Corporate Tower (London) – 180,000 sq ft, 97% occupancy, £115M.\n4. Brickell Financial Centre (Miami, FL) – Class-A multi-tenant corporate hub, $89M.\n5. Tokyo Minato-ku High-Rise HQ – Institutional yield structure with Tokyo Metro direct link, ¥12.4B.',
+      'A curated catalog of premier commercial developments has arrived on the market this quarter, headlined by Outer Ring Road Tech Campus, Margaret River Estate, and Bishopsgate Corporate Tower.',
     sourceName: 'Boolok Institutional Asset Index & RERA Commercial',
     sourceUrl: 'https://www.cbre.com/insights',
   },
@@ -65,9 +63,9 @@ const DEFAULT_REAL_ESTATE_NEWS = [
     readers: '8,709 readers',
     category: 'AI Market Intelligence',
     summary:
-      'Boolok’s proprietary neural real estate appraisal algorithm recorded an all-time high valuation confidence score across 45,000 multi-family and commercial properties, signaling a 14.8% YoY valuation upside in high-growth tech corridors.',
+      'Boolok’s proprietary neural real estate appraisal algorithm recorded an all-time high valuation confidence score across 45,000 multi-family and commercial properties.',
     content:
-      'By synthesizing spatial computer vision, municipal tax records, real-time footfall telemetry, and historical transaction comps, the Boolok AI Valuation Index demonstrates unprecedented accuracy in forecasting commercial cap rates and residential yield compressions.\n\nInstitutional syndicates and real estate family offices are utilizing the platform’s live underwriting models to pre-qualify acquisitions 4x faster than traditional appraisal workflows.',
+      'By synthesizing spatial computer vision, municipal tax records, and live footfall telemetry, the Boolok AI Valuation Index delivers 4x faster institutional underwriting with 99% accuracy on cap rate trends.',
     sourceName: 'Boolok AI Research & MIT Center for Real Estate',
     sourceUrl: 'https://cre.mit.edu',
   },
@@ -78,9 +76,9 @@ const DEFAULT_REAL_ESTATE_NEWS = [
     readers: '6,387 readers',
     category: 'Luxury Real Estate',
     summary:
-      'Private family offices and sovereign wealth vehicles allocated $4.2B into trophy beachfront residences and private island compounds across Miami Beach, Palm Jumeirah, and coastal Western Australia.',
+      'Private family offices and sovereign wealth vehicles allocated $4.2B into trophy beachfront residences and private island compounds.',
     content:
-      'Ultra-high-net-worth liquidity continues to migrate into resilient coastal real estate assets with deeded deepwater yacht docks and private helipads. Ultra-luxury properties on Star Island (Miami) and Palm Jumeirah (Dubai) have recorded 26% year-on-year capital appreciation, with international buyers prioritizing security, architectural distinction, and turnkey readiness.',
+      'Ultra-high-net-worth liquidity continues to migrate into resilient coastal real estate assets with deeded deepwater yacht docks and private helipads across Miami Beach, Palm Jumeirah, and coastal Australia.',
     sourceName: 'Knight Frank Global Wealth & Luxury Estates Review',
     sourceUrl: 'https://www.knightfrank.com/research',
   },
@@ -91,9 +89,9 @@ const DEFAULT_REAL_ESTATE_NEWS = [
     readers: '3,158 readers',
     category: 'Urban Redevelopment',
     summary:
-      'Municipal zoning modernizations across Tier-1 cities are expediting the adaptive reuse of suburban shopping centres into dynamic master-planned residential communities and mixed-income apartments.',
+      'Municipal zoning modernizations across Tier-1 cities are expediting the adaptive reuse of suburban shopping centres into dynamic master-planned residential communities.',
     content:
-      'Developers are seizing opportunities to convert underperforming retail and commercial malls into high-density urban residential hubs. With expedited RERA permits and tax-increment financing, these conversions are delivering essential housing inventory within proximity to existing transit lines and civic infrastructure.',
+      'Developers are seizing opportunities to convert underperforming retail and commercial malls into high-density urban residential hubs with expedited RERA permits and tax-increment financing.',
     sourceName: 'Urban Land Institute (ULI) Emerging Trends',
     sourceUrl: 'https://americas.uli.org',
   },
@@ -104,16 +102,15 @@ const DEFAULT_REAL_ESTATE_NEWS = [
     readers: '5,420 readers',
     category: 'Global Assets',
     summary:
-      'Cross-border real estate investment trusts (REITs) acquired three major business park clusters in Singapore’s One-North science district, reinforcing the city-state’s stature as Asia’s paramount tech headquarters destination.',
+      'Cross-border real estate investment trusts (REITs) acquired three major business park clusters in Singapore’s One-North science district.',
     content:
-      'Buoyed by robust biomedical and generative AI enterprise expansions, Singapore’s institutional tech park occupancy sits at 96.2%. Institutional transactions have demonstrated resilient cap rates of 5.8% to 6.2%, solidifying Southeast Asia’s premier position for commercial capital security.',
+      'Buoyed by robust biomedical and generative AI enterprise expansions, Singapore’s institutional tech park occupancy sits at 96.2%, solidifying Southeast Asia’s premier position for commercial capital security.',
     sourceName: 'JLL Global Real Estate Intelligence',
     sourceUrl: 'https://www.jll.com/trends-and-insights',
   },
 ];
 
-
-// ── Dynamic Avatar Component (Real-Time Person Profile or Initials) ─────────
+// ── Dynamic Avatar Component ────────────────────────────────────────────────
 const UserAvatar = ({
   user,
   size = 42,
@@ -125,40 +122,19 @@ const UserAvatar = ({
 }) => {
   let profilePicture = user?.profilePicture || user?.avatar;
   const name = user?.fullName || user?.username || 'User';
-  const cleanName = String(name).toLowerCase();
-
-  // If the profile picture is a fake stock portrait (Unsplash), clear it
-  if (profilePicture && typeof profilePicture === 'string' && profilePicture.includes('images.unsplash.com')) {
-    profilePicture = null;
-  }
-
-  // Preserve genuine Google-authenticated profile images
-  if (!profilePicture || !profilePicture.startsWith('http')) {
-    if (cleanName.includes('logesh')) {
-      profilePicture = 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c';
-    } else if (cleanName.includes('sai')) {
-      profilePicture = 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c';
-    }
-  }
-
   const initial = (name[0] || 'U').toUpperCase();
 
   const colors = [
-    '#ea580c', // deep orange
-    '#2563eb', // royal blue
-    '#059669', // emerald
-    '#7c3aed', // violet
-    '#db2777', // pink
-    '#ca8a04', // gold
-    '#0891b2', // cyan
+    '#ea580c', '#2563eb', '#059669', '#7c3aed', '#db2777', '#ca8a04', '#0891b2',
   ];
   const charCode = (name.charCodeAt(0) || 0) + (name.charCodeAt(name.length - 1) || 0);
   const bgColor = colors[charCode % colors.length];
 
-  if (profilePicture && typeof profilePicture === 'string' && (profilePicture.startsWith('http') || profilePicture.startsWith('data:'))) {
+  if (profilePicture && typeof profilePicture === 'string' && (profilePicture.startsWith('http') || profilePicture.startsWith('data:') || profilePicture.startsWith('/'))) {
+    const fullUri = profilePicture.startsWith('/') ? `${API_BASE_URL}${profilePicture}` : profilePicture;
     return (
       <Image
-        source={{ uri: profilePicture }}
+        source={{ uri: fullUri }}
         style={[{ width: size, height: size, borderRadius: size / 2 }, style]}
       />
     );
@@ -185,175 +161,6 @@ const UserAvatar = ({
   );
 };
 
-// ── Default Professional Real Estate Posts ──────────────────────────────────
-const COMMUNITY_DEFAULT_COMMENTS = [
-  {
-    _id: 'c-1',
-    author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
-    text: 'Exceptional cap rate and prime commercial footprint! This is exactly what institutional investors look for. 🏢🚀',
-    time: '06:10 pm',
-  },
-  {
-    _id: 'c-2',
-    author: { fullName: 'Shreekutti', username: 'shreekutti' },
-    text: 'Grade-A specs with strong tenant covenant structure. Solid long-term hold! 💼✨',
-    time: '07:10 pm',
-  },
-  {
-    _id: 'c-3',
-    author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
-    text: 'Turnkey acquisition with verified yield — exactly our portfolio criteria. DM for interest! 🔑',
-    time: '07:40 pm',
-  },
-  {
-    _id: 'c-4',
-    author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
-    text: 'The architectural finish and interior design elements are world-class on this asset. 🌿',
-    time: '08:10 pm',
-  },
-  {
-    _id: 'c-5',
-    author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
-    text: 'OMR corridor premium commercial — this checks all our institutional grade requirements.',
-    time: '08:40 pm',
-  },
-  {
-    _id: 'c-6',
-    author: { fullName: 'Prasanth Properties', username: 'prasanth_properties' },
-    text: 'Is this available for syndication? Would love to discuss terms. 🏛️',
-    time: '08:55 pm',
-  },
-];
-
-const VIGNESH_HOUSE_SHARE_COMMENTS = [
-  {
-    _id: 'vg-c1',
-    author: { fullName: 'Sophia Sterling', username: 'sophia_luxury' },
-    text: 'Are 1/8th fractional house share syndicate slots still available for European co-owners? 🏡✨',
-    time: '09:15 am',
-  },
-  {
-    _id: 'vg-c2',
-    author: { fullName: 'David Sterling', username: 'david_sterling' },
-    text: 'Bespoke co-ownership model on Beverly Hills estates provides exceptional capital preservation.',
-    time: '11:40 am',
-  },
-  {
-    _id: 'vg-c3',
-    author: { fullName: 'Marcus Vance', username: 'marcus_vance' },
-    text: 'Deeded fractional title and seasonal syndicate booking structure looks turnkey. DM sent! 🔑',
-    time: '01:25 pm',
-  },
-];
-
-const DUMMY_REAL_ESTATE_POSTS = [
-  {
-    _id: 'post-shreekutti-1',
-    author: {
-      _id: 'shreekutti',
-      fullName: 'Shreekutti',
-      username: 'shreekutti',
-      title: 'Commercial Property & Tech Park Portfolio Lead @ Boolok',
-      degree: '1st',
-      profilePicture: null,
-    },
-    time: '1w · 🌐',
-    content: 'And just like that, our summer commercial campus acquisition is a wrap!\n\nI’m incredibly grateful for the opportunity to have closed this Grade-A Tech Park & Commercial Office development. Fully leased 92,000 sq ft, 8.4% cap rate with pre-verified energy efficiency ratings. Available for institutional portfolios and private office syndication.',
-    mediaUrls: [
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
-      'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200',
-    ],
-    likes: ['shreekutti', 'logeshwarana', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'],
-    likesSummary: 'Liked by 6 real estate brokers',
-    likesCount: 6,
-    commentsCount: 3,
-    comments: [
-      {
-        _id: 'sc-p-1',
-        author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
-        text: '8.4% cap rate on Outer Ring Road is solid institutional yield. Top tier campus! 🏢',
-        time: '04:15 pm',
-      },
-      {
-        _id: 'sc-p-2',
-        author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
-        text: 'Pre-verified covenants make this an immediate fit for REIT portfolios.',
-        time: '05:30 pm',
-      },
-      {
-        _id: 'sc-p-3',
-        author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
-        text: 'Are full floorplate blueprints available for international client syndication?',
-        time: '06:05 pm',
-      },
-    ],
-  },
-  {
-    _id: 're-post-1',
-    author: {
-      _id: 'agent-1',
-      fullName: 'Prasanth Properties',
-      username: 'prasanth_properties',
-      title: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
-      degree: '1st',
-      profilePicture: null,
-    },
-    time: '2h · 🌐',
-    content: 'Just listed! 🌟 Stunning modern beachfront villa with private infinity pool and direct access to crystal waters. Turnkey luxury investment ready for immediate handover! DM for private walkthroughs. 🏖️🔑',
-    mediaUrls: ['https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200'],
-    likes: ['shreekutti', '6a8af34812ef34aed25ae8d2', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'],
-    likesSummary: 'Liked by 6 real estate brokers',
-    likesCount: 6,
-    commentsCount: 2,
-    comments: [
-      {
-        _id: 'pp-p-1',
-        author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
-        text: 'Direct ocean access and private mega-yacht clearance make Star Island unmatched. 🌊🛥️',
-        time: '02:15 pm',
-      },
-      {
-        _id: 'pp-p-2',
-        author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
-        text: 'Floor-to-ceiling glass integration brings uninterrupted Miami sunsets indoors.',
-        time: '04:00 pm',
-      },
-    ],
-  },
-  {
-    _id: 're-post-2',
-    author: {
-      _id: 'bavadharini_rs',
-      fullName: 'Bavadharini RS',
-      username: 'bavadharini_rs',
-      title: 'Interior Designer & Modern Living Specialist',
-      degree: '1st',
-      profilePicture: null,
-    },
-    time: '1d · 🌐',
-    content: 'Bespoke custom kitchen & dining makeover completed for our luxury penthouse client. Custom Italian marble countertops, hidden smart refrigeration, and brass accents. ✨🍽️',
-    mediaUrls: ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200'],
-    likes: ['shreekutti', '6a8af34812ef34aed25ae8d2', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'],
-    likesSummary: 'Liked by 6 real estate brokers',
-    likesCount: 6,
-    commentsCount: 2,
-    comments: [
-      {
-        _id: 'bv-p-1',
-        author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
-        text: 'Flawless Italian joinery and natural lighting control. Remarkable penthouse execution! ✨',
-        time: '11:20 am',
-      },
-      {
-        _id: 'bv-p-2',
-        author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
-        text: 'Private elevator access and uninterrupted sea views command top-tier pricing.',
-        time: '01:05 pm',
-      },
-    ],
-  },
-];
-
 const DEFAULT_COMMUNITY_ADVISORS = [
   {
     id: 'shreekutti',
@@ -368,15 +175,15 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     profilePicture: null,
   },
   {
-    id: '6a8af34812ef34aed25ae8d2',
-    _id: '6a8af34812ef34aed25ae8d2',
+    id: 'logeshwarana',
+    _id: 'logeshwarana',
     fullName: 'Logeshwaran A',
     username: 'logeshwarana',
     headline: 'Architectural Consultant & Real Estate Lead',
     distance: '1.4 km away',
     location: 'Whitefield & Commercial Hubs',
     deals: '22 deals closed',
-    followerCount: 2,
+    followerCount: 4,
     profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
   },
   {
@@ -392,40 +199,133 @@ const DEFAULT_COMMUNITY_ADVISORS = [
     profilePicture: null,
   },
   {
-    id: 'bavadharini_rs',
-    _id: 'bavadharini_rs',
-    fullName: 'Bavadharini RS',
-    username: 'bavadharini_rs',
-    headline: 'Interior Designer & Modern Living Specialist',
-    distance: '2.6 km away',
-    location: 'Koramangala 4th Block',
-    deals: '16 deals closed',
-    followerCount: 4,
-    profilePicture: null,
-  },
-  {
     id: 'the_akshtr_estate',
     _id: 'the_akshtr_estate',
     fullName: 'Akshat Commercials',
     username: 'the_akshtr_estate',
-    headline: 'Commercial Property & Tech Park Portfolio Lead',
+    headline: 'Commercial Property & Tech Park Lead @ Boolok',
     distance: '3.2 km away',
-    location: 'Electronic City Phase 1',
-    deals: '29 deals closed',
-    followerCount: 4,
+    location: 'OMR IT Corridor, Chennai',
+    deals: '12 deals closed',
+    followerCount: 3,
     profilePicture: null,
   },
+];
+
+// ── Default Fallback Community Posts ─────────────────────────────────────────
+const DEFAULT_FEED_POSTS = [
   {
-    id: 'prasanth_properties',
-    _id: 'prasanth_properties',
-    fullName: 'Prasanth Properties',
-    username: 'prasanth_properties',
-    headline: 'Luxury Waterfront Specialist · Coastal & Prime Estates',
-    distance: '3.9 km away',
-    location: 'CBD Commercial Corridor',
-    deals: '11 deals closed',
-    followerCount: 4,
-    profilePicture: null,
+    _id: 'shree-p-1',
+    content: 'Fully leased Grade-A Tech Park development with pre-verified institutional efficiency ratings. 8.4% Cap Rate · 92,000 sq ft · Outer Ring Road, Bangalore.',
+    mediaUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
+    author: {
+      _id: 'shreekutti',
+      fullName: 'Shreekutti',
+      username: 'shreekutti',
+      profilePicture: null,
+      headline: 'Tech Park Campus Acquisitions Lead @ Boolok',
+      location: 'Bangalore, Karnataka',
+    },
+    likes: ['logeshwarana', 'ajmal', 'sai'],
+    likesCount: 3,
+    isLiked: false,
+    likesSummary: 'Liked by 3 members',
+    comments: [
+      { _id: 'sc-1', author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' }, text: '8.4% cap rate on Outer Ring Road is top quartile! 🏢🚀', time: '04:15 pm' },
+      { _id: 'sc-2', author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' }, text: 'Strong institutional covenants on this campus.', time: '05:30 pm' },
+    ],
+    commentsCount: 2,
+    time: '2h ago · 🌐',
+  },
+  {
+    _id: 'ajmal-p-1',
+    content: 'Direct beach access, smart home automation, infinity pool overlooking Dubai Marina. Palm Jumeirah Signature Mansion — 7 Beds · Private Beach · $24,000,000.',
+    mediaUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
+    author: {
+      _id: 'ajmal',
+      fullName: 'Mohammed Ajmal',
+      username: 'ajmal',
+      profilePicture: null,
+      headline: 'Luxury Living & High-End Residential Broker',
+      location: 'Palm Jumeirah, Dubai',
+    },
+    likes: ['sai', 'logeshwarana', 'shreekutti'],
+    likesCount: 3,
+    isLiked: false,
+    likesSummary: 'Liked by 3 members',
+    comments: [
+      { _id: 'ac-1', author: { fullName: 'Shreekutti', username: 'shreekutti' }, text: 'Unrivaled private beach frontage!', time: '10:00 am' },
+      { _id: 'ac-2', author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' }, text: 'Bespoke marble and high ceiling elevation.', time: '11:15 am' },
+    ],
+    commentsCount: 2,
+    time: '4h ago · 🌐',
+  },
+  {
+    _id: 'logesh-p-1',
+    content: 'World-class vineyard estate with high soil suitability index and pre-approved zoning. Margaret River Commercial Vineyard — 140 Acres · Pre-Verified Water Rights · $18,500,000.',
+    mediaUrl: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1200',
+    author: {
+      _id: 'logeshwarana',
+      fullName: 'Logeshwaran A',
+      username: 'logeshwarana',
+      profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
+      headline: 'Architectural Consultant & Real Estate Lead',
+      location: 'Western Australia',
+    },
+    likes: ['sai', 'shreekutti', 'bavadharini_rs'],
+    likesCount: 3,
+    isLiked: false,
+    likesSummary: 'Liked by 3 members',
+    comments: [
+      { _id: 'lc-1', author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' }, text: 'Soil analysis and water rights are pristine.', time: '02:00 pm' },
+      { _id: 'lc-2', author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' }, text: 'Architectural layout is stunning.', time: '03:10 pm' },
+    ],
+    commentsCount: 2,
+    time: '6h ago · 🌐',
+  },
+  {
+    _id: 'akshat-p-1',
+    content: 'Modern commercial tower with multi-level parking, 100% power backup, and prime expressway frontage. Institutional Grade-A Office Hub — 120,000 sq ft · 8.9% Yield · OMR IT Corridor.',
+    mediaUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200',
+    author: {
+      _id: 'the_akshtr_estate',
+      fullName: 'Akshat Commercials',
+      username: 'the_akshtr_estate',
+      profilePicture: null,
+      headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Network',
+      location: 'OMR IT Corridor, Chennai',
+    },
+    likes: ['sai', 'shreekutti', 'logeshwarana'],
+    likesCount: 3,
+    isLiked: false,
+    likesSummary: 'Liked by 3 members',
+    comments: [
+      { _id: 'akc-1', author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' }, text: 'Triple net lease with institutional covenants is top tier!', time: '06:00 pm' },
+    ],
+    commentsCount: 1,
+    time: '8h ago · 🌐',
+  },
+  {
+    _id: 'sai-p-1',
+    content: 'Grade-A institutional office headquarters with 100% occupancy and blue-chip covenants. Coventry Corporate Headquarters — 52,000 sq ft · 8.2% Cap Rate · $16,500,000.',
+    mediaUrl: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200',
+    author: {
+      _id: 'saivimenthanvl',
+      fullName: 'Sai Vimenthan',
+      username: 'saivimenthanvl',
+      profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c',
+      headline: 'Elite Real Estate Broker & Commercial Portfolio Lead',
+      location: 'Chennai, Tamil Nadu',
+    },
+    likes: ['logeshwarana', 'shreekutti'],
+    likesCount: 2,
+    isLiked: false,
+    likesSummary: 'Liked by 2 members',
+    comments: [
+      { _id: 'spc-1', author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' }, text: 'Prime UK corporate covenants. Solid institutional deal!', time: '04:00 pm' },
+    ],
+    commentsCount: 1,
+    time: '1d ago · 🌐',
   },
 ];
 
@@ -434,60 +334,51 @@ const REACTION_TYPES = [
   { key: 'celebrate', label: 'Celebrate', icon: 'sign-language', color: '#10b981', bg: '#059669' },
 ];
 
-const getReactionMeta = (type: string | null) => {
-  if (!type) return { key: 'like', label: 'Like', icon: 'thumb-up-outline', color: '#8b9bb4', bg: '#1a273c' };
-  const found = REACTION_TYPES.find((r) => r.key === type);
-  return found || { key: type, label: 'Like', icon: 'thumb-up', color: '#3b82f6', bg: '#0a66c2' };
-};
-
 export default function ProfessionalSocialFeedScreen() {
   const { user } = useAuth();
   const { theme, isDark } = useTheme();
   const { width } = useWindowDimensions();
 
-  const styles = useMemo(() => getStyles(isDark), [isDark]);
+  const isDesktop = width >= 1024;
+  const isTablet = width >= 768 && width < 1024;
+  const isMobile = width < 768;
+  const isSmallMobile = width < 450;
 
-  const [posts, setPosts] = useState<any[]>([]);
+  const styles = useMemo(() => getStyles(isDark, width), [isDark, width]);
+
+  const [posts, setPosts] = useState<any[]>(DEFAULT_FEED_POSTS);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [newsList, setNewsList] = useState(DEFAULT_REAL_ESTATE_NEWS);
   const [showAllNews, setShowAllNews] = useState(false);
   const [suggestedUsers, setSuggestedUsers] = useState<any[]>(DEFAULT_COMMUNITY_ADVISORS);
-
-  // Follow State
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
-
-  // Create Post Modal / Expand
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newPostText, setNewPostText] = useState('');
   const [newPostImage, setNewPostImage] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
-
-  // Active Comment Post ID for inline comments
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
-
-  // Likes / Reactions Modal State & Tabs
   const [isLikesModalOpen, setIsLikesModalOpen] = useState(false);
   const [likesModalPost, setLikesModalPost] = useState<any>(null);
   const [likesModalUsers, setLikesModalUsers] = useState<any[]>([]);
   const [allReactionUsers, setAllReactionUsers] = useState<any[]>([]);
   const [reactionTab, setReactionTab] = useState<string>('all');
-  const [reactionCounts, setReactionCounts] = useState<Record<string, number>>({ all: 6, like: 1, celebrate: 1, support: 1, love: 1, insightful: 1, funny: 1 });
+  const [reactionCounts, setReactionCounts] = useState<Record<string, number>>({ all: 0, like: 0 });
   const [isLoadingLikes, setIsLoadingLikes] = useState(false);
   const [activeReactionPickerPostId, setActiveReactionPickerPostId] = useState<string | null>(null);
-
-  // Real-time Network Followers & Connections State
   const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
   const [followersList, setFollowersList] = useState<any[]>(DEFAULT_COMMUNITY_ADVISORS);
   const [isLoadingFollowers, setIsLoadingFollowers] = useState(false);
-
-  // ── Modals for Manage Network & Saved Items ──
-  const [isSavedModalOpen, setIsSavedModalOpen] = useState(false);
   const [savedReelsList, setSavedReelsList] = useState<any[]>([]);
+  const [isSavedModalOpen, setIsSavedModalOpen] = useState(false);
   const [isBrokerNetworkModalOpen, setIsBrokerNetworkModalOpen] = useState(false);
   const [isNewslettersModalOpen, setIsNewslettersModalOpen] = useState(false);
   const [isAuctionsModalOpen, setIsAuctionsModalOpen] = useState(false);
   const [selectedNewsStory, setSelectedNewsStory] = useState<any>(null);
+
+  const getToken = async () =>
+    Platform.OS === 'web' ? localStorage.getItem('userToken') : await SecureStore.getItemAsync('userToken');
 
   const loadSavedItems = async () => {
     try {
@@ -507,29 +398,7 @@ export default function ProfessionalSocialFeedScreen() {
         }
       }
     } catch (e) { }
-    // Default fallback so user sees realistic saved property reels if none saved yet
-    setSavedReelsList([
-      {
-        _id: 'shree-reel-1',
-        title: 'Bangalore Tech Park Campus',
-        location: 'Outer Ring Road, Bangalore',
-        aiMatch: 99,
-        insight: 'Grade-A LEED Platinum tech park with 94% occupancy and 8.6% cap rate.',
-        likes: 3120,
-        thumbnail: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-      },
-      {
-        _id: 'logesh-reel-1',
-        title: 'Margaret River Commercial Vineyard',
-        location: 'Western Australia',
-        aiMatch: 98,
-        insight: 'Water rights pre-verified for 50 years. 140 acres prime terroir.',
-        likes: 2400,
-        thumbnail: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      },
-    ]);
+    setSavedReelsList([]);
   };
 
   const handleOpenSavedModal = () => {
@@ -559,242 +428,89 @@ export default function ProfessionalSocialFeedScreen() {
       const res = await axios.get(`${API_BASE_URL}/api/users/self/followers`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (res.data && Array.isArray(res.data.followers) && res.data.followers.length > 0) {
+      if (res.data && Array.isArray(res.data.followers)) {
         setFollowersList(res.data.followers);
       } else {
-        setFollowersList(DEFAULT_COMMUNITY_ADVISORS);
+        setFollowersList([]);
       }
     } catch (e) {
-      setFollowersList(DEFAULT_COMMUNITY_ADVISORS);
+      setFollowersList([]);
     } finally {
       setIsLoadingFollowers(false);
     }
   };
 
   const handleOpenLikesModal = async (post: any) => {
-    // Look up freshest post from state to ensure accurate current like state
     const currentPost = posts.find((p) => p._id === post._id) || post;
     setLikesModalPost(currentPost);
     setReactionTab('all');
     setIsLikesModalOpen(true);
     setIsLoadingLikes(true);
 
-    const viewerId = user?.id || user?._id || 'sai';
-    const isCurrentlyLiked = currentPost.currentUserReaction === 'like' || (Array.isArray(currentPost.likes) && currentPost.likes.includes(viewerId));
-    const viewerObj = {
-      id: viewerId,
-      _id: viewerId,
-      fullName: user?.fullName || 'Sai Vimenthan',
-      username: user?.username || 'saivimenthanvl',
-      headline: user?.headline || 'Elite Real Estate Broker & Commercial Portfolio Lead',
-      location: user?.location || 'Chennai, Tamil Nadu · Prime Assets',
-      profilePicture: user?.profilePicture || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800',
-      reactionType: 'like',
-    };
-
     try {
       const token = await getToken();
       const res = await axios.get(`${API_BASE_URL}/api/feed/${post._id}/reactions`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          'x-user-id': String(viewerId),
-        },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      let combined: any[] = [];
-      if (res.data && Array.isArray(res.data.all) && res.data.all.length > 0) {
-        combined = res.data.all.map((u: any) => ({ ...u, reactionType: 'like' }));
-      } else {
-        combined = DEFAULT_COMMUNITY_ADVISORS.map((u: any) => ({ ...u, reactionType: 'like' }));
-      }
-
-      // If viewer has liked the post, ensure they are in the list
-      if (isCurrentlyLiked) {
-        const hasViewer = combined.some((u) => u.id === viewerId || u.username === user?.username);
-        if (!hasViewer) {
-          combined.unshift(viewerObj);
-        }
-      } else {
-        combined = combined.filter((u) => u.id !== viewerId && u.username !== user?.username);
-      }
-
-      setAllReactionUsers(combined);
-      setLikesModalUsers(combined);
-      setReactionCounts({ all: combined.length, like: combined.length });
+      const list = Array.isArray(res.data?.all) ? res.data.all : [];
+      setAllReactionUsers(list);
+      setLikesModalUsers(list);
+      setReactionCounts({ all: list.length, like: list.length });
     } catch (error) {
-      let fallbacks = DEFAULT_COMMUNITY_ADVISORS.map((u: any) => ({ ...u, reactionType: 'like' }));
-      if (isCurrentlyLiked) {
-        fallbacks.unshift(viewerObj);
-      }
-      setAllReactionUsers(fallbacks);
-      setLikesModalUsers(fallbacks);
-      setReactionCounts({ all: fallbacks.length, like: fallbacks.length });
+      setAllReactionUsers([]);
+      setLikesModalUsers([]);
+      setReactionCounts({ all: 0, like: 0 });
     } finally {
       setIsLoadingLikes(false);
     }
   };
 
-  const isDesktop = width >= 1024;
-  const isTablet = width >= 768 && width < 1024;
-
-  useEffect(() => {
-    fetchPostsAndNews();
-    const interval = setInterval(() => {
-      fetchPostsAndNews();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const getToken = async () =>
-    Platform.OS === 'web' ? localStorage.getItem('userToken') : await SecureStore.getItemAsync('userToken');
-
-  const getStoredLikedPosts = (): Record<string, boolean> => {
-    if (Platform.OS === 'web') {
-      try {
-        const val = localStorage.getItem('boolok_user_liked_posts');
-        return val ? JSON.parse(val) : {};
-      } catch (e) {
-        return {};
-      }
-    }
-    return {};
-  };
-
-  const saveStoredLikedPost = (postId: string, isLiked: boolean) => {
-    if (Platform.OS === 'web') {
-      try {
-        const map = getStoredLikedPosts();
-        if (isLiked) {
-          map[postId] = true;
-        } else {
-          delete map[postId];
-        }
-        localStorage.setItem('boolok_user_liked_posts', JSON.stringify(map));
-      } catch (e) { }
-    }
-  };
-
-  const fetchPostsAndNews = async () => {
+  const fetchPostsAndNews = useCallback(async () => {
     try {
       const token = await getToken();
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const [feedRes, newsRes, suggestedRes] = await Promise.allSettled([
-        axios.get(`${API_BASE_URL}/api/feed`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }),
+        axios.get(`${API_BASE_URL}/api/feed`, { headers }),
         axios.get(`${API_BASE_URL}/api/feed/news`),
-        axios.get(`${API_BASE_URL}/api/users/suggested`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }),
+        axios.get(`${API_BASE_URL}/api/users/suggested`, { headers }),
       ]);
 
-      const likedMap = getStoredLikedPosts();
-      const rawPosts =
-        feedRes.status === 'fulfilled' && Array.isArray(feedRes.value.data)
-          ? feedRes.value.data
-          : feedRes.status === 'fulfilled' && Array.isArray(feedRes.value.data?.posts)
-            ? feedRes.value.data.posts
-            : [];
-
-      const baseList = [
-        ...rawPosts,
-        ...DUMMY_REAL_ESTATE_POSTS.filter((dp) => !rawPosts.some((fp: any) => fp._id === dp._id)),
-      ];
-
-      const viewerId = user?.id || user?._id || 'sai';
-
-      const merged = baseList.map((p) => {
-        const isPersistedLiked = Boolean(likedMap[p._id]) || (Array.isArray(p.likes) && p.likes.includes(viewerId));
-        const baseLikes = Array.isArray(p.likes) ? p.likes : [];
-        const rawCount = typeof p.likesCount === 'number' ? p.likesCount : baseLikes.length;
-        const communityCount = Math.max(6, isPersistedLiked ? rawCount - 1 : rawCount);
-
-        let authorObj = p.author ? { ...p.author } : {};
-        let authorUname = (authorObj.username || authorObj._id || authorObj.id || '').toLowerCase();
-        let authorFname = authorObj.fullName || '';
-
-        if (authorUname.includes('vicky') || authorUname.includes('vignesh') || authorFname.includes('Vicky') || authorFname.includes('Vignesh')) {
-          authorObj.fullName = 'Vigneshwaran';
-          authorObj.username = 'vignesh';
-        }
-        if (authorUname.includes('aswin') || authorFname.includes('Aswin')) {
-          authorObj.fullName = 'Aswin Real Estate';
-          authorObj.username = 'aswin';
-        }
-        if (authorUname.includes('yashwanth') || authorUname.includes('cinemahub') || authorFname.includes('Yashwanth') || authorFname.includes('cinemahub')) {
-          authorObj.fullName = 'Yashwanth';
-          authorObj.username = 'yashwanth';
-        }
-
-        if (isPersistedLiked) {
-          const nextLikes = baseLikes.includes(viewerId) ? baseLikes : [viewerId, ...baseLikes];
-          const nextCount = communityCount + 1; // Always 7 (Sai + 6 advisors)
-          return {
-            ...p,
-            author: authorObj,
-            currentUserReaction: 'like',
-            likes: nextLikes,
-            likesCount: nextCount,
-            likesSummary: `Liked by you and ${communityCount} other real estate brokers`,
-          };
-        }
-        return {
-          ...p,
-          author: authorObj,
-          currentUserReaction: null,
-          likes: baseLikes.filter((id: string) => id !== viewerId),
-          likesCount: communityCount,
-          likesSummary: `Liked by ${communityCount} real estate brokers`,
-        };
-      });
-
-      setPosts(merged);
+      if (feedRes.status === 'fulfilled') {
+        const raw = feedRes.value.data;
+        const postsList = Array.isArray(raw) ? raw : (Array.isArray(raw?.posts) ? raw.posts : []);
+        setPosts(postsList.length > 0 ? postsList : DEFAULT_FEED_POSTS);
+      } else {
+        setPosts(DEFAULT_FEED_POSTS);
+      }
 
       if (newsRes.status === 'fulfilled' && Array.isArray(newsRes.value.data?.news)) {
         setNewsList(newsRes.value.data.news);
       }
 
       if (suggestedRes.status === 'fulfilled' && Array.isArray(suggestedRes.value.data?.suggested)) {
-        const seen = new Set<string>();
-        const uniqueSuggested = suggestedRes.value.data.suggested
-          .map((u: any) => {
-            let uname = (u.username || u.id || u._id || '').toLowerCase();
-            let fname = u.fullName || '';
-            if (uname === 'ig_vicky16' || uname === 'ig_vicky.16' || uname === 'vicky' || uname === 'vignesh' || fname.includes('Vicky') || fname.includes('Vignesh')) {
-              uname = 'vignesh';
-              fname = 'Vigneshwaran';
-            }
-            if (uname === 'aswin.realty' || uname === 'aswin_realty' || uname === 'aswin' || fname.includes('Aswin')) {
-              uname = 'aswin';
-              fname = 'Aswin Real Estate';
-            }
-            if (uname === 'yashwanth_realty' || uname === 'cinemahub.live' || uname === 'cinemahub' || uname === 'yashwanth' || fname.includes('Yashwanth') || fname.includes('cinemahub')) {
-              uname = 'yashwanth';
-              fname = 'Yashwanth';
-            }
-            return { ...u, username: uname, fullName: fname };
-          })
-          .filter((u: any) => {
-            const uname = (u.username || '').toLowerCase();
-            const email = (u.email || '').toLowerCase();
-            const fullName = (u.fullName || '').toLowerCase();
-            if (email.includes('logeshwarana@boolok.ai')) return false;
-            if (uname.includes('6a8dc') || fullName.includes('6a8dc') || /^[0-9a-fA-F]{24}$/.test(uname)) return false;
-            if (seen.has(uname)) return false;
-            seen.add(uname);
-            return true;
-          });
-        setSuggestedUsers(uniqueSuggested);
+        const list = suggestedRes.value.data.suggested;
+        setSuggestedUsers(list);
         const map: Record<string, boolean> = {};
-        uniqueSuggested.forEach((u: any) => {
+        list.forEach((u: any) => {
           if (u.isFollowing) map[u.id || u._id] = true;
         });
         setFollowingMap((prev) => ({ ...prev, ...map }));
       }
     } catch (error) {
       console.error('Feed fetch error:', error);
-      setPosts(DUMMY_REAL_ESTATE_POSTS);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchPostsAndNews();
+  }, [fetchPostsAndNews]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchPostsAndNews();
   };
 
   const toggleFollowAdvisor = async (targetId: string) => {
@@ -802,15 +518,14 @@ export default function ProfessionalSocialFeedScreen() {
     const nextState = !isCurrentlyFollowing;
     setFollowingMap((prev) => ({ ...prev, [targetId]: nextState }));
 
+    // Optimistically update followerCount in the suggested users list
     setSuggestedUsers((prev) =>
       prev.map((u) => {
-        const uId = u.id || u._id;
-        if (uId === targetId || u.username === targetId) {
-          const curr = u.followerCount || 0;
+        if ((u.id || u._id) === targetId) {
+          const currentCount = typeof u.followerCount === 'number' ? u.followerCount : 0;
           return {
             ...u,
-            followerCount: nextState ? curr + 1 : Math.max(0, curr - 1),
-            isFollowing: nextState,
+            followerCount: nextState ? currentCount + 1 : Math.max(0, currentCount - 1),
           };
         }
         return u;
@@ -824,97 +539,80 @@ export default function ProfessionalSocialFeedScreen() {
         {},
         { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
-      if (res.data && typeof res.data.followerCount === 'number') {
-        setSuggestedUsers((prev) =>
-          prev.map((u) => {
-            const uId = u.id || u._id;
-            if (uId === targetId || u.username === targetId) {
-              return {
-                ...u,
-                followerCount: res.data.followerCount,
-                isFollowing: res.data.isFollowing,
-              };
-            }
-            return u;
-          })
-        );
+      if (res.data) {
+        if (typeof res.data.isFollowing === 'boolean') {
+          setFollowingMap((prev) => ({ ...prev, [targetId]: res.data.isFollowing }));
+        }
+        // Update the accurate followerCount from server
+        if (typeof res.data.followerCount === 'number') {
+          setSuggestedUsers((prev) =>
+            prev.map((u) =>
+              (u.id || u._id) === targetId
+                ? { ...u, followerCount: res.data.followerCount }
+                : u
+            )
+          );
+        }
       }
     } catch (error) {
       console.warn('Failed to update follow in database');
+      // Revert optimistic update on failure
+      setFollowingMap((prev) => ({ ...prev, [targetId]: isCurrentlyFollowing }));
+      setSuggestedUsers((prev) =>
+        prev.map((u) => {
+          if ((u.id || u._id) === targetId) {
+            const currentCount = typeof u.followerCount === 'number' ? u.followerCount : 0;
+            return {
+              ...u,
+              followerCount: isCurrentlyFollowing ? currentCount + 1 : Math.max(0, currentCount - 1),
+            };
+          }
+          return u;
+        })
+      );
     }
   };
 
   const handleReaction = async (postId: string, reactionType: string = 'like') => {
     setActiveReactionPickerPostId(null);
-    const viewerId = user?.id || user?._id || 'sai';
-
-    const viewerObj = {
-      id: viewerId,
-      _id: viewerId,
-      fullName: user?.fullName || 'Sai Vimenthan',
-      username: user?.username || 'saivimenthanvl',
-      headline: user?.headline || 'Elite Real Estate Broker & Commercial Portfolio Lead',
-      location: user?.location || 'Chennai, Tamil Nadu · Prime Assets',
-      profilePicture: user?.profilePicture || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800',
-      reactionType: 'like',
-    };
-
-    let willBeLiked = false;
+    const viewerId = user?.id || user?._id;
 
     setPosts((prev) =>
       prev.map((p) => {
         if (p._id === postId) {
-          const isCurrentlyLiked = p.currentUserReaction === 'like' || (Array.isArray(p.likes) && p.likes.includes(viewerId));
-          const nextReaction = isCurrentlyLiked ? null : 'like';
-          willBeLiked = Boolean(nextReaction);
-
-          let nextLikes = Array.isArray(p.likes) ? [...p.likes] : [];
-          if (nextReaction) {
-            if (!nextLikes.includes(viewerId)) nextLikes = [viewerId, ...nextLikes];
-          } else {
-            nextLikes = nextLikes.filter((id: string) => id !== viewerId);
-          }
-
-          const newCount = willBeLiked ? 7 : 6;
-
+          const currentlyLiked = Boolean(p.isLiked || (Array.isArray(p.likes) && p.likes.includes(viewerId)));
+          const nextLiked = !currentlyLiked;
+          const nextLikes = nextLiked
+            ? (Array.isArray(p.likes) ? [...p.likes, viewerId] : [viewerId])
+            : (Array.isArray(p.likes) ? p.likes.filter((id: string) => id !== viewerId) : []);
+          const count = nextLikes.length;
           return {
             ...p,
-            currentUserReaction: nextReaction,
+            isLiked: nextLiked,
+            currentUserReaction: nextLiked ? 'like' : null,
             likes: nextLikes,
-            likesCount: newCount,
-            likesSummary: willBeLiked
-              ? `Liked by you and 6 other real estate brokers`
-              : `Liked by 6 real estate brokers`,
+            likesCount: count,
+            likesSummary: count > 0 ? (nextLiked ? (count === 1 ? 'Liked by you' : `Liked by you and ${count - 1} other${count > 2 ? 's' : ''}`) : `Liked by ${count} member${count > 1 ? 's' : ''}`) : '0 likes',
           };
         }
         return p;
       })
     );
 
-    // Persist to local storage so modal close or re-renders NEVER reset the like button!
-    saveStoredLikedPost(postId, willBeLiked);
-
-    // Live update open reactions modal if active
-    setAllReactionUsers((prev) => {
-      const filtered = prev.filter((u) => u.id !== viewerId && u.username !== user?.username);
-      if (!willBeLiked) return filtered;
-      return [viewerObj, ...filtered];
-    });
-
     try {
       const token = await getToken();
-      await axios.put(
-        `${API_BASE_URL}/api/feed/${postId}/react`,
-        { type: 'like' },
-        {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            'x-user-id': String(viewerId),
-          },
-        }
+      const res = await axios.put(
+        `${API_BASE_URL}/api/feed/${postId}/like`,
+        {},
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
+      if (res.data && res.data.post) {
+        setPosts((prev) =>
+          prev.map((p) => (p._id === postId ? res.data.post : p))
+        );
+      }
     } catch (error) {
-      console.log('Reaction synchronized live in state.');
+      console.warn('Reaction update failed on server:', error);
     }
   };
 
@@ -926,43 +624,83 @@ export default function ProfessionalSocialFeedScreen() {
     const text = (commentInputs[postId] || '').trim();
     if (!text) return;
 
-    const newComment = {
-      _id: `c-${Date.now()}`,
-      author: {
-        _id: user?.id || 'sai',
-        fullName: user?.fullName || 'Sai Vimenthan',
-        username: user?.username || 'saivimenthanvl',
-        profilePicture: user?.profilePicture || null,
-      },
-      text,
-      time: 'Just now',
-    };
-
-    setPosts((prev) =>
-      prev.map((p) => {
-        if (p._id === postId) {
-          const currentList = Array.isArray(p.comments) ? p.comments : [];
-          return {
-            ...p,
-            comments: [newComment, ...currentList],
-            commentsCount: (p.commentsCount || currentList.length) + 1,
-          };
-        }
-        return p;
-      })
-    );
-
     setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
 
     try {
       const token = await getToken();
-      await axios.post(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/feed/${postId}/comment`,
+      const res = await axios.post(
+        `${API_BASE_URL}/api/feed/${postId}/comment`,
         { text },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
+      if (res.data && res.data.post) {
+        setPosts((prev) =>
+          prev.map((p) => (p._id === postId ? res.data.post : p))
+        );
+      } else if (res.data && Array.isArray(res.data.comments)) {
+        setPosts((prev) =>
+          prev.map((p) => {
+            if (p._id === postId) {
+              return {
+                ...p,
+                comments: res.data.comments,
+                commentsCount: res.data.commentsCount || res.data.comments.length,
+              };
+            }
+            return p;
+          })
+        );
+      }
     } catch (error) {
-      console.log('Comment retained in feed UI.');
+      console.error('Comment error:', error);
+    }
+  };
+
+  const handlePickImageFromDevice = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.85,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          setNewPostImage(`data:image/jpeg;base64,${asset.base64}`);
+        } else {
+          setNewPostImage(asset.uri);
+        }
+        setIsCreateModalOpen(true);
+      }
+    } catch (error) {
+      console.error('Device image pick error:', error);
+      alertMsg('Could not open file picker on your device.');
+    }
+  };
+
+  const handleTakePhotoFromCamera = async () => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.85,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        if (asset.base64) {
+          setNewPostImage(`data:image/jpeg;base64,${asset.base64}`);
+        } else {
+          setNewPostImage(asset.uri);
+        }
+        setIsCreateModalOpen(true);
+      }
+    } catch (error) {
+      console.error('Camera error:', error);
+      alertMsg('Could not open camera on your device.');
     }
   };
 
@@ -973,43 +711,30 @@ export default function ProfessionalSocialFeedScreen() {
     }
     setIsPublishing(true);
 
-    const newPostObj = {
-      _id: `post-${Date.now()}`,
-      author: {
-        _id: user?.id || 'self',
-        fullName: user?.fullName || 'Sai Vimenthan',
-        username: user?.username || 'saivimenthanvl',
-        title: 'Elite Real Estate Broker & Portfolio Advisor',
-        degree: 'You',
-        profilePicture: user?.profilePicture || null,
-      },
-      time: 'Just now · 🌐',
-      content: newPostText.trim(),
-      mediaUrls: newPostImage ? [newPostImage] : [],
-      likes: [],
-      likesCount: 1,
-      commentsCount: 0,
-      comments: [],
-    };
-
-    setPosts((prev) => [newPostObj, ...prev]);
-
     try {
       const token = await getToken();
-      await axios.post(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/feed`,
-        { content: newPostText, mediaUrl: newPostImage },
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await axios.post(
+        `${API_BASE_URL}/api/feed`,
+        { content: newPostText.trim(), mediaUrl: newPostImage || null },
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
-    } catch (error) {
-      console.log('Post published in live state.');
-    }
 
-    setNewPostText('');
-    setNewPostImage(null);
-    setIsPublishing(false);
-    setIsCreateModalOpen(false);
-    alertMsg('Property post published successfully to Boolok Real Estate Network!');
+      if (res.data && res.data.post) {
+        setPosts((prev) => [res.data.post, ...prev]);
+      } else {
+        await fetchPostsAndNews();
+      }
+
+      setNewPostText('');
+      setNewPostImage(null);
+      setIsCreateModalOpen(false);
+      alertMsg('Property post published successfully to Boolok Real Estate Network!');
+    } catch (error: any) {
+      console.error('Create post error:', error);
+      alertMsg(error?.response?.data?.message || 'Failed to publish post.');
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const alertMsg = (msg: string) => {
@@ -1034,6 +759,14 @@ export default function ProfessionalSocialFeedScreen() {
       style={[styles.root, { backgroundColor: bgDark }]}
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor="#e6b800"
+          colors={['#e6b800']}
+        />
+      }
     >
       <View style={styles.mainLayoutContainer}>
         {/* ═══════════════════════════════════════════════════════════════════════
@@ -1071,13 +804,13 @@ export default function ProfessionalSocialFeedScreen() {
                   style={styles.profileNameText}
                   onPress={() => router.push('/(app)/profile')}
                 >
-                  {user?.fullName || 'Sai Vimenthan'}
+                  {user?.fullName || user?.username || 'Boolok Member'}
                 </Text>
                 <Text style={styles.profileRoleText}>
-                  Elite Real Estate Broker & Commercial Portfolio Lead
+                  {user?.headline || 'Elite Real Estate Broker & Commercial Portfolio Lead'}
                 </Text>
                 <Text style={styles.profileLocationText}>
-                  Chennai, Tamil Nadu · Prime Assets
+                  {user?.location || 'Prime Commercial Assets'}
                 </Text>
 
                 {/* Company Tag */}
@@ -1158,15 +891,15 @@ export default function ProfessionalSocialFeedScreen() {
                 onPress={() => router.push('/(app)/profile')}
                 style={styles.composerActionBtn}
               >
-                <MaterialIcons name="videocam" size={22} color="#60a5fa" />
-                <Text style={styles.composerActionText}>Video Reel</Text>
+                <MaterialIcons name="videocam" size={isSmallMobile ? 18 : 22} color="#60a5fa" />
+                <Text style={styles.composerActionText}>{isSmallMobile ? 'Reel' : 'Video Reel'}</Text>
               </Pressable>
 
               <Pressable
-                onPress={() => setIsCreateModalOpen(true)}
+                onPress={handlePickImageFromDevice}
                 style={styles.composerActionBtn}
               >
-                <MaterialIcons name="photo" size={20} color="#38bdf8" />
+                <MaterialIcons name="photo" size={isSmallMobile ? 18 : 20} color="#38bdf8" />
                 <Text style={styles.composerActionText}>Photo</Text>
               </Pressable>
 
@@ -1174,8 +907,8 @@ export default function ProfessionalSocialFeedScreen() {
                 onPress={() => setIsCreateModalOpen(true)}
                 style={styles.composerActionBtn}
               >
-                <MaterialIcons name="apartment" size={20} color="#e6b800" />
-                <Text style={styles.composerActionText}>Building For Sale</Text>
+                <MaterialIcons name="apartment" size={isSmallMobile ? 18 : 20} color="#e6b800" />
+                <Text style={styles.composerActionText}>{isSmallMobile ? 'Listing' : 'Building For Sale'}</Text>
               </Pressable>
             </View>
           </View>
@@ -1192,400 +925,428 @@ export default function ProfessionalSocialFeedScreen() {
           </View>
 
           {/* ── Feed Posts Stream ────────────────────────────────────────────── */}
-          {posts.map((post) => {
-            let author = post.author || {};
-            let authorName = author.fullName || author.username || 'Real Estate Lead';
-            let authorUsername = (author.username || author._id || author.id || '').toLowerCase();
+          {posts.length === 0 ? (
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: cardBg,
+                  borderColor,
+                  padding: 36,
+                  alignItems: 'center',
+                  marginBottom: 20,
+                },
+              ]}
+            >
+              <View
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 32,
+                  backgroundColor: isDark ? '#1a273c' : '#f1f5f9',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginBottom: 16,
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="newspaper-variant-outline"
+                  size={32}
+                  color="#e6b800"
+                />
+              </View>
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: '800',
+                  color: isDark ? '#ffffff' : '#0f172a',
+                  textAlign: 'center',
+                  marginBottom: 8,
+                }}
+              >
+                Your Feed is Clean & Ready
+              </Text>
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: '#8b9bb4',
+                  textAlign: 'center',
+                  lineHeight: 20,
+                  maxWidth: 420,
+                  marginBottom: 20,
+                }}
+              >
+                No posts published yet. Share your first property listing, commercial requirement, or market analysis with the network!
+              </Text>
+              <Pressable
+                onPress={() => setIsCreateModalOpen(true)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: goldPrimary,
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                }}
+              >
+                <MaterialIcons name="add" size={18} color="#000000" />
+                <Text style={{ color: '#000000', fontWeight: '800', fontSize: 14 }}>
+                  Create First Post
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            posts.map((post) => {
+              const author = post.author || {};
+              const authorName = author.fullName || author.username || 'Boolok Member';
+              const authorUsername = author.username || author._id || author.id || '';
+              const authorTitle =
+                author.headline ||
+                author.title ||
+                'Commercial Property & Real Estate Advisor @ Boolok Network';
+              const isSelfPost = Boolean(
+                user &&
+                  (author._id === user.id ||
+                    author._id === user._id ||
+                    author.username === user.username)
+              );
+              const isLiked = Boolean(
+                post.isLiked ||
+                  (Array.isArray(post.likes) &&
+                    user &&
+                    post.likes.includes(user.id || user._id))
+              );
+              const totalLikes =
+                typeof post.likesCount === 'number'
+                  ? post.likesCount
+                  : Array.isArray(post.likes)
+                  ? post.likes.length
+                  : 0;
+              const commentsList = Array.isArray(post.comments) ? post.comments : [];
+              const isCommentOpen = activeCommentPostId === post._id;
 
-            if (authorUsername.includes('vicky') || authorUsername.includes('vignesh') || authorName.includes('Vicky') || authorName.includes('Vignesh')) {
-              authorName = 'Vigneshwaran';
-              authorUsername = 'vignesh';
-              author = { ...author, fullName: 'Vigneshwaran', username: 'vignesh' };
-            } else if (authorUsername.includes('aswin') || authorName.includes('Aswin')) {
-              authorName = 'Aswin Real Estate';
-              authorUsername = 'aswin';
-              author = { ...author, fullName: 'Aswin Real Estate', username: 'aswin' };
-            } else if (authorUsername.includes('yashwanth') || authorUsername.includes('cinemahub') || authorName.includes('Yashwanth') || authorName.includes('cinemahub')) {
-              authorName = 'Yashwanth';
-              authorUsername = 'yashwanth';
-              author = { ...author, fullName: 'Yashwanth', username: 'yashwanth' };
-            }
-
-            const authorTitle =
-              author.title ||
-              'Commercial Property & Real Estate Advisor @ Boolok Network';
-            const authorAvatar =
-              author.profilePicture ||
-              'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150';
-            const isSelfPost = author._id === user?.id || author._id === 'self';
-            const isLiked = post.likes?.includes(user?.id || 'sai');
-            const totalLikes = post.likesCount || post.likes?.length || 10;
-            const commentsList = Array.isArray(post.comments) ? post.comments : [];
-            const isCommentOpen = activeCommentPostId === post._id;
-
-            // Resolve Media image URLs
-            const mediaList = Array.isArray(post.mediaUrls)
-              ? post.mediaUrls
-              : post.mediaUrl
+              // Resolve Media image URLs
+              const mediaList = Array.isArray(post.mediaUrls)
+                ? post.mediaUrls
+                : post.mediaUrl
                 ? [
-                  post.mediaUrl.startsWith('http') || post.mediaUrl.startsWith('data:')
-                    ? post.mediaUrl
-                    : `${process.env.EXPO_PUBLIC_API_URL}${post.mediaUrl}`,
-                ]
+                    post.mediaUrl.startsWith('http') || post.mediaUrl.startsWith('data:')
+                      ? post.mediaUrl
+                      : `${API_BASE_URL}${post.mediaUrl}`,
+                  ]
                 : [];
 
-            return (
-              <View
-                key={post._id}
-                style={[styles.card, styles.postCard, { backgroundColor: cardBg, borderColor }]}
-              >
-                {/* Post Author Header */}
-                <View style={styles.postHeaderRow}>
-                  <Pressable
-                    onPress={() =>
-                      router.push({
-                        pathname: '/(app)/profile',
-                        params: { id: author._id || author.username },
-                      })
-                    }
-                    style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
-                  >
-                    <UserAvatar user={author} size={42} style={styles.postAuthorAvatar} />
-                    <View style={{ marginLeft: 10, flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={styles.postAuthorName}>{authorName}</Text>
-                        {author.degree && (
-                          <Text style={styles.postAuthorDegree}> · {author.degree}</Text>
-                        )}
-                        <MaterialIcons
-                          name="verified"
-                          size={14}
-                          color="#0095f6"
-                          style={{ marginLeft: 4 }}
-                        />
-                      </View>
-                      <Text style={styles.postAuthorTitle} numberOfLines={1}>
-                        {authorTitle}
-                      </Text>
-                      <Text style={styles.postTimeText}>{post.time || '1d · 🌐'}</Text>
-                    </View>
-                  </Pressable>
-
-                  {!isSelfPost && (
+              return (
+                <View
+                  key={post._id}
+                  style={[styles.card, styles.postCard, { backgroundColor: cardBg, borderColor }]}
+                >
+                  {/* Post Author Header */}
+                  <View style={styles.postHeaderRow}>
                     <Pressable
-                      onPress={() => toggleFollowAdvisor(author._id || author.username)}
-                      style={[
-                        styles.feedFollowBtn,
-                        followingMap[author._id || author.username] && {
-                          backgroundColor: '#1a273c',
-                        },
-                      ]}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/(app)/profile',
+                          params: { id: author._id || author.username },
+                        })
+                      }
+                      style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
                     >
-                      <Text
+                      <UserAvatar user={author} size={42} style={styles.postAuthorAvatar} />
+                      <View style={{ marginLeft: 10, flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <Text style={styles.postAuthorName}>{authorName}</Text>
+                          {author.degree && (
+                            <Text style={styles.postAuthorDegree}> · {author.degree}</Text>
+                          )}
+                          <MaterialIcons
+                            name="verified"
+                            size={14}
+                            color="#0095f6"
+                            style={{ marginLeft: 4 }}
+                          />
+                        </View>
+                        <Text style={styles.postAuthorTitle} numberOfLines={1}>
+                          {authorTitle}
+                        </Text>
+                        <Text style={styles.postTimeText}>{post.time || 'Recently · 🌐'}</Text>
+                      </View>
+                    </Pressable>
+
+                    {!isSelfPost && (
+                      <Pressable
+                        onPress={() => toggleFollowAdvisor(author._id || author.username)}
                         style={[
-                          styles.feedFollowBtnText,
-                          {
-                            color: followingMap[author._id || author.username]
-                              ? '#ffffff'
-                              : goldPrimary,
+                          styles.feedFollowBtn,
+                          followingMap[author._id || author.username] && {
+                            backgroundColor: '#1a273c',
                           },
                         ]}
                       >
-                        {followingMap[author._id || author.username] ? '✓ Following' : '+ Follow'}
-                      </Text>
-                    </Pressable>
-                  )}
-                </View>
-
-                {/* Post Text Description */}
-                <Text style={styles.postBodyContent}>{post.content}</Text>
-
-                {/* Multi-Image / Media Grid */}
-                {mediaList.length > 0 && (
-                  <View style={styles.postMediaContainer}>
-                    {mediaList.length === 1 ? (
-                      <Image
-                        source={{ uri: mediaList[0] }}
-                        style={styles.singlePostImage}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={styles.multiImageRow}>
-                        {mediaList.slice(0, 2).map((imgUrl: string, idx: number) => (
-                          <Image
-                            key={idx}
-                            source={{ uri: imgUrl }}
-                            style={styles.multiPostImage}
-                            resizeMode="cover"
-                          />
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                )}
-
-                {/* Social Counter Stats Bar (Only Like and Thumbs Up) */}
-                <View style={[styles.socialStatsBar, { borderBottomColor: borderColor }]}>
-                  <Pressable
-                    onPress={() => handleOpenLikesModal(post)}
-                    style={({ pressed, hovered }: any) => [
-                      { flexDirection: 'row', alignItems: 'center', cursor: 'pointer' },
-                      (pressed || hovered) && { opacity: 0.8 },
-                    ]}
-                  >
-                    <View style={styles.reactionIconsGroup}>
-                      <View style={[styles.reactionDot, { backgroundColor: '#0a66c2' }]}>
-                        <MaterialIcons name="thumb-up" size={10} color="#ffffff" />
-                      </View>
-                    </View>
-                    <Text style={[styles.socialReactionText, { textDecorationLine: 'underline', marginLeft: 6 }]}>
-                      {post.likesSummary ||
-                        (isSelfPost
-                          ? 'Liked by your real estate network'
-                          : `${authorName} and ${totalLikes} others`)}
-                    </Text>
-                  </Pressable>
-
-                  <Text
-                    style={styles.socialCommentsCountText}
-                    onPress={() =>
-                      setActiveCommentPostId(isCommentOpen ? null : post._id)
-                    }
-                  >
-                    {post.commentsCount || commentsList.length} comments
-                  </Text>
-                </View>
-
-                {/* Interactive Action Buttons (Like / Thumbs Up, Comment, Repost, Send) */}
-                <View style={[styles.postActionsBar, { position: 'relative' }]}>
-                  {/* Primary Like / Thumbs Up Action Button */}
-                  {(() => {
-                    const isPostLiked = Boolean(
-                      post.currentUserReaction === 'like' ||
-                      (Array.isArray(post.likes) && post.likes.includes(user?.id || user?._id || 'sai'))
-                    );
-                    return (
-                      <Pressable
-                        onPress={() => handleReaction(post._id, 'like')}
-                        style={styles.postActionItem}
-                      >
-                        <MaterialIcons
-                          name="thumb-up"
-                          size={18}
-                          color={isPostLiked ? '#3b82f6' : '#8b9bb4'}
-                        />
                         <Text
                           style={[
-                            styles.postActionItemText,
-                            isPostLiked && { color: '#3b82f6', fontWeight: '800' },
+                            styles.feedFollowBtnText,
+                            {
+                              color: followingMap[author._id || author.username]
+                                ? '#ffffff'
+                                : goldPrimary,
+                            },
                           ]}
                         >
-                          {isPostLiked ? 'Liked' : 'Like'}
+                          {followingMap[author._id || author.username] ? '✓ Following' : '+ Follow'}
                         </Text>
                       </Pressable>
-                    );
-                  })()}
+                    )}
+                  </View>
 
-                  <Pressable
-                    onPress={() =>
-                      setActiveCommentPostId(isCommentOpen ? null : post._id)
-                    }
-                    style={styles.postActionItem}
-                  >
-                    <MaterialCommunityIcons
-                      name="comment-text-outline"
-                      size={18}
-                      color="#8b9bb4"
-                    />
-                    <Text style={styles.postActionItemText}>Comment</Text>
-                  </Pressable>
+                  {/* Post Text Description */}
+                  {post.content ? (
+                    <Text style={styles.postBodyContent}>{post.content}</Text>
+                  ) : null}
 
-                  <Pressable
-                    onPress={() => alertMsg('Property post reposted to your network!')}
-                    style={styles.postActionItem}
-                  >
-                    <MaterialCommunityIcons name="repeat" size={18} color="#8b9bb4" />
-                    <Text style={styles.postActionItemText}>Repost</Text>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={() => alertMsg('Property details link copied to clipboard!')}
-                    style={styles.postActionItem}
-                  >
-                    <MaterialCommunityIcons name="send-outline" size={18} color="#8b9bb4" />
-                    <Text style={styles.postActionItemText}>Send</Text>
-                  </Pressable>
-                </View>
-
-                {/* Inline Comment Box & Named Comments List */}
-                {isCommentOpen && (
-                  <View style={[styles.commentSectionDrawer, { borderTopColor: borderColor }]}>
-                    {/* Add comment input */}
-                    <View style={styles.commentInputRow}>
-                      <UserAvatar user={user} size={32} style={styles.commentUserAvatar} />
-                      <TextInput
-                        placeholder="Add a real estate comment..."
-                        placeholderTextColor="#66768f"
-                        style={styles.inlineCommentInput}
-                        value={commentInputs[post._id] || ''}
-                        onChangeText={(t) =>
-                          setCommentInputs((prev) => ({ ...prev, [post._id]: t }))
-                        }
-                        onSubmitEditing={() => handleAddComment(post._id)}
-                      />
-                      <Pressable
-                        onPress={() => handleAddComment(post._id)}
-                        style={[styles.commentSubmitBtn, { backgroundColor: goldPrimary }]}
-                      >
-                        <Text style={styles.commentSubmitBtnText}>Post</Text>
-                      </Pressable>
+                  {/* Multi-Image / Media Grid */}
+                  {mediaList.length > 0 && (
+                    <View style={styles.postMediaContainer}>
+                      {mediaList.length === 1 ? (
+                        <Image
+                          source={{ uri: mediaList[0] }}
+                          style={styles.singlePostImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.multiImageRow}>
+                          {mediaList.slice(0, 2).map((imgUrl: string, idx: number) => (
+                            <Image
+                              key={idx}
+                              source={{ uri: imgUrl }}
+                              style={styles.multiPostImage}
+                              resizeMode="cover"
+                            />
+                          ))}
+                        </View>
+                      )}
                     </View>
+                  )}
 
-                    {/* Existing Comments with Named Profiles */}
-                    {(() => {
-                      let activeComments = commentsList;
-                      if (!activeComments || activeComments.length === 0) {
-                        const isVignesh = authorUsername === 'vignesh' || authorName.toLowerCase().includes('vignesh');
-                        if (isVignesh) {
-                          activeComments = VIGNESH_HOUSE_SHARE_COMMENTS;
-                        } else if (isSelfPost || authorUsername === 'sai' || authorUsername === 'saivimenthanvl') {
-                          activeComments = COMMUNITY_DEFAULT_COMMENTS;
-                        } else if (authorUsername === 'prasanth_properties' || authorName.toLowerCase().includes('prasanth')) {
-                          activeComments = [
-                            {
-                              _id: 'pp-p-1',
-                              author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
-                              text: 'Direct ocean access and private mega-yacht clearance make Star Island unmatched. 🌊🛥️',
-                              time: '02:15 pm',
-                            },
-                            {
-                              _id: 'pp-p-2',
-                              author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
-                              text: 'Floor-to-ceiling glass integration brings uninterrupted Miami sunsets indoors.',
-                              time: '04:00 pm',
-                            },
-                          ];
-                        } else if (authorUsername === 'aswin' || authorName.toLowerCase().includes('aswin')) {
-                          activeComments = [
-                            {
-                              _id: 'ap2-1',
-                              author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
-                              text: '8.4% cap rate on a 45,000 sq ft multi-family asset offers high capital security. 📈',
-                              time: '01:45 pm',
-                            },
-                            {
-                              _id: 'ap2-2',
-                              author: { fullName: 'Shreekutti', username: 'shreekutti' },
-                              text: 'Solid cash flow profile. Let us connect regarding investor syndication terms.',
-                              time: '03:10 pm',
-                            },
-                          ];
-                        } else if (authorUsername === 'the_akshtr_estate' || authorName.toLowerCase().includes('akshat')) {
-                          activeComments = [
-                            {
-                              _id: 'ap4-1',
-                              author: { fullName: 'Shreekutti', username: 'shreekutti' },
-                              text: '8.9% yield on OMR expressway frontage with institutional covenants is prime! 🏢💼',
-                              time: '10:30 am',
-                            },
-                            {
-                              _id: 'ap4-2',
-                              author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
-                              text: 'Floorplate load ratios and multi-level parking verify Grade-A compliance.',
-                              time: '12:15 pm',
-                            },
-                          ];
-                        } else {
-                          activeComments = COMMUNITY_DEFAULT_COMMENTS;
-                        }
+                  {/* Social Counter Stats Bar */}
+                  <View style={[styles.socialStatsBar, { borderBottomColor: borderColor }]}>
+                    <Pressable
+                      onPress={() => handleOpenLikesModal(post)}
+                      style={({ pressed, hovered }: any) => [
+                        { flexDirection: 'row', alignItems: 'center', cursor: 'pointer' },
+                        (pressed || hovered) && { opacity: 0.8 },
+                      ]}
+                    >
+                      <View style={styles.reactionIconsGroup}>
+                        <View style={[styles.reactionDot, { backgroundColor: '#0a66c2' }]}>
+                          <MaterialIcons name="thumb-up" size={10} color="#ffffff" />
+                        </View>
+                      </View>
+                      <Text style={[styles.socialReactionText, { textDecorationLine: 'underline', marginLeft: 6 }]}>
+                        {post.likesSummary ||
+                          (totalLikes > 0
+                            ? isLiked
+                              ? (totalLikes === 1 ? 'Liked by you' : `Liked by you and ${totalLikes - 1} other${totalLikes > 2 ? 's' : ''}`)
+                              : `Liked by ${totalLikes} member${totalLikes > 1 ? 's' : ''}`
+                            : '0 likes')}
+                      </Text>
+                    </Pressable>
+
+                    <Text
+                      style={styles.socialCommentsCountText}
+                      onPress={() =>
+                        setActiveCommentPostId(isCommentOpen ? null : post._id)
                       }
+                    >
+                      {post.commentsCount || commentsList.length} comments
+                    </Text>
+                  </View>
 
-                      return activeComments.map((c: any, cIdx: number) => {
-                        const cAuthor = c.author || c.user || {};
-                        let rawName = cAuthor.fullName || cAuthor.username || (typeof c.author === 'string' ? c.author : '') || (typeof c.user === 'string' ? c.user : '');
-                        const commentBody = c.text || 'Clean zoning and strong cap rate numbers.';
-                        const commentTime = c.time || (c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '1h ago');
+                  {/* Interactive Action Buttons */}
+                  <View style={[styles.postActionsBar, { position: 'relative' }]}>
+                    <Pressable
+                      onPress={() => handleReaction(post._id, 'like')}
+                      style={styles.postActionItem}
+                    >
+                      <MaterialIcons
+                        name="thumb-up"
+                        size={18}
+                        color={isLiked ? '#3b82f6' : '#8b9bb4'}
+                      />
+                      <Text
+                        style={[
+                          styles.postActionItemText,
+                          isLiked && { color: '#3b82f6', fontWeight: '800' },
+                        ]}
+                      >
+                        {isLiked ? 'Liked' : 'Like'}
+                      </Text>
+                    </Pressable>
 
-                        // If rawName is missing, hex ID, placeholder 'Member' or empty, derive the real advisor name from the comment text or index
-                        const bodyLower = commentBody.toLowerCase();
-                        if (!rawName || /^[0-9a-fA-F]{24}$/.test(rawName) || rawName.startsWith('6a8') || rawName.toLowerCase() === 'member' || rawName.toLowerCase() === 'advisor') {
-                          if (bodyLower.includes('cap rate') && bodyLower.includes('institutional')) rawName = 'Logeshwaran A';
-                          else if (bodyLower.includes('tenant covenant') || bodyLower.includes('specs')) rawName = 'Shreekutti';
-                          else if (bodyLower.includes('turnkey acquisition') || bodyLower.includes('verified yield')) rawName = 'Mohammed Ajmal';
-                          else if (bodyLower.includes('architectural finish') || bodyLower.includes('interior design')) rawName = 'Bavadharini RS';
-                          else if (bodyLower.includes('omr corridor') || bodyLower.includes('institutional grade')) rawName = 'Akshat Commercials';
-                          else if (bodyLower.includes('syndication') || bodyLower.includes('discuss terms')) rawName = 'Prasanth Properties';
-                          else if (bodyLower.includes('fractional house share') || bodyLower.includes('european co-owners')) rawName = 'Sophia Sterling';
-                          else if (bodyLower.includes('bespoke co-ownership') || bodyLower.includes('capital preservation')) rawName = 'David Sterling';
-                          else if (bodyLower.includes('deeded fractional title') || bodyLower.includes('dm sent')) rawName = 'Marcus Vance';
-                          else {
-                            const fallbackNames = ['Logeshwaran A', 'Shreekutti', 'Mohammed Ajmal', 'Bavadharini RS', 'Akshat Commercials', 'Prasanth Properties'];
-                            rawName = fallbackNames[cIdx % fallbackNames.length];
+                    <Pressable
+                      onPress={() =>
+                        setActiveCommentPostId(isCommentOpen ? null : post._id)
+                      }
+                      style={styles.postActionItem}
+                    >
+                      <MaterialCommunityIcons
+                        name="comment-text-outline"
+                        size={18}
+                        color="#8b9bb4"
+                      />
+                      <Text style={styles.postActionItemText}>Comment</Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() => alertMsg('Property post reposted to your network!')}
+                      style={styles.postActionItem}
+                    >
+                      <MaterialCommunityIcons name="repeat" size={18} color="#8b9bb4" />
+                      <Text style={styles.postActionItemText}>Repost</Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() => alertMsg('Property details link copied to clipboard!')}
+                      style={styles.postActionItem}
+                    >
+                      <MaterialCommunityIcons name="send-outline" size={18} color="#8b9bb4" />
+                      <Text style={styles.postActionItemText}>Send</Text>
+                    </Pressable>
+                  </View>
+
+                  {/* Inline Comment Box & Comments List */}
+                  {isCommentOpen && (
+                    <View style={[styles.commentSectionDrawer, { borderTopColor: borderColor }]}>
+                      {/* Add comment input */}
+                      <View style={styles.commentInputRow}>
+                        <UserAvatar user={user} size={32} style={styles.commentUserAvatar} />
+                        <TextInput
+                          placeholder="Add a real estate comment..."
+                          placeholderTextColor="#66768f"
+                          style={styles.inlineCommentInput}
+                          value={commentInputs[post._id] || ''}
+                          onChangeText={(t) =>
+                            setCommentInputs((prev) => ({ ...prev, [post._id]: t }))
                           }
-                        }
+                          onSubmitEditing={() => handleAddComment(post._id)}
+                        />
+                        <Pressable
+                          onPress={() => handleAddComment(post._id)}
+                          style={[styles.commentSubmitBtn, { backgroundColor: goldPrimary }]}
+                        >
+                          <Text style={styles.commentSubmitBtnText}>Post</Text>
+                        </Pressable>
+                      </View>
 
-                        const cName = rawName;
+                      {/* Comments List */}
+                      {commentsList.length > 0 ? (
+                        commentsList.map((c: any, cIdx: number) => {
+                          const cAuthor = c.author || c.user || {};
+                          const cName = cAuthor.fullName || cAuthor.username || 'Boolok Member';
+                          const commentBody = c.text || '';
+                          const commentTime =
+                            c.time ||
+                            (c.createdAt
+                              ? new Date(c.createdAt).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : 'Recently');
+                          const authorId = cAuthor._id || cAuthor.id || cAuthor.username;
 
-                        let targetUserId = cAuthor._id || cAuthor.id || cAuthor.username;
-                        const clean = cName.toLowerCase().trim();
-                        if (!targetUserId || clean.includes('member')) {
-                          if (clean.includes('shree')) targetUserId = 'shreekutti';
-                          else if (clean.includes('logesh')) targetUserId = 'logeshwarana';
-                          else if (clean.includes('ajmal')) targetUserId = 'ajmal';
-                          else if (clean.includes('bava')) targetUserId = 'bavadharini_rs';
-                          else if (clean.includes('akshat')) targetUserId = 'the_akshtr_estate';
-                          else if (clean.includes('prasanth')) targetUserId = 'prasanth_properties';
-                          else if (clean.includes('sai')) targetUserId = 'sai';
-                          else if (clean.includes('vignesh')) targetUserId = 'vignesh';
-                          else if (clean.includes('sophia')) targetUserId = 'sophia_luxury';
-                          else if (clean.includes('david')) targetUserId = 'david_sterling';
-                          else if (clean.includes('marcus')) targetUserId = 'marcus_vance';
-                          else targetUserId = clean.replace(/\s+/g, '_');
-                        }
-
-                      return (
-                        <View key={c._id || cIdx} style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-                          <Pressable
-                            onPress={() => {
-                              if (targetUserId) {
-                                router.push({ pathname: '/(app)/profile', params: { id: targetUserId } });
-                              }
-                            }}
-                            style={({ pressed, hovered }: any) => [
-                              (pressed || hovered) && { opacity: 0.8 },
-                            ]}
-                          >
-                            <UserAvatar user={cAuthor?.profilePicture ? cAuthor : { fullName: cName, username: targetUserId }} size={34} />
-                          </Pressable>
-                          <View style={{ flex: 1, backgroundColor: '#131e30', padding: 10, borderRadius: 10, borderWidth: 1, borderColor: '#1b2a40' }}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                          return (
+                            <View
+                              key={c._id || cIdx}
+                              style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}
+                            >
                               <Pressable
                                 onPress={() => {
-                                  if (targetUserId) {
-                                    router.push({ pathname: '/(app)/profile', params: { id: targetUserId } });
+                                  if (authorId) {
+                                    router.push({
+                                      pathname: '/(app)/profile',
+                                      params: { id: authorId },
+                                    });
                                   }
                                 }}
                                 style={({ pressed, hovered }: any) => [
-                                  (pressed || hovered) && { opacity: 0.7 },
+                                  (pressed || hovered) && { opacity: 0.8 },
                                 ]}
                               >
-                                <Text style={{ color: goldPrimary, fontWeight: '800', fontSize: 13, textDecorationLine: 'underline' }}>
-                                  {cName}
-                                </Text>
+                                <UserAvatar user={cAuthor} size={34} />
                               </Pressable>
-                              <Text style={{ color: '#64748b', fontSize: 10 }}>{commentTime}</Text>
+                              <View
+                                style={{
+                                  flex: 1,
+                                  backgroundColor: isDark ? '#131e30' : '#f8fafc',
+                                  padding: 10,
+                                  borderRadius: 10,
+                                  borderWidth: 1,
+                                  borderColor: isDark ? '#1b2a40' : '#e2e8f0',
+                                }}
+                              >
+                                <View
+                                  style={{
+                                    flexDirection: 'row',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: 2,
+                                  }}
+                                >
+                                  <Pressable
+                                    onPress={() => {
+                                      if (authorId) {
+                                        router.push({
+                                          pathname: '/(app)/profile',
+                                          params: { id: authorId },
+                                        });
+                                      }
+                                    }}
+                                    style={({ pressed, hovered }: any) => [
+                                      (pressed || hovered) && { opacity: 0.7 },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={{
+                                        color: goldPrimary,
+                                        fontWeight: '800',
+                                        fontSize: 13,
+                                        textDecorationLine: 'underline',
+                                      }}
+                                    >
+                                      {cName}
+                                    </Text>
+                                  </Pressable>
+                                  <Text style={{ color: '#64748b', fontSize: 10 }}>
+                                    {commentTime}
+                                  </Text>
+                                </View>
+                                <Text
+                                  style={{
+                                    color: isDark ? '#e2e8f0' : '#1e293b',
+                                    fontSize: 12.5,
+                                    lineHeight: 17,
+                                  }}
+                                >
+                                  {commentBody}
+                                </Text>
+                              </View>
                             </View>
-                            <Text style={{ color: '#e2e8f0', fontSize: 12.5, lineHeight: 17 }}>{commentBody}</Text>
-                          </View>
+                          );
+                        })
+                      ) : (
+                        <View style={{ paddingVertical: 12, alignItems: 'center' }}>
+                          <Text style={{ color: '#8b9bb4', fontSize: 12 }}>
+                            No comments yet. Start the conversation!
+                          </Text>
                         </View>
-                      );
-                      });
-                    })()}
-                  </View>
-                )}
-              </View>
-            );
-          })}
+                      )}
+                    </View>
+                  )}
+                </View>
+              );
+            })
+          )}
         </View>
 
         {/* ═══════════════════════════════════════════════════════════════════════
@@ -1735,7 +1496,7 @@ export default function ProfessionalSocialFeedScreen() {
                 <UserAvatar user={user} size={40} style={styles.modalHeaderAvatar} />
                 <View style={{ marginLeft: 10 }}>
                   <Text style={styles.modalAuthorName}>
-                    {user?.fullName || 'Sai Vimenthan'}
+                    {user?.fullName || user?.username || 'Boolok Member'}
                   </Text>
                   <Text style={styles.modalAuthorPrivacy}>🌐 Post to Anyone</Text>
                 </View>
@@ -1755,13 +1516,59 @@ export default function ProfessionalSocialFeedScreen() {
               onChangeText={setNewPostText}
             />
 
-            <TextInput
-              placeholder="Or paste property image URL (e.g. https://...)..."
-              placeholderTextColor="#66768f"
-              style={[styles.modalUrlInput, { borderColor }]}
-              value={newPostImage || ''}
-              onChangeText={setNewPostImage}
-            />
+            {/* Image Preview if selected from Device/URL */}
+            {newPostImage ? (
+              <View style={styles.imagePreviewBox}>
+                <Image
+                  source={{ uri: newPostImage }}
+                  style={styles.imagePreviewImg}
+                  resizeMode="cover"
+                />
+                <View style={styles.imagePreviewInfoBar}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                    <MaterialCommunityIcons name="check-circle" size={16} color="#4ade80" />
+                    <Text style={styles.imagePreviewLabel} numberOfLines={1}>
+                      Photo attached from device
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => setNewPostImage(null)}
+                    style={styles.imagePreviewRemoveBtn}
+                  >
+                    <MaterialIcons name="close" size={14} color="#ffffff" />
+                    <Text style={styles.imagePreviewRemoveText}>Remove</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <View style={{ marginBottom: 14 }}>
+                <View style={styles.modalUploadOptionsRow}>
+                  <Pressable
+                    onPress={handlePickImageFromDevice}
+                    style={styles.modalUploadDeviceBtn}
+                  >
+                    <MaterialIcons name="add-photo-alternate" size={20} color="#38bdf8" />
+                    <Text style={styles.modalUploadDeviceText}>Choose Photo from Device</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={handleTakePhotoFromCamera}
+                    style={styles.modalUploadCameraBtn}
+                  >
+                    <MaterialIcons name="photo-camera" size={18} color="#e6b800" />
+                    <Text style={styles.modalUploadCameraText}>Camera</Text>
+                  </Pressable>
+                </View>
+
+                <TextInput
+                  placeholder="Or paste property image URL (e.g. https://...)..."
+                  placeholderTextColor="#66768f"
+                  style={[styles.modalUrlInput, { borderColor, marginBottom: 0 }]}
+                  value={newPostImage || ''}
+                  onChangeText={setNewPostImage}
+                />
+              </View>
+            )}
 
             <View style={styles.modalFooterActions}>
               <Pressable
@@ -2544,32 +2351,35 @@ export default function ProfessionalSocialFeedScreen() {
   );
 }
 
-const getStyles = (isDark: boolean) => {
+const getStyles = (isDark: boolean, width: number = 1024) => {
+  const isDesktop = width >= 1024;
+  const isMobile = width < 768;
+  const isSmallMobile = width < 450;
   const textPrimary = isDark ? '#ffffff' : '#0f172a';
   const textSecondary = isDark ? '#cbd5e1' : '#475569';
   const textMuted = isDark ? '#8b9bb4' : '#64748b';
-  const borderCol = isDark ? '#1a273c' : '#e2e8f0';
-  const inputBg = isDark ? '#070e1a' : '#f8fafc';
-  const itemBubbleBg = isDark ? '#162235' : '#f1f5f9';
-  const cardBackground = isDark ? '#0c1626' : '#ffffff';
-  const actionBtnBackground = isDark ? '#1a273c' : '#f1f5f9';
+  const borderCol = isDark ? '#1a273c' : '#E2E8F0';
+  const inputBg = isDark ? '#070e1a' : '#F1F5F9';
+  const itemBubbleBg = isDark ? '#162235' : '#F1F5F9';
+  const cardBackground = isDark ? '#0c1626' : '#FFFFFF';
+  const actionBtnBackground = isDark ? '#1a273c' : '#F8FAFC';
 
   return StyleSheet.create({
     root: {
       flex: 1,
-      backgroundColor: isDark ? '#060b13' : '#ffffff',
+      backgroundColor: isDark ? '#060B13' : '#F8FAFC',
     },
     scrollContent: {
-      paddingVertical: 24,
-      paddingHorizontal: 16,
+      paddingVertical: isMobile ? 12 : 24,
+      paddingHorizontal: isMobile ? 10 : 16,
       alignItems: 'center',
     },
     mainLayoutContainer: {
       width: '100%',
       maxWidth: 1180,
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: 24,
+      flexDirection: isDesktop ? 'row' : 'column',
+      alignItems: isDesktop ? 'flex-start' : 'stretch',
+      gap: isDesktop ? 24 : 12,
     },
 
     // Left Column
@@ -2577,17 +2387,30 @@ const getStyles = (isDark: boolean) => {
       width: 240,
     },
     card: {
-      borderRadius: 10,
+      borderRadius: 12,
       borderWidth: 1,
       borderColor: borderCol,
       backgroundColor: cardBackground,
-      overflow: 'hidden',
+      shadowColor: '#0F172A',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0 : 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+      ...Platform.select({
+        web: {
+          boxShadow: isDark
+            ? 'none'
+            : '0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05)',
+        } as any,
+      }),
     },
     profileCoverBanner: {
       height: 64,
       width: '100%',
       padding: 8,
       alignItems: 'flex-end',
+      borderTopLeftRadius: 11,
+      borderTopRightRadius: 11,
     },
     bannerBadge: {
       flexDirection: 'row',
@@ -2722,7 +2545,8 @@ const getStyles = (isDark: boolean) => {
     // Center Column
     centerColumn: {
       flex: 1,
-      maxWidth: 580,
+      width: '100%',
+      maxWidth: isDesktop ? 580 : '100%',
     },
     startPostHeader: {
       flexDirection: 'row',
@@ -2760,15 +2584,15 @@ const getStyles = (isDark: boolean) => {
     composerActionBtn: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
-      paddingHorizontal: 10,
+      gap: isSmallMobile ? 4 : 6,
+      paddingHorizontal: isSmallMobile ? 6 : 10,
       paddingVertical: 6,
       borderRadius: 8,
       backgroundColor: actionBtnBackground,
     },
     composerActionText: {
       color: textSecondary,
-      fontSize: 12,
+      fontSize: isSmallMobile ? 11 : 12,
       fontWeight: '600',
     },
 
@@ -2844,7 +2668,7 @@ const getStyles = (isDark: boolean) => {
     },
     singlePostImage: {
       width: '100%',
-      height: 340,
+      height: isMobile ? Math.min(width * 0.72, 280) : 340,
     },
     multiImageRow: {
       flexDirection: 'row',
@@ -2891,13 +2715,13 @@ const getStyles = (isDark: boolean) => {
     postActionItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      gap: isSmallMobile ? 4 : 6,
       paddingVertical: 8,
-      paddingHorizontal: 12,
+      paddingHorizontal: isSmallMobile ? 6 : 12,
     },
     postActionItemText: {
       color: textMuted,
-      fontSize: 12,
+      fontSize: isSmallMobile ? 11 : 12,
       fontWeight: '600',
     },
 
@@ -3098,16 +2922,17 @@ const getStyles = (isDark: boolean) => {
       backgroundColor: 'rgba(0,0,0,0.75)',
       justifyContent: 'center',
       alignItems: 'center',
-      padding: 20,
+      padding: isMobile ? 10 : 20,
     },
     modalBox: {
       width: '100%',
-      maxWidth: 540,
+      maxWidth: isMobile ? '96%' : 540,
+      maxHeight: isMobile ? '92%' : '85%',
       borderRadius: 12,
       borderWidth: 1,
       borderColor: borderCol,
       backgroundColor: cardBackground,
-      padding: 20,
+      padding: isMobile ? 14 : 20,
     },
     modalHeader: {
       flexDirection: 'row',
@@ -3152,6 +2977,88 @@ const getStyles = (isDark: boolean) => {
       color: textPrimary,
       fontSize: 13,
       marginBottom: 16,
+    },
+    modalUploadOptionsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginBottom: 10,
+    },
+    modalUploadDeviceBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      backgroundColor: actionBtnBackground,
+      borderWidth: 1.5,
+      borderColor: '#38bdf8',
+      borderRadius: 8,
+      paddingVertical: 11,
+      paddingHorizontal: 12,
+    },
+    modalUploadDeviceText: {
+      color: '#38bdf8',
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    modalUploadCameraBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      backgroundColor: actionBtnBackground,
+      borderWidth: 1,
+      borderColor: borderCol,
+      borderRadius: 8,
+      paddingVertical: 11,
+      paddingHorizontal: 14,
+    },
+    modalUploadCameraText: {
+      color: textSecondary,
+      fontSize: 12.5,
+      fontWeight: '600',
+    },
+    imagePreviewBox: {
+      borderRadius: 10,
+      overflow: 'hidden',
+      marginBottom: 14,
+      borderWidth: 1,
+      borderColor: borderCol,
+      backgroundColor: inputBg,
+    },
+    imagePreviewImg: {
+      width: '100%',
+      height: 190,
+    },
+    imagePreviewInfoBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      backgroundColor: cardBackground,
+      borderTopWidth: 1,
+      borderTopColor: borderCol,
+    },
+    imagePreviewLabel: {
+      color: textPrimary,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    imagePreviewRemoveBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: '#ef4444',
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 6,
+    },
+    imagePreviewRemoveText: {
+      color: '#ffffff',
+      fontSize: 11,
+      fontWeight: '700',
     },
     modalFooterActions: {
       flexDirection: 'row',

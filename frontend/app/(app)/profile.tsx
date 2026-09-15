@@ -680,9 +680,9 @@ function resolveMemberProfile(targetId: string, viewer: any) {
       profilePicture: viewer?.profilePicture || 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c',
       coverImage: viewer?.coverImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
       closedDeals: viewer?.closedDeals || '3',
-      followerCount: 4,
-      followingCount: 4,
-      mutuals: '4 followers in Boolok Real Estate Network',
+      followerCount: 0,
+      followingCount: 0,
+      mutuals: '0 followers in Boolok Real Estate Network',
       reels: SAI_REELS,
       posts: [
         {
@@ -731,6 +731,8 @@ function resolveMemberProfile(targetId: string, viewer: any) {
 }
 
 const ProfileReelItem = ({ reel }: { reel: any }) => {
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
   const [isPlaying, setIsPlaying] = useState(false);
   const [likesCount, setLikesCount] = useState<number>(reel.likes?.length ?? reel.likes ?? 100);
   const [hasLiked, setHasLiked] = useState(false);
@@ -806,7 +808,7 @@ const ProfileReelItem = ({ reel }: { reel: any }) => {
   };
 
   return (
-    <View style={styles.reelCardItem}>
+    <View style={[styles.reelCardItem, isMobile && { height: Math.min(width * 1.35, 480) }]}>
       {/* ── Video Player / Fallback ── */}
       <Pressable onPress={togglePlay} style={StyleSheet.absoluteFill}>
         {Platform.OS === 'web' ? (
@@ -1003,6 +1005,8 @@ export default function ProfessionalUserProfileScreen() {
   const { user: viewer, updateUser } = useAuth();
   const { theme, isDark } = useTheme();
   const { width } = useWindowDimensions();
+  const isMobile = width < 768;
+  const isSmallMobile = width < 480;
 
   const isSelf = !id || id === 'self' || id === viewer?.id || id === viewer?._id || (Boolean(viewer?.username) && String(id).toLowerCase() === String(viewer?.username).toLowerCase());
   const targetId = isSelf ? (viewer?.id || viewer?._id || 'self') : String(id);
@@ -1010,7 +1014,8 @@ export default function ProfessionalUserProfileScreen() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isFollowingState, setIsFollowingState] = useState(false);
-  const [followerCountState, setFollowerCountState] = useState(4);
+  const [followerCountState, setFollowerCountState] = useState(0);
+  const [followingCountState, setFollowingCountState] = useState(0);
   const [followBusy, setFollowBusy] = useState(false);
 
   // Tabs: 'properties' vs 'reels'
@@ -1075,6 +1080,11 @@ export default function ProfessionalUserProfileScreen() {
   const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
   const [followersList, setFollowersList] = useState<any[]>([]);
   const [isLoadingFollowers, setIsLoadingFollowers] = useState(false);
+
+  // Real-time Following list modal state
+  const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
+  const [followingList, setFollowingList] = useState<any[]>([]);
+  const [isLoadingFollowing, setIsLoadingFollowing] = useState(false);
 
   // Real-time Closed Deals modal state
   const [isClosedDealsModalOpen, setIsClosedDealsModalOpen] = useState(false);
@@ -1271,18 +1281,16 @@ export default function ProfessionalUserProfileScreen() {
       const res = await axios.get(`${API_BASE_URL}/api/feed/${selectedPostDetails._id}/reactions`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (res.data && Array.isArray(res.data.all) && res.data.all.length > 0) {
+      if (res.data && Array.isArray(res.data.all)) {
         setAllPostLikesUsers(res.data.all);
         setPostLikesUsersList(res.data.all);
       } else {
-        const fallbacks = COMMUNITY_MEMBERS.map((m) => ({ ...m, reactionType: 'like' }));
-        setAllPostLikesUsers(fallbacks);
-        setPostLikesUsersList(fallbacks);
+        setAllPostLikesUsers([]);
+        setPostLikesUsersList([]);
       }
     } catch (error) {
-      const fallbacks = COMMUNITY_MEMBERS.map((m) => ({ ...m, reactionType: 'like' }));
-      setAllPostLikesUsers(fallbacks);
-      setPostLikesUsersList(fallbacks);
+      setAllPostLikesUsers([]);
+      setPostLikesUsersList([]);
     } finally {
       setIsLoadingPostLikes(false);
     }
@@ -1298,6 +1306,9 @@ export default function ProfessionalUserProfileScreen() {
     Platform.OS === 'web' ? localStorage.getItem('userToken') : await SecureStore.getItemAsync('userToken');
 
   const fetchProfileSilent = async (userId: string) => {
+    // Don't run silent refresh while a follow/unfollow API call is in-flight —
+    // it would overwrite the optimistic UI state with a stale backend value
+    if (followBusy) return;
     try {
       const token = await getToken();
       const res = await axios.get(`${API_BASE_URL}/api/users/${userId}`, {
@@ -1305,8 +1316,12 @@ export default function ProfessionalUserProfileScreen() {
       });
       if (res.data?.user) {
         setData(res.data);
-        setFollowerCountState(res.data.followerCount || 4);
-        setIsFollowingState(Boolean(res.data.isFollowing || GLOBAL_FOLLOWED_USERS.has(userId)));
+        setFollowerCountState(res.data.followerCount ?? res.data.user?.followerCount ?? 0);
+        setFollowingCountState(res.data.followingCount ?? res.data.user?.followingCount ?? 0);
+        // Only update follow state from the poll if we are NOT in the middle of a toggle
+        if (!followBusy) {
+          setIsFollowingState(Boolean(res.data.isFollowing));
+        }
         if (isSelf && res.data.user) {
           updateUser({ closedDeals: res.data.user.closedDeals || '3' });
         }
@@ -1317,16 +1332,12 @@ export default function ProfessionalUserProfileScreen() {
   };
 
   useEffect(() => {
-    if (isSelf) {
-      const activeId = viewer?.id || viewer?._id || viewer?.username || 'self';
-      fetchProfile(activeId);
-    } else {
-      fetchProfile(targetId);
-      const interval = setInterval(() => {
-        fetchProfileSilent(targetId);
-      }, 4000);
-      return () => clearInterval(interval);
-    }
+    const activeId = isSelf ? (viewer?.id || viewer?._id || viewer?.username || 'self') : targetId;
+    fetchProfile(activeId);
+    const interval = setInterval(() => {
+      fetchProfileSilent(activeId);
+    }, 3000);
+    return () => clearInterval(interval);
   }, [targetId, isSelf, viewer?.id, viewer?._id, viewer?.username]);
 
   const fetchProfile = async (lookupId: string) => {
@@ -1339,8 +1350,9 @@ export default function ProfessionalUserProfileScreen() {
       });
       if (res.data && res.data.user) {
         setData(res.data);
-        setFollowerCountState(res.data.followerCount || 4);
-        setIsFollowingState(Boolean(res.data.isFollowing || GLOBAL_FOLLOWED_USERS.has(lookupId)));
+        setFollowerCountState(res.data.followerCount ?? res.data.user?.followerCount ?? 0);
+        setFollowingCountState(res.data.followingCount ?? res.data.user?.followingCount ?? 0);
+        setIsFollowingState(Boolean(res.data.isFollowing));
 
         if (res.data.user?.username && isSelf) {
           setUsernameInput(res.data.user.username);
@@ -1350,15 +1362,16 @@ export default function ProfessionalUserProfileScreen() {
           user: fallbackUser,
           postCount: (fallbackUser.posts || []).length,
           reelCount: (fallbackUser.reels || []).length,
-          followerCount: 4,
-          followingCount: isSelf ? (GLOBAL_FOLLOWED_USERS.size || 4) : 12,
-          isFollowing: GLOBAL_FOLLOWED_USERS.has(lookupId),
+          followerCount: fallbackUser.followerCount ?? 0,
+          followingCount: fallbackUser.followingCount ?? 0,
+          isFollowing: false,
           isSelf,
           posts: fallbackUser.posts || [],
           reels: fallbackUser.reels || [],
         });
-        setFollowerCountState(4);
-        setIsFollowingState(GLOBAL_FOLLOWED_USERS.has(lookupId));
+        setFollowerCountState(fallbackUser.followerCount ?? 0);
+        setFollowingCountState(fallbackUser.followingCount ?? 0);
+        setIsFollowingState(false);
       }
     } catch (error: any) {
       console.warn('Profile loaded via member registry:', error.message);
@@ -1366,15 +1379,16 @@ export default function ProfessionalUserProfileScreen() {
         user: fallbackUser,
         postCount: (fallbackUser.posts || []).length,
         reelCount: (fallbackUser.reels || []).length,
-        followerCount: 4,
-        followingCount: isSelf ? (GLOBAL_FOLLOWED_USERS.size || 4) : 12,
-        isFollowing: GLOBAL_FOLLOWED_USERS.has(lookupId),
+        followerCount: fallbackUser.followerCount ?? 0,
+        followingCount: fallbackUser.followingCount ?? 0,
+        isFollowing: false,
         isSelf,
         posts: fallbackUser.posts || [],
         reels: fallbackUser.reels || [],
       });
-      setFollowerCountState(4);
-      setIsFollowingState(GLOBAL_FOLLOWED_USERS.has(lookupId));
+      setFollowerCountState(fallbackUser.followerCount ?? 0);
+      setFollowingCountState(fallbackUser.followingCount ?? 0);
+      setIsFollowingState(false);
     } finally {
       setLoading(false);
     }
@@ -1534,50 +1548,50 @@ export default function ProfessionalUserProfileScreen() {
   const handleOpenFollowersModal = async () => {
     setIsFollowersModalOpen(true);
     setIsLoadingFollowers(true);
-    const activeId = targetId || profileUser?.id || profileUser?._id || viewer?.id;
-    const isTargetLogesh = String(activeId).toLowerCase().includes('logesh') || (profileUser?.username || '').toLowerCase().includes('logesh');
-
-    const saiFollower = {
-      id: viewer?.id || 'saivimenthanvl',
-      _id: viewer?._id || 'saivimenthanvl',
-      fullName: viewer?.fullName || 'Sai',
-      username: viewer?.username || 'saivimenthanvl',
-      headline: viewer?.headline || 'Principal Real Estate Broker & Portfolio Advisor',
-      location: viewer?.location || 'Chennai, Tamil Nadu · Prime Assets',
-      profilePicture: viewer?.profilePicture || 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c',
-    };
+    const activeId = isSelf ? (viewer?.id || viewer?._id || viewer?.username || 'self') : targetId;
 
     try {
       const token = await getToken();
       const res = await axios.get(`${API_BASE_URL}/api/users/${activeId}/followers`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (res.data && Array.isArray(res.data.followers) && res.data.followers.length > 0) {
-        const seen = new Set<string>();
-        const unique = res.data.followers.filter((f: any) => {
-          const fid = (f.username || f.id || f._id || '').toString().toLowerCase();
-          const fname = (f.fullName || '').toLowerCase();
-          if (fid.includes('6a8dc49') || fname.includes('6a8dc49')) return false;
-          if (seen.has(fid)) return false;
-          seen.add(fid);
-          return true;
-        });
-        const finalFollowers = unique.length > 0
-          ? unique
-          : (isTargetLogesh ? [saiFollower] : COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, 4));
-        setFollowersList(finalFollowers);
-        setFollowerCountState(finalFollowers.length);
+      if (res.data && Array.isArray(res.data.followers)) {
+        setFollowersList(res.data.followers);
+        if (typeof res.data.followerCount === 'number') {
+          setFollowerCountState(res.data.followerCount);
+        }
       } else {
-        const initialMembers = isTargetLogesh ? [saiFollower] : COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, 4);
-        setFollowersList(initialMembers);
-        setFollowerCountState(initialMembers.length);
+        setFollowersList([]);
       }
     } catch (error) {
-      const initialMembers = isTargetLogesh ? [saiFollower] : COMMUNITY_MEMBERS.filter((m) => m.id !== activeId).slice(0, 4);
-      setFollowersList(initialMembers);
-      setFollowerCountState(initialMembers.length);
+      setFollowersList([]);
     } finally {
       setIsLoadingFollowers(false);
+    }
+  };
+
+  const handleOpenFollowingModal = async () => {
+    setIsFollowingModalOpen(true);
+    setIsLoadingFollowing(true);
+    const activeId = isSelf ? (viewer?.id || viewer?._id || viewer?.username || 'self') : targetId;
+
+    try {
+      const token = await getToken();
+      const res = await axios.get(`${API_BASE_URL}/api/users/${activeId}/following`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.data && Array.isArray(res.data.following)) {
+        setFollowingList(res.data.following);
+        if (typeof res.data.followingCount === 'number') {
+          setFollowingCountState(res.data.followingCount);
+        }
+      } else {
+        setFollowingList([]);
+      }
+    } catch (error) {
+      setFollowingList([]);
+    } finally {
+      setIsLoadingFollowing(false);
     }
   };
 
@@ -1825,12 +1839,6 @@ export default function ProfessionalUserProfileScreen() {
     setIsFollowingState(nextState);
     setFollowerCountState((prev) => (nextState ? prev + 1 : Math.max(0, prev - 1)));
 
-    if (nextState) {
-      GLOBAL_FOLLOWED_USERS.add(activeTarget);
-    } else {
-      GLOBAL_FOLLOWED_USERS.delete(activeTarget);
-    }
-
     try {
       const token = await getToken();
       const res = await axios.post(
@@ -1897,14 +1905,17 @@ export default function ProfessionalUserProfileScreen() {
   const postCount = data?.postCount !== undefined ? data.postCount : postsToDisplay.length;
   const reelCount = reelsToDisplay.length;
   const followerCount = followerCountState;
-  const followingCount = isSelf ? GLOBAL_FOLLOWED_USERS.size : (data?.followingCount || 12);
+  const followingCount = followingCountState;
   const posts = postsToDisplay;
   const reels = reelsToDisplay;
 
-  const bgDark = isDark ? '#060b13' : '#ffffff';
-  const cardBg = isDark ? '#0c1626' : '#ffffff';
-  const borderColor = isDark ? '#1a273c' : '#e2e8f0';
-  const goldPrimary = '#e6b800';
+  const bgDark = isDark ? '#060B13' : '#F8FAFC';
+  const cardBg = isDark ? '#0C1626' : '#FFFFFF';
+  const borderColor = isDark ? '#1E293B' : '#E2E8F0';
+  const textPrimary = isDark ? '#FFFFFF' : '#0F172A';
+  const textSecondary = isDark ? '#CBD5E1' : '#475569';
+  const textMuted = isDark ? '#8B9BB4' : '#64748B';
+  const goldPrimary = isDark ? '#E6B800' : '#D97706';
 
   const defaultHeadline =
     profileUser?.headline ||
@@ -1917,13 +1928,13 @@ export default function ProfessionalUserProfileScreen() {
   const mutualsText = (rawMutuals && !rawMutuals.includes('Logeshwaran A, Logeshwaran A'))
     ? rawMutuals
     : (followerCount > 0
-      ? `Followed by Logeshwaran A, shreekutti and ${Math.max(1, followerCount - 2)} other${Math.max(1, followerCount - 2) > 1 ? 's' : ''}`
-      : '4 followers in Boolok Network');
+      ? `${followerCount} ${followerCount === 1 ? 'follower' : 'followers'} in Boolok Network`
+      : '0 followers in Boolok Network');
 
   return (
     <ScrollView
       style={[styles.root, { backgroundColor: bgDark }]}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[styles.scrollContent, isMobile && { paddingVertical: 12, paddingHorizontal: 10 }]}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.container}>
@@ -1938,7 +1949,7 @@ export default function ProfessionalUserProfileScreen() {
         ════════════════════════════════════════════════════════════════════════ */}
         <View style={[styles.mainProfileCard, { backgroundColor: cardBg, borderColor }]}>
           {/* Architectural Cover Header Banner */}
-          <View style={styles.coverBannerContainer}>
+          <View style={[styles.coverBannerContainer, isMobile && { height: 135 }]}>
             <Image
               source={{
                 uri:
@@ -1952,16 +1963,16 @@ export default function ProfessionalUserProfileScreen() {
               colors={['transparent', 'rgba(12,22,38,0.9)']}
               style={StyleSheet.absoluteFill}
             />
-            <View style={styles.coverBrandBadge}>
-              <BoolokLogo size={16} color="#ffffff" />
-              <Text style={styles.coverBrandText}>BOOLOK GPT ELITE BROKERAGE</Text>
+            <View style={[styles.coverBrandBadge, isSmallMobile && { paddingHorizontal: 6, paddingVertical: 3 }]}>
+              <BoolokLogo size={isSmallMobile ? 14 : 16} color="#ffffff" />
+              <Text style={styles.coverBrandText}>{isSmallMobile ? 'BOOLOK ELITE' : 'BOOLOK GPT ELITE BROKERAGE'}</Text>
             </View>
           </View>
 
           {/* Profile Header Content Overlapping Cover */}
-          <View style={styles.profileHeaderContent}>
+          <View style={[styles.profileHeaderContent, isMobile && { paddingHorizontal: 14, paddingBottom: 16 }]}>
             {/* Top Row: Avatar on Left, Organization Badge on Right */}
-            <View style={styles.avatarRow}>
+            <View style={[styles.avatarRow, isMobile && { marginTop: -42, marginBottom: 10 }]}>
               {/* Overlapping Avatar */}
               <Pressable
                 onPress={isSelf ? () => setIsAvatarModalOpen(true) : undefined}
@@ -1970,17 +1981,18 @@ export default function ProfessionalUserProfileScreen() {
                 {profileUser.profilePicture && !profileUser.profilePicture.includes('images.unsplash.com') ? (
                   <Image
                     source={{ uri: profileUser.profilePicture }}
-                    style={styles.avatarImage}
+                    style={[styles.avatarImage, isMobile && { width: 84, height: 84, borderRadius: 42, borderWidth: 3 }]}
                   />
                 ) : (isSelf || (profileUser.username || '').includes('sai')) ? (
                   <Image
                     source={{ uri: 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' }}
-                    style={styles.avatarImage}
+                    style={[styles.avatarImage, isMobile && { width: 84, height: 84, borderRadius: 42, borderWidth: 3 }]}
                   />
                 ) : (
                   <View
                     style={[
                       styles.avatarImage,
+                      isMobile && { width: 84, height: 84, borderRadius: 42, borderWidth: 3 },
                       {
                         backgroundColor: isSelf ? '#ea580c' : '#1a273c',
                         justifyContent: 'center',
@@ -1992,7 +2004,7 @@ export default function ProfessionalUserProfileScreen() {
                   >
                     <Text
                       style={{
-                        fontSize: 38,
+                        fontSize: isMobile ? 28 : 38,
                         fontWeight: '800',
                         color: isSelf ? '#ffffff' : '#daa520',
                       }}
@@ -2008,8 +2020,8 @@ export default function ProfessionalUserProfileScreen() {
                       {
                         backgroundColor: '#daa520',
                         borderRadius: 14,
-                        width: 28,
-                        height: 28,
+                        width: isMobile ? 24 : 28,
+                        height: isMobile ? 24 : 28,
                         justifyContent: 'center',
                         alignItems: 'center',
                         borderWidth: 2,
@@ -2017,23 +2029,23 @@ export default function ProfessionalUserProfileScreen() {
                       },
                     ]}
                   >
-                    <MaterialIcons name="photo-camera" size={16} color="#000000" />
+                    <MaterialIcons name="photo-camera" size={isMobile ? 13 : 16} color="#000000" />
                   </View>
                 ) : (
                   <View style={styles.avatarVerifiedBadge}>
-                    <MaterialIcons name="verified" size={20} color="#0095f6" />
+                    <MaterialIcons name="verified" size={isMobile ? 16 : 20} color="#0095f6" />
                   </View>
                 )}
               </Pressable>
 
               {/* Right Side Affiliation & Logo Badge */}
-              <View style={styles.affiliationBox}>
-                <View style={styles.affiliationLogoCircle}>
-                  <BoolokLogo size={18} color="#ffffff" />
+              <View style={[styles.affiliationBox, isSmallMobile && { paddingHorizontal: 8, paddingVertical: 6 }]}>
+                <View style={[styles.affiliationLogoCircle, isSmallMobile && { width: 26, height: 26, borderRadius: 13 }]}>
+                  <BoolokLogo size={isSmallMobile ? 14 : 18} color="#ffffff" />
                 </View>
-                <View style={{ marginLeft: 8 }}>
-                  <Text style={styles.affiliationTitle}>Boolok Real Estate Group</Text>
-                  <Text style={styles.affiliationSubtitle}>Institutional Valuation & CRE</Text>
+                <View style={{ marginLeft: isSmallMobile ? 6 : 8 }}>
+                  <Text style={[styles.affiliationTitle, isSmallMobile && { fontSize: 11 }]}>Boolok Real Estate Group</Text>
+                  {!isSmallMobile && <Text style={styles.affiliationSubtitle}>Institutional Valuation & CRE</Text>}
                 </View>
               </View>
             </View>
@@ -2041,7 +2053,7 @@ export default function ProfessionalUserProfileScreen() {
             {/* Name & Verification Indicator */}
             <View style={styles.nameBlock}>
               <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                <Text style={styles.profileFullName}>
+                <Text style={[styles.profileFullName, { color: textPrimary }]}>
                   {profileUser.fullName || (isSelf ? viewer?.fullName || 'Sai Vimenthan' : 'Advisor')}
                 </Text>
                 <MaterialIcons name="verified" size={20} color="#0095f6" />
@@ -2082,11 +2094,11 @@ export default function ProfessionalUserProfileScreen() {
               )}
 
               {/* Professional Headline */}
-              <Text style={styles.profileHeadline}>{defaultHeadline}</Text>
+              <Text style={[styles.profileHeadline, { color: textSecondary }]}>{defaultHeadline}</Text>
 
               {/* Location & Contact Info */}
               <View style={styles.locationContactRow}>
-                <Text style={styles.locationText}>{defaultLocation}</Text>
+                <Text style={[styles.locationText, { color: textMuted }]}>{defaultLocation}</Text>
                 <Text style={styles.locationDot}>·</Text>
                 <Pressable onPress={() => alertMsg(`Member: ${profileUser.fullName}\nUsername: @${profileUser.username}\nNetwork: Boolok Global Real Estate`)}>
                   <Text style={styles.contactInfoText}>Contact info</Text>
@@ -2101,6 +2113,15 @@ export default function ProfessionalUserProfileScreen() {
                       {followerCount.toLocaleString()}
                     </Text>{' '}
                     followers
+                  </Text>
+                </Pressable>
+                <Text style={styles.metricsDot}>·</Text>
+                <Pressable onPress={handleOpenFollowingModal} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.followersMetric}>
+                    <Text style={{ fontWeight: '800', color: '#ffffff', textDecorationLine: 'underline' }}>
+                      {followingCount.toLocaleString()}
+                    </Text>{' '}
+                    following
                   </Text>
                 </Pressable>
                 <Text style={styles.metricsDot}>·</Text>
@@ -2123,14 +2144,14 @@ export default function ProfessionalUserProfileScreen() {
               </Pressable>
 
               {/* Call-to-Action Executive Buttons */}
-              <View style={styles.ctaButtonRow}>
+              <View style={[styles.ctaButtonRow, isMobile && { gap: 8, marginTop: 14 }]}>
                 {!isSelf ? (
                   <>
                     <Pressable
                       onPress={() =>
                         alertMsg(`Inquiry opened for ${profileUser.fullName}. Connecting to secure message desk...`)
                       }
-                      style={[styles.primaryCtaBtn, { backgroundColor: '#0077b5' }]}
+                      style={[styles.primaryCtaBtn, isMobile && { flex: 1, minWidth: 90, paddingHorizontal: 10, justifyContent: 'center' }, { backgroundColor: '#0077b5' }]}
                     >
                       <MaterialCommunityIcons name="send" size={16} color="#ffffff" />
                       <Text style={styles.primaryCtaText}>Message</Text>
@@ -2141,6 +2162,7 @@ export default function ProfessionalUserProfileScreen() {
                       disabled={followBusy}
                       style={[
                         styles.secondaryCtaBtn,
+                        isMobile && { flex: 1, minWidth: 90, paddingHorizontal: 10, justifyContent: 'center' },
                         {
                           backgroundColor: isFollowingState ? '#1a273c' : goldPrimary,
                           borderColor: isFollowingState ? '#1a273c' : goldPrimary,
@@ -2159,7 +2181,7 @@ export default function ProfessionalUserProfileScreen() {
 
                     <Pressable
                       onPress={() => alertMsg('Consultation scheduled on Boolok GPT VIP calendar.')}
-                      style={[styles.secondaryCtaBtn, { borderColor: '#8b9bb4' }]}
+                      style={[styles.secondaryCtaBtn, isMobile && { flex: 1, minWidth: 140, paddingHorizontal: 10, justifyContent: 'center' }, { borderColor: '#8b9bb4' }]}
                     >
                       <Text style={[styles.secondaryCtaText, { color: '#ffffff' }]}>
                         Schedule Consultation
@@ -2170,7 +2192,7 @@ export default function ProfessionalUserProfileScreen() {
                   <>
                     <Pressable
                       onPress={handleOpenEditModal}
-                      style={[styles.primaryCtaBtn, { backgroundColor: goldPrimary }]}
+                      style={[styles.primaryCtaBtn, isMobile && { flex: 1, minWidth: 90, paddingHorizontal: 10, justifyContent: 'center' }, { backgroundColor: goldPrimary }]}
                     >
                       <MaterialIcons name="edit" size={18} color="#000000" />
                       <Text style={[styles.primaryCtaText, { color: '#000000' }]}>
@@ -2180,7 +2202,7 @@ export default function ProfessionalUserProfileScreen() {
 
                     <Pressable
                       onPress={() => setCreateType('post')}
-                      style={[styles.secondaryCtaBtn, { borderColor: goldPrimary }]}
+                      style={[styles.secondaryCtaBtn, isMobile && { flex: 1, minWidth: 90, paddingHorizontal: 10, justifyContent: 'center' }, { borderColor: goldPrimary }]}
                     >
                       <MaterialIcons name="add" size={18} color={goldPrimary} />
                       <Text style={[styles.secondaryCtaText, { color: goldPrimary }]}>
@@ -2190,7 +2212,7 @@ export default function ProfessionalUserProfileScreen() {
 
                     <Pressable
                       onPress={() => alertMsg('CRE Portfolio PDF downloaded.')}
-                      style={[styles.secondaryCtaBtn, { borderColor: '#8b9bb4' }]}
+                      style={[styles.secondaryCtaBtn, isMobile && { flex: 1, minWidth: 90, paddingHorizontal: 10, justifyContent: 'center' }, { borderColor: '#8b9bb4' }]}
                     >
                       <Text style={[styles.secondaryCtaText, { color: '#ffffff' }]}>
                         Share Portfolio
@@ -2207,22 +2229,22 @@ export default function ProfessionalUserProfileScreen() {
             ABOUT & COMMERCIAL EXPERTISE CARD
         ════════════════════════════════════════════════════════════════════════ */}
         <View style={[styles.card, { backgroundColor: cardBg, borderColor, marginTop: 16 }]}>
-          <Text style={styles.sectionHeading}>About & Commercial Expertise</Text>
-          <Text style={styles.aboutBodyText}>{defaultBio}</Text>
+          <Text style={[styles.sectionHeading, { color: textPrimary }]}>About & Commercial Expertise</Text>
+          <Text style={[styles.aboutBodyText, { color: textSecondary }]}>{defaultBio}</Text>
 
           {/* Core Specialization Pills */}
           <View style={styles.pillsContainer}>
-            <View style={styles.pillItem}>
-              <Text style={styles.pillText}>🏢 Commercial Office Buildings</Text>
+            <View style={[styles.pillItem, { backgroundColor: isDark ? '#162235' : '#F1F5F9', borderColor }]}>
+              <Text style={[styles.pillText, { color: goldPrimary }]}>🏢 Commercial Office Buildings</Text>
             </View>
-            <View style={styles.pillItem}>
-              <Text style={styles.pillText}>🏖️ Luxury Waterfront Estates</Text>
+            <View style={[styles.pillItem, { backgroundColor: isDark ? '#162235' : '#F1F5F9', borderColor }]}>
+              <Text style={[styles.pillText, { color: goldPrimary }]}>🏖️ Luxury Waterfront Estates</Text>
             </View>
-            <View style={styles.pillItem}>
-              <Text style={styles.pillText}>📈 Institutional Cap Rate Advisory</Text>
+            <View style={[styles.pillItem, { backgroundColor: isDark ? '#162235' : '#F1F5F9', borderColor }]}>
+              <Text style={[styles.pillText, { color: goldPrimary }]}>📈 Institutional Cap Rate Advisory</Text>
             </View>
-            <View style={styles.pillItem}>
-              <Text style={styles.pillText}>🤖 AI Valuation & Market Modeling</Text>
+            <View style={[styles.pillItem, { backgroundColor: isDark ? '#162235' : '#F1F5F9', borderColor }]}>
+              <Text style={[styles.pillText, { color: goldPrimary }]}>🤖 AI Valuation & Market Modeling</Text>
             </View>
           </View>
         </View>
@@ -2232,7 +2254,7 @@ export default function ProfessionalUserProfileScreen() {
         ════════════════════════════════════════════════════════════════════════ */}
         {isSelf && (
           <View style={[styles.card, { backgroundColor: cardBg, borderColor, marginTop: 16 }]}>
-            <Text style={styles.sectionHeading}>Publish Property Listing or Video Reel</Text>
+            <Text style={[styles.sectionHeading, { color: textPrimary }]}>Publish Property Listing or Video Reel</Text>
 
             {/* Type Selector */}
             <View style={styles.createTypeRow}>
@@ -2419,12 +2441,12 @@ export default function ProfessionalUserProfileScreen() {
               <MaterialCommunityIcons
                 name="office-building"
                 size={20}
-                color={activeTab === 'properties' ? goldPrimary : '#8b9bb4'}
+                color={activeTab === 'properties' ? goldPrimary : textMuted}
               />
               <Text
                 style={[
                   styles.portfolioTabText,
-                  { color: activeTab === 'properties' ? '#ffffff' : '#8b9bb4' },
+                  { color: activeTab === 'properties' ? (isDark ? '#FFFFFF' : '#0F172A') : textMuted },
                 ]}
               >
                 Properties & Listings ({posts.length})
@@ -2441,12 +2463,12 @@ export default function ProfessionalUserProfileScreen() {
               <MaterialCommunityIcons
                 name="play-box-multiple-outline"
                 size={20}
-                color={activeTab === 'reels' ? goldPrimary : '#8b9bb4'}
+                color={activeTab === 'reels' ? goldPrimary : textMuted}
               />
               <Text
                 style={[
                   styles.portfolioTabText,
-                  { color: activeTab === 'reels' ? '#ffffff' : '#8b9bb4' },
+                  { color: activeTab === 'reels' ? (isDark ? '#FFFFFF' : '#0F172A') : textMuted },
                 ]}
               >
                 Video Tours & Reels ({reels.length})
@@ -2457,14 +2479,15 @@ export default function ProfessionalUserProfileScreen() {
           {/* Properties Display */}
           {activeTab === 'properties' ? (
             posts && posts.length > 0 ? (
-              <View style={styles.propertiesGrid}>
+              <View style={[styles.propertiesGrid, isMobile && { gap: 12 }]}>
                 {posts.map((post: any) => (
                   <Pressable
                     key={post._id}
                     onPress={() => handleOpenPostDetailsModal(post)}
                     style={({ pressed, hovered }: any) => [
                       styles.propertyCard,
-                      { borderColor, cursor: 'pointer' },
+                      isMobile && { width: '100%', minWidth: '100%' },
+                      { backgroundColor: cardBg, borderColor, cursor: 'pointer' },
                       (pressed || hovered) && { borderColor: goldPrimary, transform: [{ translateY: -2 }] },
                     ]}
                   >
@@ -2472,20 +2495,20 @@ export default function ProfessionalUserProfileScreen() {
                       source={{
                         uri: resolvePropertyImage(post),
                       }}
-                      style={styles.propertyImage}
+                      style={[styles.propertyImage, isMobile && { height: 210 }]}
                       resizeMode="cover"
                     />
-                    <View style={styles.propertyDetailsBox}>
-                      <Text style={styles.propertyPriceText}>
+                    <View style={[styles.propertyDetailsBox, { backgroundColor: cardBg }]}>
+                      <Text style={[styles.propertyPriceText, { color: goldPrimary }]}>
                         {post.price || '$8,900,000'}
                       </Text>
-                      <Text style={styles.propertyTitleText} numberOfLines={1}>
+                      <Text style={[styles.propertyTitleText, { color: textPrimary }]} numberOfLines={1}>
                         {post.title || (post.content ? post.content.slice(0, 45) + '...' : 'Luxury Waterfront Residence')}
                       </Text>
-                      <Text style={styles.propertyLocationText}>
+                      <Text style={[styles.propertyLocationText, { color: textMuted }]}>
                         📍 {post.location || 'Prime Commercial Corridor'}
                       </Text>
-                      <Text style={styles.propertySpecsText}>
+                      <Text style={[styles.propertySpecsText, { color: textSecondary }]}>
                         {post.specs || 'Turnkey Acquisition · High Cap Rate'}
                       </Text>
 
@@ -2719,6 +2742,96 @@ export default function ProfessionalUserProfileScreen() {
                       {isSelf
                         ? 'When members in the Boolok Network connect with you, they will appear here in real-time.'
                         : `Be the first person in the network to follow ${profileUser.fullName}!`}
+                    </Text>
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* REAL-TIME LIVE FOLLOWING MODAL */}
+        <Modal
+          visible={isFollowingModalOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsFollowingModalOpen(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+            <View style={{ width: '100%', maxWidth: 480, backgroundColor: '#0c1626', borderRadius: 16, borderWidth: 1, borderColor: '#1a273c', padding: 20, maxHeight: 520 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#1a273c', paddingBottom: 14 }}>
+                <View>
+                  <Text style={{ fontSize: 17, fontWeight: '800', color: '#ffffff' }}>
+                    {profileUser.fullName}'s Following
+                  </Text>
+                  <Text style={{ color: '#8b9bb4', fontSize: 12, marginTop: 2 }}>
+                    {followingCount} {followingCount === 1 ? 'person followed' : 'persons followed'} in real-time
+                  </Text>
+                </View>
+                <Pressable onPress={() => setIsFollowingModalOpen(false)} style={{ padding: 4 }}>
+                  <MaterialIcons name="close" size={24} color="#8b9bb4" />
+                </Pressable>
+              </View>
+
+              <ScrollView style={{ marginTop: 12 }} showsVerticalScrollIndicator={false}>
+                {isLoadingFollowing ? (
+                  <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                    <ActivityIndicator size="small" color="#daa520" />
+                    <Text style={{ color: '#8b9bb4', fontSize: 12, marginTop: 8 }}>Loading real-time following list...</Text>
+                  </View>
+                ) : followingList.length > 0 ? (
+                  followingList.map((followedUser: any, idx: number) => {
+                    const fInitial = (followedUser.fullName || followedUser.username || 'U')[0]?.toUpperCase();
+                    return (
+                      <Pressable
+                        key={followedUser.id || followedUser._id || idx}
+                        style={({ pressed, hovered }: any) => [
+                          styles.followerListItem,
+                          { borderBottomWidth: idx < followingList.length - 1 ? 1 : 0, borderBottomColor: '#142033' },
+                          (pressed || hovered) && { backgroundColor: '#162338' },
+                        ]}
+                        onPress={() => {
+                          setIsFollowingModalOpen(false);
+                          router.push({
+                            pathname: '/(app)/profile',
+                            params: { id: followedUser.id || followedUser._id || followedUser.username },
+                          });
+                        }}
+                      >
+                        {followedUser.profilePicture ? (
+                          <Image source={{ uri: followedUser.profilePicture }} style={styles.followerItemAvatar} />
+                        ) : (
+                          <View style={[styles.followerItemAvatar, { backgroundColor: '#1a273c', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#daa520' }]}>
+                            <Text style={{ color: '#daa520', fontWeight: '800', fontSize: 14 }}>{fInitial}</Text>
+                          </View>
+                        )}
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                          <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>
+                            {followedUser.fullName}
+                          </Text>
+                          <Text style={{ color: '#8b9bb4', fontSize: 12 }}>
+                            @{followedUser.username}
+                          </Text>
+                          {followedUser.headline && (
+                            <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+                              {followedUser.headline}
+                            </Text>
+                          )}
+                        </View>
+                        <MaterialIcons name="chevron-right" size={20} color="#8b9bb4" />
+                      </Pressable>
+                    );
+                  })
+                ) : (
+                  <View style={{ paddingVertical: 36, alignItems: 'center' }}>
+                    <MaterialIcons name="people-outline" size={44} color="#64748b" />
+                    <Text style={{ color: '#ffffff', fontSize: 15, fontWeight: '700', marginTop: 12 }}>
+                      Not following anyone yet
+                    </Text>
+                    <Text style={{ color: '#8b9bb4', fontSize: 12.5, textAlign: 'center', marginTop: 6, paddingHorizontal: 20 }}>
+                      {isSelf
+                        ? 'When you follow brokers, investors, or advisors in the Boolok Network, they will appear here.'
+                        : `${profileUser.fullName} is not currently following any members.`}
                     </Text>
                   </View>
                 )}
@@ -3269,12 +3382,24 @@ const styles = StyleSheet.create({
   mainProfileCard: {
     borderRadius: 12,
     borderWidth: 1,
-    overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -1px rgba(15, 23, 42, 0.04)',
+      } as any,
+    }),
   },
   coverBannerContainer: {
     height: 180,
     width: '100%',
     position: 'relative',
+    borderTopLeftRadius: 11,
+    borderTopRightRadius: 11,
+    overflow: 'hidden',
   },
   coverBannerImage: {
     width: '100%',
@@ -3514,6 +3639,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     padding: 20,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 10px -1px rgba(15, 23, 42, 0.06), 0 1px 3px -1px rgba(15, 23, 42, 0.04)',
+      } as any,
+    }),
   },
   sectionHeading: {
     fontSize: 16,
@@ -3680,10 +3815,19 @@ const styles = StyleSheet.create({
   propertyCard: {
     width: '48%',
     minWidth: 260,
-    backgroundColor: '#070e1a',
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 1,
     overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 10px -1px rgba(15, 23, 42, 0.06), 0 1px 3px -1px rgba(15, 23, 42, 0.04)',
+      } as any,
+    }),
   },
   propertyImage: {
     width: '100%',

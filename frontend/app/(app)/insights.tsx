@@ -26,6 +26,7 @@ import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
+import { API_BASE_URL } from '../../lib/api';
 
 const DUMMY_VIDEOS = [
   {
@@ -201,8 +202,9 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
   const { theme } = useTheme();
   const [deleting, setDeleting] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [likesCount, setLikesCount] = useState<number>(item.likes || 920);
-  const [hasLiked, setHasLiked] = useState(false);
+  const initialLikes = typeof item.likes === 'number' ? item.likes : (Array.isArray(item.likes) ? item.likes.length : 0);
+  const [likesCount, setLikesCount] = useState<number>(initialLikes);
+  const [hasLiked, setHasLiked] = useState<boolean>(Boolean(item.isLiked));
   const [isSaved, setIsSaved] = useState<boolean>(() => {
     if (Platform.OS === 'web') {
       try {
@@ -329,13 +331,31 @@ const VideoItem = ({ item, isActive, cardHeight, cardWidth, isMobile, onDelete }
     }
   };
 
-  const handleLike = () => {
-    if (hasLiked) {
-      setHasLiked(false);
-      setLikesCount((prev) => Math.max(0, prev - 1));
-    } else {
-      setHasLiked(true);
-      setLikesCount((prev) => prev + 1);
+  const handleLike = async () => {
+    const nextState = !hasLiked;
+    setHasLiked(nextState);
+    setLikesCount((prev) => (nextState ? prev + 1 : Math.max(0, prev - 1)));
+
+    try {
+      const token = Platform.OS === 'web'
+        ? localStorage.getItem('userToken')
+        : await SecureStore.getItemAsync('userToken');
+
+      if (item._id && token && !['1', '2', '3', '4'].includes(item._id)) {
+        const res = await axios.put(
+          `${API_BASE_URL}/api/reels/${item._id}/like`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (res.data && typeof res.data.likesCount === 'number') {
+          setLikesCount(res.data.likesCount);
+        }
+        if (res.data && typeof res.data.isLiked === 'boolean') {
+          setHasLiked(res.data.isLiked);
+        }
+      }
+    } catch (e) {
+      console.warn('Reel like updated in local session');
     }
   };
 
@@ -911,7 +931,7 @@ function UploadModal({ visible, onClose, onUploaded, theme, isDark }: any) {
       formData.append('location', location.trim());
       formData.append('caption', caption.trim());
 
-      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/api/reels`, formData, {
+      const response = await axios.post(`${API_BASE_URL}/api/reels`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
@@ -1071,7 +1091,7 @@ export default function InsightsScreen() {
         ? localStorage.getItem('userToken')
         : await SecureStore.getItemAsync('userToken');
 
-      const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/reels`, {
+      const response = await axios.get(`${API_BASE_URL}/api/reels`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -1086,7 +1106,7 @@ export default function InsightsScreen() {
           // Uploaded files are relative paths; stream URLs are absolute
           videoUrl: r.videoUrl.startsWith('http')
             ? r.videoUrl
-            : `${process.env.EXPO_PUBLIC_API_URL}${r.videoUrl}`,
+            : `${API_BASE_URL}${r.videoUrl}`,
         }));
         // Real reels first, then dummy placeholders
         setVideos([...dbReels, ...DUMMY_VIDEOS]);
@@ -1105,7 +1125,9 @@ export default function InsightsScreen() {
       aiMatch: newReel.aiMatch ?? 0,
       insight: newReel.insight || newReel.caption || '',
       likes: newReel.likes?.length ?? 0,
-      videoUrl: `${process.env.EXPO_PUBLIC_API_URL}${newReel.videoUrl}`,
+      videoUrl: newReel.videoUrl?.startsWith('http')
+        ? newReel.videoUrl
+        : `${API_BASE_URL}${newReel.videoUrl}`,
     };
     setVideos((prev) => [mapped, ...prev]);
   };
@@ -1116,7 +1138,7 @@ export default function InsightsScreen() {
         ? localStorage.getItem('userToken')
         : await SecureStore.getItemAsync('userToken');
 
-      await axios.delete(`${process.env.EXPO_PUBLIC_API_URL}/api/reels/${reelId}`, {
+      await axios.delete(`${API_BASE_URL}/api/reels/${reelId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

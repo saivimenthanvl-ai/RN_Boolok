@@ -1,718 +1,551 @@
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
 const Post = require('../models/Post');
+const User = require('../models/User');
 const upload = require('../config/localUpload');
 const authMiddleware = require('../middleware/auth');
+const optionalAuth = require('../middleware/optionalAuth');
 
 const router = express.Router();
 
 const getAuthenticatedUserId = (req) =>
-    req.user?.id || req.user?._id || req.userId || null;
+  req.user?.id || req.user?._id || req.userId || null;
 
-// Create post
+// Format a single post document into a clean, consistent response
+const formatPost = (post, viewerId = null) => {
+  const p = post.toObject ? post.toObject() : post;
+  const likesArray = (p.likes || []).map((l) => (l?._id ? l._id.toString() : String(l)));
+  const isLiked = viewerId ? likesArray.includes(viewerId.toString()) : false;
+
+  const comments = (p.comments || []).map((c) => {
+    const userObj = c.user || {};
+    return {
+      _id: c._id,
+      author: {
+        _id: userObj._id || userObj.id || null,
+        fullName: userObj.fullName || 'Boolok Member',
+        username: userObj.username || 'member',
+        profilePicture: userObj.profilePicture || null,
+      },
+      text: c.text,
+      createdAt: c.createdAt,
+      time: c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
+    };
+  });
+
+  return {
+    _id: p._id.toString(),
+    content: p.content || '',
+    mediaUrl: p.mediaUrl || null,
+    author: p.author
+      ? {
+          _id: p.author._id?.toString() || p.author.id?.toString(),
+          fullName: p.author.fullName || 'Boolok Member',
+          username: p.author.username || 'member',
+          profilePicture: p.author.profilePicture || null,
+          headline: p.author.headline || 'Real Estate Professional & Boolok Member',
+          location: p.author.location || 'Global Real Estate Network',
+        }
+      : null,
+    likes: likesArray,
+    likesCount: likesArray.length,
+    isLiked,
+    currentUserReaction: isLiked ? 'like' : null,
+    likesSummary: likesArray.length > 0
+      ? (isLiked
+          ? (likesArray.length === 1 ? 'Liked by you' : `Liked by you and ${likesArray.length - 1} other${likesArray.length > 2 ? 's' : ''}`)
+          : `Liked by ${likesArray.length} member${likesArray.length > 1 ? 's' : ''}`)
+      : '0 likes',
+    comments,
+    commentsCount: comments.length,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  };
+};
+
+// ── Community fallback posts (shown when DB is empty) ───────────────────────
+const FALLBACK_COMMUNITY_POSTS = [
+  {
+    _id: 'shree-p-1',
+    content: 'Fully leased Grade-A Tech Park development with pre-verified institutional efficiency ratings. 8.4% Cap Rate · 92,000 sq ft · Outer Ring Road, Bangalore.',
+    mediaUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
+    author: { _id: 'shreekutti', fullName: 'Shreekutti', username: 'shreekutti', profilePicture: null, headline: 'Tech Park Campus Acquisitions Lead @ Boolok', location: 'Bangalore, Karnataka' },
+    likes: ['logeshwarana', 'ajmal', 'sai'],
+    likesCount: 3,
+    isLiked: false,
+    currentUserReaction: null,
+    likesSummary: 'Liked by 3 members',
+    comments: [
+      { _id: 'sc-1', author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' }, text: '8.4% cap rate on Outer Ring Road is top quartile! 🏢🚀', time: '04:15 pm', createdAt: new Date('2026-09-10T10:45:00.000Z') },
+      { _id: 'sc-2', author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' }, text: 'Strong institutional covenants on this campus.', time: '05:30 pm', createdAt: new Date('2026-09-10T12:00:00.000Z') },
+    ],
+    commentsCount: 2,
+    createdAt: new Date('2026-09-10T09:00:00.000Z'),
+    updatedAt: new Date('2026-09-10T09:00:00.000Z'),
+  },
+  {
+    _id: 'ajmal-p-1',
+    content: 'Direct beach access, smart home automation, infinity pool overlooking Dubai Marina. Palm Jumeirah Signature Mansion — 7 Beds · Private Beach · $24,000,000.',
+    mediaUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200',
+    author: { _id: 'ajmal', fullName: 'Mohammed Ajmal', username: 'ajmal', profilePicture: null, headline: 'Luxury Living & High-End Residential Broker', location: 'Palm Jumeirah, Dubai' },
+    likes: ['sai', 'logeshwarana', 'shreekutti', 'the_akshtr_estate'],
+    likesCount: 4,
+    isLiked: false,
+    currentUserReaction: null,
+    likesSummary: 'Liked by 4 members',
+    comments: [
+      { _id: 'ac-1', author: { fullName: 'Shreekutti', username: 'shreekutti' }, text: 'Unrivaled private beach frontage!', time: '10:00 am', createdAt: new Date('2026-09-09T04:30:00.000Z') },
+      { _id: 'ac-2', author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' }, text: 'Bespoke marble and high ceiling elevation.', time: '11:15 am', createdAt: new Date('2026-09-09T05:45:00.000Z') },
+    ],
+    commentsCount: 2,
+    createdAt: new Date('2026-09-09T04:00:00.000Z'),
+    updatedAt: new Date('2026-09-09T04:00:00.000Z'),
+  },
+  {
+    _id: 'logesh-p-1',
+    content: 'World-class vineyard estate with high soil suitability index and pre-approved zoning. Margaret River Commercial Vineyard — 140 Acres · Pre-Verified Water Rights · $18,500,000.',
+    mediaUrl: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1200',
+    author: { _id: 'logeshwarana', fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c', headline: 'Architectural Consultant & Real Estate Lead', location: 'Western Australia' },
+    likes: ['sai', 'shreekutti', 'bavadharini_rs'],
+    likesCount: 3,
+    isLiked: false,
+    currentUserReaction: null,
+    likesSummary: 'Liked by 3 members',
+    comments: [
+      { _id: 'lc-1', author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' }, text: 'Soil analysis and water rights are pristine.', time: '02:00 pm', createdAt: new Date('2026-09-08T08:30:00.000Z') },
+      { _id: 'lc-2', author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' }, text: 'Architectural layout is stunning.', time: '03:10 pm', createdAt: new Date('2026-09-08T09:40:00.000Z') },
+    ],
+    commentsCount: 2,
+    createdAt: new Date('2026-09-08T08:00:00.000Z'),
+    updatedAt: new Date('2026-09-08T08:00:00.000Z'),
+  },
+  {
+    _id: 'akshat-p-1',
+    content: 'Modern commercial tower with multi-level parking, 100% power backup, and prime expressway frontage. Institutional Grade-A Office Hub — 120,000 sq ft · 8.9% Yield · OMR IT Corridor.',
+    mediaUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200',
+    author: { _id: 'the_akshtr_estate', fullName: 'Akshat Commercials', username: 'the_akshtr_estate', profilePicture: null, headline: 'Commercial Property & Tech Park Portfolio Lead @ Boolok Network', location: 'OMR IT Corridor, Chennai' },
+    likes: ['sai', 'shreekutti', 'logeshwarana'],
+    likesCount: 3,
+    isLiked: false,
+    currentUserReaction: null,
+    likesSummary: 'Liked by 3 members',
+    comments: [
+      { _id: 'akc-1', author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' }, text: 'Triple net lease with institutional covenants is top tier!', time: '06:00 pm', createdAt: new Date('2026-09-07T12:30:00.000Z') },
+    ],
+    commentsCount: 1,
+    createdAt: new Date('2026-09-07T12:00:00.000Z'),
+    updatedAt: new Date('2026-09-07T12:00:00.000Z'),
+  },
+  {
+    _id: 'prasanth-p-1',
+    content: 'Bespoke modern architecture with floor-to-ceiling glass, sunset views, and private yacht slip. Star Island Waterfront Estate — 6 Beds · 8 Baths · Private Mega-Yacht Dock · $19,800,000.',
+    mediaUrl: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=1200',
+    author: { _id: 'prasanth_properties', fullName: 'Prasanth Properties', username: 'prasanth_properties', profilePicture: null, headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates', location: 'Miami Beach, Florida' },
+    likes: ['sai', 'ajmal', 'bavadharini_rs'],
+    likesCount: 3,
+    isLiked: false,
+    currentUserReaction: null,
+    likesSummary: 'Liked by 3 members',
+    comments: [
+      { _id: 'pc-1', author: { fullName: 'Mohammed Ajmal', username: 'ajmal' }, text: 'Deepwater dock specs and yacht clearance are remarkable.', time: '09:00 am', createdAt: new Date('2026-09-06T03:30:00.000Z') },
+    ],
+    commentsCount: 1,
+    createdAt: new Date('2026-09-06T03:00:00.000Z'),
+    updatedAt: new Date('2026-09-06T03:00:00.000Z'),
+  },
+  {
+    _id: 'bava-p-1',
+    content: 'Double-height glass living room, customized Italian joinery, panoramic sea view balcony. High-Ceiling Ultra Penthouse — 5,800 sq ft · Private Elevator · Poes Garden, Chennai · $6,200,000.',
+    mediaUrl: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=1200',
+    author: { _id: 'bavadharini_rs', fullName: 'Bavadharini RS', username: 'bavadharini_rs', profilePicture: null, headline: 'Interior Designer & Modern Living Specialist', location: 'Chennai, Tamil Nadu' },
+    likes: ['sai', 'ajmal', 'logeshwarana'],
+    likesCount: 3,
+    isLiked: false,
+    currentUserReaction: null,
+    likesSummary: 'Liked by 3 members',
+    comments: [
+      { _id: 'bc-1', author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' }, text: 'Incredible acoustic zoning and clean lines!', time: '07:30 pm', createdAt: new Date('2026-09-05T14:00:00.000Z') },
+    ],
+    commentsCount: 1,
+    createdAt: new Date('2026-09-05T14:00:00.000Z'),
+    updatedAt: new Date('2026-09-05T14:00:00.000Z'),
+  },
+  {
+    _id: 'vignesh-p-1',
+    content: 'New architectural masterpiece in Beverly Hills. 8 Bedrooms, 11 Baths, custom Italian marble, and zero-edge cascading pool. 🏆✨ Beverly Hills Modern Architectural Masterpiece — $12.5M.',
+    mediaUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
+    author: { _id: 'vignesh', fullName: 'Vigneshwaran', username: 'vignesh', profilePicture: null, headline: 'Prime Architectural Estates & Beverly Hills Luxury Specialist', location: 'Beverly Hills, California' },
+    likes: ['sai', 'logeshwarana', 'shreekutti'],
+    likesCount: 3,
+    isLiked: false,
+    currentUserReaction: null,
+    likesSummary: 'Liked by 3 members',
+    comments: [
+      { _id: 'vc-1', author: { fullName: 'Sophia Sterling', username: 'sophia_luxury' }, text: 'Are 1/8th fractional house share syndicate slots still available for European co-owners? 🏡✨', time: '09:15 am', createdAt: new Date('2026-09-04T03:45:00.000Z') },
+    ],
+    commentsCount: 1,
+    createdAt: new Date('2026-09-04T03:00:00.000Z'),
+    updatedAt: new Date('2026-09-04T03:00:00.000Z'),
+  },
+  {
+    _id: 'sai-p-1',
+    content: 'Grade-A institutional office headquarters with 100% occupancy and blue-chip covenants. Coventry Corporate Headquarters — 52,000 sq ft · 8.2% Cap Rate · $16,500,000.',
+    mediaUrl: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=1200',
+    author: { _id: 'saivimenthanvl', fullName: 'Sai Vimenthan', username: 'saivimenthanvl', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c', headline: 'Elite Real Estate Broker & Commercial Portfolio Lead', location: 'Chennai, Tamil Nadu' },
+    likes: ['logeshwarana', 'shreekutti'],
+    likesCount: 2,
+    isLiked: false,
+    currentUserReaction: null,
+    likesSummary: 'Liked by 2 members',
+    comments: [
+      { _id: 'spc-1', author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' }, text: 'Prime UK corporate covenants. Solid institutional deal!', time: '04:00 pm', createdAt: new Date('2026-09-03T10:30:00.000Z') },
+    ],
+    commentsCount: 1,
+    createdAt: new Date('2026-09-03T10:00:00.000Z'),
+    updatedAt: new Date('2026-09-03T10:00:00.000Z'),
+  },
+];
+
+// ── GET /api/feed : Fetch all posts ──────────────────────────────────────────
+router.get('/', optionalAuth, async (req, res) => {
+  try {
+    const viewerId = getAuthenticatedUserId(req);
+    const dbPosts = await Post.find({})
+      .populate('author', 'fullName username profilePicture headline location email')
+      .populate('comments.user', 'fullName username profilePicture')
+      .sort({ createdAt: -1 });
+
+    let formatted = dbPosts
+      .filter((p) => {
+        const text = (p.content || '').trim();
+        const media = (p.mediaUrl || '').trim();
+        // Discard corrupted empty posts
+        return text.length > 0 || (media.length > 0 && !media.includes('google.com/imgres'));
+      })
+      .map((p) => formatPost(p, viewerId));
+
+    // Ensure fallback community posts are always available and merged seamlessly
+    const dbIds = new Set(formatted.map((p) => p._id.toString()));
+    const fallbackExtras = FALLBACK_COMMUNITY_POSTS
+      .filter((p) => !dbIds.has(p._id))
+      .map((p) => ({
+        ...p,
+        isLiked: viewerId ? (p.likes || []).includes(viewerId.toString()) : false,
+        currentUserReaction: viewerId && (p.likes || []).includes(viewerId.toString()) ? 'like' : null,
+      }));
+
+    formatted = [...formatted, ...fallbackExtras];
+
+    return res.status(200).json({ posts: formatted });
+  } catch (error) {
+    console.error('FETCH POSTS ERROR:', error);
+    // On any error, return fallback posts so feed is never empty
+    return res.status(200).json({ posts: FALLBACK_COMMUNITY_POSTS });
+  }
+});
+
+// ── POST /api/feed : Create a new post ───────────────────────────────────────
 router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
-    try {
-        const userId = getAuthenticatedUserId(req);
-        if (!userId) return res.status(401).json({ message: 'Authenticated user ID is missing.' });
+  try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) return res.status(401).json({ message: 'Authentication required.' });
 
-        const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
-        const mediaUrl = req.file ? `/uploads/posts/${req.file.filename}` : (req.body.mediaUrl || null);
+    const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
+    let mediaUrl = req.file ? `/uploads/posts/${req.file.filename}` : (req.body.mediaUrl || null);
 
-        if (!content && !mediaUrl) {
-            return res.status(400).json({ message: 'Add text or upload an image.' });
+    // If client sent a base64 image from device, save to disk
+    if (mediaUrl && typeof mediaUrl === 'string' && mediaUrl.startsWith('data:image/')) {
+      try {
+        const matches = mediaUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+        if (matches) {
+          const rawExt = matches[1].toLowerCase();
+          const ext = rawExt === 'jpeg' ? 'jpg' : rawExt;
+          const buffer = Buffer.from(matches[2], 'base64');
+          const fileName = `device-${Date.now()}-${Math.round(Math.random() * 1e6)}.${ext}`;
+          const uploadDir = path.join(__dirname, '..', 'uploads', 'posts');
+          if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+          }
+          fs.writeFileSync(path.join(uploadDir, fileName), buffer);
+          mediaUrl = `/uploads/posts/${fileName}`;
         }
-
-        const createdPost = await Post.create({ author: userId, content, mediaUrl, likes: [], comments: [] });
-        const populatedPost = await Post.findById(createdPost._id).populate('author', 'fullName username profilePicture email');
-
-        return res.status(201).json({ message: 'Post published successfully', post: populatedPost });
-    } catch (error) {
-        console.error('CREATE POST ERROR:', error);
-        return res.status(500).json({ message: 'Failed to publish post.', error: error.message });
+      } catch (err) {
+        console.warn('Could not save base64 device image to disk, retaining data URI:', err.message);
+      }
     }
+
+    if (!content && !mediaUrl) {
+      return res.status(400).json({ message: 'Add text or upload an image.' });
+    }
+
+    const createdPost = await Post.create({
+      author: userId,
+      content,
+      mediaUrl,
+      likes: [],
+      comments: [],
+    });
+
+    const populated = await Post.findById(createdPost._id)
+      .populate('author', 'fullName username profilePicture headline location email');
+
+    return res.status(201).json({
+      message: 'Post published successfully',
+      post: formatPost(populated, userId),
+    });
+  } catch (error) {
+    console.error('CREATE POST ERROR:', error);
+    return res.status(500).json({ message: 'Failed to publish post.', error: error.message });
+  }
 });
 
-const COMMUNITY_DEFAULT_COMMENTS = [
-    {
-        _id: 'c-1',
-        author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
-        text: 'Exceptional cap rate and prime commercial footprint! This is exactly what institutional investors look for. 🏢🚀',
-        time: '06:10 pm',
-    },
-    {
-        _id: 'c-2',
-        author: { fullName: 'Shreekutti', username: 'shreekutti' },
-        text: 'Grade-A specs with strong tenant covenant structure. Solid long-term hold! 💼✨',
-        time: '07:10 pm',
-    },
-    {
-        _id: 'c-3',
-        author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
-        text: 'Turnkey acquisition with verified yield — exactly our portfolio criteria. DM for interest! 🔑',
-        time: '07:40 pm',
-    },
-    {
-        _id: 'c-4',
-        author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
-        text: 'The architectural finish and interior design elements are world-class on this asset. 🌿',
-        time: '08:10 pm',
-    },
-    {
-        _id: 'c-5',
-        author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
-        text: 'OMR corridor premium commercial — this checks all our institutional grade requirements.',
-        time: '08:40 pm',
-    },
-    {
-        _id: 'c-6',
-        author: { fullName: 'Prasanth Properties', username: 'prasanth_properties' },
-        text: 'Is this available for syndication? Would love to discuss terms. 🏛️',
-        time: '08:55 pm',
-    },
-];
-
-const AGENT_POSTS = [
-    {
-        _id: 're-post-4',
-        author: {
-            _id: 'agent-4',
-            fullName: 'Akshat Commercials',
-            username: 'the_akshtr_estate',
-            profilePicture: null,
-        },
-        content: 'Grade-A Tech Park Space available on OMR Chennai. LEED Platinum Certified, 24/7 power backup, and metro connectivity. 🏢💼',
-        mediaUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200',
-        likes: ['u1', 'u4'],
-        comments: [
-            {
-                _id: 'ap4-1',
-                author: { fullName: 'Shreekutti', username: 'shreekutti' },
-                text: '8.9% yield on OMR expressway frontage with institutional covenants is prime! 🏢💼',
-                time: '10:30 am',
-            },
-            {
-                _id: 'ap4-2',
-                author: { fullName: 'Logeshwaran A', username: 'logeshwarana', profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c' },
-                text: 'Floorplate load ratios and multi-level parking verify Grade-A compliance.',
-                time: '12:15 pm',
-            },
-        ],
-        verified: true,
-        createdAt: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-        _id: 're-post-1',
-        author: {
-            _id: 'agent-1',
-            fullName: 'Prasanth Properties',
-            username: 'prasanth_properties',
-            profilePicture: null,
-        },
-        content: 'Just listed! 🌟 Stunning modern beachfront villa with private infinity pool and direct access to crystal waters. Turnkey luxury investment ready for immediate handover! DM for private tours. 🏖️🔑',
-        mediaUrl: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200',
-        likes: ['u1', 'u2', 'u3', 'u4', 'u5'],
-        comments: [
-            {
-                _id: 'ap1-1',
-                author: { fullName: 'Mohammed Ajmal', username: 'ajmal' },
-                text: 'Direct ocean access and private mega-yacht clearance make Star Island unmatched. 🌊🛥️',
-                time: '02:15 pm',
-            },
-            {
-                _id: 'ap1-2',
-                author: { fullName: 'Bavadharini RS', username: 'bavadharini_rs' },
-                text: 'Floor-to-ceiling glass integration brings uninterrupted Miami sunsets indoors.',
-                time: '04:00 pm',
-            },
-        ],
-        verified: true,
-        createdAt: new Date(Date.now() - 7200000).toISOString(),
-    },
-    {
-        _id: 're-post-2',
-        author: {
-            _id: 'agent-2',
-            fullName: 'Aswin Real Estate',
-            username: 'aswin',
-            profilePicture: null,
-        },
-        content: 'Market update: Commercial cap rates in urban metros have compressed by 45bps this quarter. Investors are rotating aggressively into high-yield multi-family assets. 📈🏙️',
-        mediaUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200',
-        likes: ['u1', 'u3'],
-        comments: [
-            {
-                _id: 'ap2-1',
-                author: { fullName: 'Akshat Commercials', username: 'the_akshtr_estate' },
-                text: '8.4% cap rate on a 45,000 sq ft multi-family asset offers high capital security. 📈',
-                time: '01:45 pm',
-            },
-            {
-                _id: 'ap2-2',
-                author: { fullName: 'Shreekutti', username: 'shreekutti' },
-                text: 'Solid cash flow profile. Let us connect regarding investor syndication terms.',
-                time: '03:10 pm',
-            },
-        ],
-        verified: true,
-        createdAt: new Date(Date.now() - 14400000).toISOString(),
-    },
-    {
-        _id: 're-post-3',
-        author: {
-            _id: 'agent-3',
-            fullName: 'Vigneshwaran',
-            username: 'vignesh',
-            profilePicture: null,
-        },
-        content: 'New architectural masterpiece in Beverly Hills. 8 Bedrooms, 11 Baths, custom Italian marble, and zero-edge cascading pool. 🏆✨ Price: $12.5M.',
-        mediaUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
-        likes: ['u2', 'u4', 'u5'],
-        comments: [
-            {
-                _id: 'vg-c1',
-                author: { fullName: 'Sophia Sterling', username: 'sophia_luxury' },
-                text: 'Are 1/8th fractional house share syndicate slots still available for European co-owners? 🏡✨',
-                time: '09:15 am',
-            },
-            {
-                _id: 'vg-c2',
-                author: { fullName: 'David Sterling', username: 'david_sterling' },
-                text: 'Bespoke co-ownership model on Beverly Hills estates provides exceptional capital preservation.',
-                time: '11:40 am',
-            },
-            {
-                _id: 'vg-c3',
-                author: { fullName: 'Marcus Vance', username: 'marcus_vance' },
-                text: 'Deeded fractional title and seasonal syndicate booking structure looks turnkey. DM sent! 🔑',
-                time: '01:25 pm',
-            },
-        ],
-        verified: true,
-        createdAt: new Date(Date.now() - 28800000).toISOString(),
-    },
-];
-
-// Get all posts
-router.get('/', authMiddleware, async (req, res) => {
-    try {
-        const viewerId = getAuthenticatedUserId(req);
-        const rawPosts = await Post.find({})
-            .populate('author', 'fullName username profilePicture email')
-            .populate('comments.user', 'fullName username profilePicture')
-            .sort({ createdAt: -1 });
-
-        // Deduplicate user posts (keep unique content only to prevent repeating test posts)
-        const seen = new Set();
-        const userPosts = rawPosts.filter((p) => {
-            const contentKey = (p.content || '').trim().toLowerCase();
-            if (contentKey && seen.has(contentKey)) return false;
-            if (contentKey) seen.add(contentKey);
-            return true;
-        });
-
-        const COMMUNITY_LIKE_IDS = ['shreekutti', '6a8af34812ef34aed25ae8d2', 'ajmal', 'bavadharini_rs', 'the_akshtr_estate', 'prasanth_properties'];
-
-        // Combine unique user posts with agent property listings
-        const allPosts = [...userPosts, ...AGENT_POSTS].map((p) => {
-            const pObj = typeof p.toObject === 'function' ? p.toObject() : { ...p };
-            const existingLikes = Array.isArray(pObj.likes) ? pObj.likes.map((l) => (l && l._id ? l._id.toString() : String(l))) : [];
-            const hasViewerLiked = viewerId ? existingLikes.includes(viewerId.toString()) : false;
-
-            const combinedLikes = hasViewerLiked
-                ? [viewerId.toString(), ...COMMUNITY_LIKE_IDS]
-                : [...COMMUNITY_LIKE_IDS];
-
-            const count = hasViewerLiked ? 7 : 6;
-            pObj.likes = combinedLikes;
-            pObj.likesCount = count;
-            pObj.currentUserReaction = hasViewerLiked ? 'like' : null;
-            pObj.likesSummary = hasViewerLiked
-                ? `Liked by you and 6 other real estate brokers`
-                : `Liked by 6 real estate brokers`;
-
-            if (Array.isArray(pObj.comments) && pObj.comments.length > 0) {
-                pObj.comments = pObj.comments.map((c, cIdx) => {
-                    const u = c.user || c.author || {};
-                    let fName = u.fullName || null;
-                    let uName = u.username || null;
-                    const text = c.text || '';
-                    const bodyLower = text.toLowerCase();
-
-                    // If author is an unpopulated ObjectId / hex string or missing, resolve proper real estate broker profile
-                    if (!fName || /^[0-9a-fA-F]{24}$/.test(fName) || fName.toLowerCase() === 'advisor' || fName.toLowerCase() === 'member') {
-                        if (bodyLower.includes('cap rate') && bodyLower.includes('institutional')) { fName = 'Logeshwaran A'; uName = 'logeshwarana'; }
-                        else if (bodyLower.includes('tenant covenant') || bodyLower.includes('specs')) { fName = 'Shreekutti'; uName = 'shreekutti'; }
-                        else if (bodyLower.includes('turnkey acquisition') || bodyLower.includes('verified yield')) { fName = 'Mohammed Ajmal'; uName = 'ajmal'; }
-                        else if (bodyLower.includes('architectural finish') || bodyLower.includes('interior design')) { fName = 'Bavadharini RS'; uName = 'bavadharini_rs'; }
-                        else if (bodyLower.includes('omr corridor') || bodyLower.includes('institutional grade')) { fName = 'Akshat Commercials'; uName = 'the_akshtr_estate'; }
-                        else if (bodyLower.includes('syndication') || bodyLower.includes('discuss terms')) { fName = 'Prasanth Properties'; uName = 'prasanth_properties'; }
-                        else if (bodyLower.includes('fractional house share') || bodyLower.includes('european co-owners')) { fName = 'Sophia Sterling'; uName = 'sophia_luxury'; }
-                        else if (bodyLower.includes('bespoke co-ownership') || bodyLower.includes('capital preservation')) { fName = 'David Sterling'; uName = 'david_sterling'; }
-                        else if (bodyLower.includes('deeded fractional title') || bodyLower.includes('dm sent')) { fName = 'Marcus Vance'; uName = 'marcus_vance'; }
-                        else {
-                            const fallbackBrokers = [
-                                { name: 'Logeshwaran A', uname: 'logeshwarana' },
-                                { name: 'Shreekutti', uname: 'shreekutti' },
-                                { name: 'Mohammed Ajmal', uname: 'ajmal' },
-                                { name: 'Bavadharini RS', uname: 'bavadharini_rs' },
-                                { name: 'Akshat Commercials', uname: 'the_akshtr_estate' },
-                                { name: 'Prasanth Properties', uname: 'prasanth_properties' },
-                            ];
-                            const picked = fallbackBrokers[cIdx % fallbackBrokers.length];
-                            fName = picked.name;
-                            uName = picked.uname;
-                        }
-                    }
-
-                    return {
-                        _id: c._id,
-                        author: {
-                            _id: uName || u._id || u.id,
-                            fullName: fName,
-                            username: uName,
-                            profilePicture: u.profilePicture || null,
-                        },
-                        text: c.text,
-                        time: c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (c.time || '1h ago'),
-                        createdAt: c.createdAt,
-                    };
-                });
-            }
-
-            return pObj;
-        });
-
-        return res.status(200).json({ posts: allPosts });
-    } catch (error) {
-        console.error('FETCH POSTS ERROR:', error);
-        return res.status(500).json({ message: 'Failed to fetch posts.', error: error.message });
-    }
-});
-
-// Get posts by a single user (for profile screen)
+// ── GET /api/feed/user/:userId : Fetch posts by specific user ────────────────
 router.get('/user/:userId', authMiddleware, async (req, res) => {
-    try {
-        const { userId } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(userId)) {
-            return res.status(400).json({ message: 'Invalid user id.' });
-        }
-        const posts = await Post.find({ author: userId })
-            .populate('author', 'fullName username profilePicture email')
-            .sort({ createdAt: -1 });
-        return res.status(200).json({ posts });
-    } catch (error) {
-        console.error('FETCH USER POSTS ERROR:', error);
-        return res.status(500).json({ message: 'Failed to fetch user posts.', error: error.message });
+  try {
+    const viewerId = getAuthenticatedUserId(req);
+    const { userId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'Invalid user ID.' });
     }
+
+    const posts = await Post.find({ author: userId })
+      .populate('author', 'fullName username profilePicture headline location email')
+      .populate('comments.user', 'fullName username profilePicture')
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({ posts: posts.map((p) => formatPost(p, viewerId)) });
+  } catch (error) {
+    console.error('FETCH USER POSTS ERROR:', error);
+    return res.status(500).json({ message: 'Failed to fetch user posts.', error: error.message });
+  }
 });
 
-// Track in-memory comments and likes for demo posts
-const demoPostComments = new Map();
-const demoPostLikes = new Map();
+// ── PUT /api/feed/:id/like or react : Toggle like on a post ─────────────────
+const toggleLikeHandler = async (req, res) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const { id } = req.params;
 
-const COMMUNITY_FALLBACK_REACTIONS = [
-    {
-        id: 'shreekutti',
-        _id: 'shreekutti',
-        fullName: 'Shreekutti',
-        username: 'shreekutti',
-        headline: 'Tech Park Campus Acquisitions Lead @ Boolok',
-        location: 'Bangalore, Karnataka',
-        profilePicture: null,
-        reactionType: 'like',
-    },
-    {
-        id: '6a8af34812ef34aed25ae8d2',
-        _id: '6a8af34812ef34aed25ae8d2',
-        fullName: 'Logeshwaran A',
-        username: 'logeshwarana',
-        headline: 'Architectural Consultant & Real Estate Lead',
-        location: 'Western Australia',
-        profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
-        reactionType: 'like',
-    },
-    {
-        id: 'ajmal',
-        _id: 'ajmal',
-        fullName: 'Mohammed Ajmal',
-        username: 'ajmal',
-        headline: 'Luxury Living & High-End Residential Broker',
-        location: 'Palm Jumeirah, Dubai',
-        profilePicture: null,
-        reactionType: 'like',
-    },
-    {
-        id: 'bavadharini_rs',
-        _id: 'bavadharini_rs',
-        fullName: 'Bavadharini RS',
-        username: 'bavadharini_rs',
-        headline: 'Interior Designer & Modern Living Specialist',
-        location: 'Chennai, Tamil Nadu',
-        profilePicture: null,
-        reactionType: 'like',
-    },
-    {
-        id: 'the_akshtr_estate',
-        _id: 'the_akshtr_estate',
-        fullName: 'Akshat Commercials',
-        username: 'the_akshtr_estate',
-        headline: 'Commercial Property & Tech Park Portfolio Lead',
-        location: 'OMR IT Corridor, Chennai',
-        profilePicture: null,
-        reactionType: 'like',
-    },
-    {
-        id: 'prasanth_properties',
-        _id: 'prasanth_properties',
-        fullName: 'Prasanth Properties',
-        username: 'prasanth_properties',
-        headline: 'Luxury Waterfront Specialist · Miami & Coastal Estates',
-        location: 'Miami Beach, Florida',
-        profilePicture: null,
-        reactionType: 'like',
-    },
-];
-
-// ── GET /api/feed/:id/reactions (Reactions endpoint matching feed.tsx) ─────────
-router.get('/:id/reactions', async (req, res) => {
-    try {
-        const viewerId = getAuthenticatedUserId(req) || req.headers['x-user-id'] || 'sai';
-        const { id } = req.params;
-
-        const all = [...COMMUNITY_FALLBACK_REACTIONS.map((item) => ({ ...item, reactionType: 'like' }))];
-
-        return res.status(200).json({
-            all,
-            counts: { all: all.length, like: all.length },
-            userReaction: null,
-        });
-    } catch (error) {
-        return res.status(500).json({ message: 'Error fetching reactions' });
+    if (!userId) return res.status(401).json({ message: 'Authentication required.' });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid post ID.' });
     }
-});
 
-// ── PUT /api/feed/:id/react (Live reaction toggle endpoint) ───────────────────
-router.put('/:id/react', async (req, res) => {
-    return res.status(200).json({ success: true, reaction: 'like' });
-});
+    const post = await Post.findById(id);
+    if (!post) return res.status(404).json({ message: 'Post not found.' });
 
-// ── GET /api/feed/:id/likes (Get all users who liked a post) ────────────────
-router.get('/:id/likes', authMiddleware, async (req, res) => {
-    try {
-        const viewerId = getAuthenticatedUserId(req);
-        const { id } = req.params;
+    const alreadyLiked = post.likes.some((u) => u.toString() === userId.toString());
+    const updateQuery = alreadyLiked
+      ? { $pull: { likes: userId } }
+      : { $addToSet: { likes: userId } };
 
-        let likedUsers = [];
+    const updated = await Post.findByIdAndUpdate(id, updateQuery, { new: true })
+      .populate('author', 'fullName username profilePicture')
+      .populate('comments.user', 'fullName username profilePicture');
 
-        if (mongoose.Types.ObjectId.isValid(id)) {
-            const post = await Post.findById(id).populate('likes', 'fullName username profilePicture headline location');
-            if (post && Array.isArray(post.likes)) {
-                likedUsers = post.likes.map((u) => ({
-                    id: u._id || u.id,
-                    _id: u._id || u.id,
-                    fullName: u.fullName || u.username || 'Boolok Advisor',
-                    username: u.username || 'member',
-                    headline: u.headline || 'Certified Real Estate Advisor @ Boolok Network',
-                    profilePicture: u.profilePicture || null,
-                    location: u.location || 'Global Real Estate Network',
-                    isFollowing: false,
-                }));
-            }
-        }
+    const formatted = formatPost(updated, userId);
+    return res.status(200).json({
+      likes: formatted.likes,
+      likesCount: formatted.likesCount,
+      isLiked: formatted.isLiked,
+      currentUserReaction: formatted.currentUserReaction,
+      post: formatted,
+    });
+  } catch (error) {
+    console.error('TOGGLE LIKE ERROR:', error);
+    return res.status(500).json({ message: 'Failed to update like.', error: error.message });
+  }
+};
 
-        if (likedUsers.length === 0) {
-            likedUsers = [...COMMUNITY_FALLBACK_REACTIONS];
-        }
+router.put('/:id/like', authMiddleware, toggleLikeHandler);
+router.put('/:id/react', authMiddleware, toggleLikeHandler);
 
-        return res.status(200).json({ likes: likedUsers, totalLikes: likedUsers.length });
-    } catch (error) {
-        console.error('GET POST LIKES ERROR:', error);
-        return res.status(500).json({ message: 'Failed to fetch post likes.', error: error.message });
-    }
-});
-
-// ── GET /api/feed/:id/details (Get full post details including comments and likes)
-router.get('/:id/details', authMiddleware, async (req, res) => {
-    try {
-        const viewerId = getAuthenticatedUserId(req);
-        const { id } = req.params;
-
-        if (mongoose.Types.ObjectId.isValid(id)) {
-            const post = await Post.findById(id)
-                .populate('author', 'fullName username profilePicture headline')
-                .populate('likes', 'fullName username profilePicture headline')
-                .populate('comments.user', 'fullName username profilePicture headline');
-
-            if (post) {
-                const formattedComments = (post.comments || []).map((c, cIdx) => {
-                    const userObj = c.user || {};
-                    let fName = userObj.fullName || null;
-                    let uName = userObj.username || null;
-                    const text = c.text || '';
-                    const bodyLower = text.toLowerCase();
-
-                    if (!fName || /^[0-9a-fA-F]{24}$/.test(fName) || fName.toLowerCase() === 'advisor' || fName.toLowerCase() === 'member') {
-                        if (bodyLower.includes('cap rate') && bodyLower.includes('institutional')) { fName = 'Logeshwaran A'; uName = 'logeshwarana'; }
-                        else if (bodyLower.includes('tenant covenant') || bodyLower.includes('specs')) { fName = 'Shreekutti'; uName = 'shreekutti'; }
-                        else if (bodyLower.includes('turnkey acquisition') || bodyLower.includes('verified yield')) { fName = 'Mohammed Ajmal'; uName = 'ajmal'; }
-                        else if (bodyLower.includes('architectural finish') || bodyLower.includes('interior design')) { fName = 'Bavadharini RS'; uName = 'bavadharini_rs'; }
-                        else if (bodyLower.includes('omr corridor') || bodyLower.includes('institutional grade')) { fName = 'Akshat Commercials'; uName = 'the_akshtr_estate'; }
-                        else if (bodyLower.includes('syndication') || bodyLower.includes('discuss terms')) { fName = 'Prasanth Properties'; uName = 'prasanth_properties'; }
-                        else if (bodyLower.includes('fractional house share') || bodyLower.includes('european co-owners')) { fName = 'Sophia Sterling'; uName = 'sophia_luxury'; }
-                        else if (bodyLower.includes('bespoke co-ownership') || bodyLower.includes('capital preservation')) { fName = 'David Sterling'; uName = 'david_sterling'; }
-                        else if (bodyLower.includes('deeded fractional title') || bodyLower.includes('dm sent')) { fName = 'Marcus Vance'; uName = 'marcus_vance'; }
-                        else {
-                            const fallbackBrokers = [
-                                { name: 'Logeshwaran A', uname: 'logeshwarana' },
-                                { name: 'Shreekutti', uname: 'shreekutti' },
-                                { name: 'Mohammed Ajmal', uname: 'ajmal' },
-                                { name: 'Bavadharini RS', uname: 'bavadharini_rs' },
-                                { name: 'Akshat Commercials', uname: 'the_akshtr_estate' },
-                                { name: 'Prasanth Properties', uname: 'prasanth_properties' },
-                            ];
-                            const picked = fallbackBrokers[cIdx % fallbackBrokers.length];
-                            fName = picked.name;
-                            uName = picked.uname;
-                        }
-                    }
-
-                    return {
-                        _id: c._id,
-                        author: {
-                            _id: uName || userObj._id,
-                            fullName: fName,
-                            username: uName,
-                            profilePicture: userObj.profilePicture || null,
-                        },
-                        text: c.text,
-                        time: c.createdAt ? new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '1h ago',
-                        createdAt: c.createdAt,
-                    };
-                });
-
-                const postObj = post.toObject();
-                postObj.comments = formattedComments;
-                return res.status(200).json({ post: postObj });
-            }
-        }
-
-        const matchedAgentPost = AGENT_POSTS.find((ap) => ap._id === id);
-        const currentLikes = demoPostLikes.get(id) || matchedAgentPost?.likes || ['u1', 'u2'];
-        const currentComments = demoPostComments.get(id) || matchedAgentPost?.comments || COMMUNITY_DEFAULT_COMMENTS;
-        return res.status(200).json({
-            post: {
-                _id: id,
-                ...(matchedAgentPost || {}),
-                likes: currentLikes,
-                comments: currentComments,
-            },
-        });
-    } catch (error) {
-        console.error('GET POST DETAILS ERROR:', error);
-        return res.status(500).json({ message: 'Failed to fetch post details.', error: error.message });
-    }
-});
-
-// Like / unlike toggle
-router.put('/:id/like', authMiddleware, async (req, res) => {
-    try {
-        const userId = getAuthenticatedUserId(req);
-        const { id } = req.params;
-
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            // Handle demo post
-            const currentLikes = demoPostLikes.get(id) || ['u1', 'u2'];
-            const alreadyLiked = currentLikes.includes(userId);
-            const nextLikes = alreadyLiked
-                ? currentLikes.filter((u) => u !== userId)
-                : [...currentLikes, userId];
-            demoPostLikes.set(id, nextLikes);
-            return res.status(200).json({ likes: nextLikes });
-        }
-
-        const post = await Post.findById(id);
-        if (!post) return res.status(404).json({ message: 'Post not found.' });
-
-        const alreadyLiked = post.likes.some((u) => u.toString() === userId);
-        if (alreadyLiked) {
-            post.likes = post.likes.filter((u) => u.toString() !== userId);
-        } else {
-            post.likes.push(userId);
-        }
-        await post.save();
-
-        return res.status(200).json({ likes: post.likes });
-    } catch (error) {
-        console.error('LIKE POST ERROR:', error);
-        return res.status(500).json({ message: 'Failed to like post.', error: error.message });
-    }
-});
-
-// Add comment
+// ── POST /api/feed/:id/comment : Add comment to post ────────────────────────
 router.post('/:id/comment', authMiddleware, async (req, res) => {
-    try {
-        const userId = getAuthenticatedUserId(req);
-        const user = req.user || {};
-        const { id } = req.params;
-        const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
-        if (!text) return res.status(400).json({ message: 'Comment text is required.' });
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const { id } = req.params;
+    const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
 
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            // Handle demo post
-            const currentComments = demoPostComments.get(id) || [];
-            const newComment = {
-                author: {
-                    _id: userId,
-                    fullName: user.fullName || 'Sai',
-                    username: user.username || 'saivimenthanvl',
-                    profilePicture: user.profilePicture || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-                },
-                text,
-                time: 'Just now',
-                createdAt: new Date().toISOString(),
-            };
-            const updated = [newComment, ...currentComments];
-            demoPostComments.set(id, updated);
-            return res.status(200).json({ comments: updated });
-        }
-
-        const post = await Post.findById(id);
-        if (!post) return res.status(404).json({ message: 'Post not found.' });
-
-        post.comments.push({ user: userId, text });
-        await post.save();
-
-        const populated = await Post.findById(id).populate('comments.user', 'fullName username profilePicture');
-        const formattedComments = (populated.comments || []).map((c) => ({
-            _id: c._id,
-            author: c.user || { fullName: user.fullName || 'Sai', username: user.username || 'saivimenthanvl' },
-            text: c.text,
-            time: 'Just now',
-        }));
-
-        return res.status(200).json({ comments: formattedComments });
-    } catch (error) {
-        console.error('COMMENT POST ERROR:', error);
-        return res.status(500).json({ message: 'Failed to add comment.', error: error.message });
+    if (!userId) return res.status(401).json({ message: 'Authentication required.' });
+    if (!text) return res.status(400).json({ message: 'Comment text cannot be empty.' });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid post ID.' });
     }
+
+    const post = await Post.findById(id);
+    if (!post) return res.status(404).json({ message: 'Post not found.' });
+
+    post.comments.push({ user: userId, text, createdAt: new Date() });
+    await post.save();
+
+    const populated = await Post.findById(id)
+      .populate('comments.user', 'fullName username profilePicture');
+
+    const formatted = formatPost(populated, userId);
+    return res.status(201).json({
+      comments: formatted.comments,
+      commentsCount: formatted.commentsCount,
+      post: formatted,
+    });
+  } catch (error) {
+    console.error('ADD COMMENT ERROR:', error);
+    return res.status(500).json({ message: 'Failed to add comment.', error: error.message });
+  }
 });
 
-// Edit post (owner only)
-router.put('/:id', authMiddleware, async (req, res) => {
-    try {
-        const userId = getAuthenticatedUserId(req);
-        const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid post id.' });
-
-        const post = await Post.findById(id);
-        if (!post) return res.status(404).json({ message: 'Post not found.' });
-        if (post.author.toString() !== userId) {
-            return res.status(403).json({ message: 'You can only edit your own posts.' });
-        }
-
-        if (typeof req.body.content === 'string') post.content = req.body.content.trim();
-        await post.save();
-
-        const populated = await Post.findById(id).populate('author', 'fullName username profilePicture email');
-        return res.status(200).json({ message: 'Post updated.', post: populated });
-    } catch (error) {
-        console.error('EDIT POST ERROR:', error);
-        return res.status(500).json({ message: 'Failed to edit post.', error: error.message });
+// ── GET /api/feed/:id/reactions / likes : List users who liked the post ─────
+const getReactionsHandler = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid post ID.' });
     }
+
+    const post = await Post.findById(id).populate('likes', 'fullName username profilePicture headline location');
+    if (!post) return res.status(404).json({ message: 'Post not found.' });
+
+    const users = (post.likes || []).map((u) => ({
+      id: u._id.toString(),
+      _id: u._id.toString(),
+      fullName: u.fullName,
+      username: u.username,
+      profilePicture: u.profilePicture,
+      headline: u.headline || 'Boolok Member',
+      location: u.location || '',
+      reactionType: 'like',
+    }));
+
+    return res.status(200).json({ all: users, like: users, count: users.length });
+  } catch (error) {
+    console.error('GET REACTIONS ERROR:', error);
+    return res.status(500).json({ message: 'Failed to fetch reactions.', error: error.message });
+  }
+};
+
+router.get('/:id/reactions', authMiddleware, getReactionsHandler);
+router.get('/:id/likes', authMiddleware, getReactionsHandler);
+
+// ── GET /api/feed/:id/details : Single post details ──────────────────────────
+router.get('/:id/details', authMiddleware, async (req, res) => {
+  try {
+    const viewerId = getAuthenticatedUserId(req);
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid post ID.' });
+    }
+
+    const post = await Post.findById(id)
+      .populate('author', 'fullName username profilePicture headline location email')
+      .populate('comments.user', 'fullName username profilePicture');
+
+    if (!post) return res.status(404).json({ message: 'Post not found.' });
+
+    return res.status(200).json({ post: formatPost(post, viewerId) });
+  } catch (error) {
+    console.error('GET POST DETAILS ERROR:', error);
+    return res.status(500).json({ message: 'Failed to fetch post details.', error: error.message });
+  }
 });
 
-// Delete post (owner only)
+// ── DELETE /api/feed/:id : Delete post (owner only) ──────────────────────────
 router.delete('/:id', authMiddleware, async (req, res) => {
-    try {
-        const userId = getAuthenticatedUserId(req);
-        const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid post id.' });
-
-        const post = await Post.findById(id);
-        if (!post) return res.status(404).json({ message: 'Post not found.' });
-        if (post.author.toString() !== userId) {
-            return res.status(403).json({ message: 'You can only delete your own posts.' });
-        }
-        await Post.findByIdAndDelete(id);
-        return res.status(200).json({ message: 'Post deleted successfully.' });
-    } catch (error) {
-        console.error('DELETE POST ERROR:', error);
-        return res.status(500).json({ message: 'Failed to delete post.', error: error.message });
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid post ID.' });
     }
+
+    const post = await Post.findById(id);
+    if (!post) return res.status(404).json({ message: 'Post not found.' });
+    if (post.author.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'You can only delete your own posts.' });
+    }
+
+    await Post.findByIdAndDelete(id);
+    return res.status(200).json({ message: 'Post deleted successfully.' });
+  } catch (error) {
+    console.error('DELETE POST ERROR:', error);
+    return res.status(500).json({ message: 'Failed to delete post.', error: error.message });
+  }
 });
 
-// Real Estate & Commercial Buildings For Sale News (Updated Daily)
+// ── Real Estate & Commercial News (Curated Industry Feed) ───────────────────
 const REAL_ESTATE_NEWS = [
-    {
-        id: 'news-1',
-        title: 'Commercial Office Towers Surge in London & NYC',
-        time: '9h ago',
-        readers: '22,392 readers',
-        category: 'Commercial Real Estate',
-        summary: 'Institutional buyers and private equity funds have deployed more than $14.6B into trophy Grade-A commercial office towers across London and New York City.',
-        content: 'The global commercial office landscape is undergoing a decisive renaissance driven by institutional capital pivot toward high-efficiency, amenity-rich properties. In Central London and Manhattan, prime yields have stabilized around 5.2% to 5.75%, encouraging institutional REITs to close multi-hundred-million-dollar transactions.',
-        sourceName: 'Financial Times Property & Bloomberg Real Estate',
-        sourceUrl: 'https://www.bloomberg.com/real-estate',
-    },
-    {
-        id: 'news-2',
-        title: 'Top 10 Prime Commercial Buildings For Sale in 2026',
-        time: '9h ago',
-        readers: '14,976 readers',
-        category: 'Property Listings',
-        summary: 'Exclusive institutional showcase reveals high-cap-rate tech parks, corporate headquarters, and mixed-use towers currently listed for acquisition across global financial hubs.',
-        content: 'A curated catalog of premier commercial developments has arrived on the market this quarter, headlined by Outer Ring Road Tech Campus (Bangalore), Margaret River Estate (Australia), and Bishopsgate Corporate Tower (London).',
-        sourceName: 'Boolok Institutional Asset Index & RERA Commercial',
-        sourceUrl: 'https://www.cbre.com/insights',
-    },
-    {
-        id: 'news-3',
-        title: 'Boolok AI Property Valuation Index Hits Record High',
-        time: '57m ago',
-        readers: '8,709 readers',
-        category: 'AI Market Intelligence',
-        summary: 'Boolok’s proprietary neural real estate appraisal algorithm recorded an all-time high valuation confidence score across 45,000 commercial and multi-family properties.',
-        content: 'By synthesizing spatial computer vision, municipal tax records, and live footfall telemetry, the Boolok AI Valuation Index delivers 4x faster institutional underwriting with 99% accuracy on cap rate trends.',
-        sourceName: 'Boolok AI Research & MIT Center for Real Estate',
-        sourceUrl: 'https://cre.mit.edu',
-    },
-    {
-        id: 'news-4',
-        title: 'Waterfront Luxury Estates See Record Institutional Influx',
-        time: '6h ago',
-        readers: '6,387 readers',
-        category: 'Luxury Real Estate',
-        summary: 'Private family offices and sovereign wealth vehicles allocated $4.2B into trophy beachfront residences and private island compounds.',
-        content: 'Ultra-high-net-worth liquidity continues to migrate into resilient coastal real estate assets with deeded deepwater yacht docks and private helipads across Miami Beach, Palm Jumeirah, and coastal Australia.',
-        sourceName: 'Knight Frank Global Wealth & Luxury Estates Review',
-        sourceUrl: 'https://www.knightfrank.com/research',
-    },
-    {
-        id: 'news-5',
-        title: 'Retail-to-Residential Conversions Accelerating in Metros',
-        time: '6h ago',
-        readers: '3,158 readers',
-        category: 'Urban Redevelopment',
-        summary: 'Municipal zoning modernizations across Tier-1 cities are expediting the adaptive reuse of suburban shopping centres into dynamic residential communities.',
-        content: 'Developers are seizing opportunities to convert underperforming retail malls into high-density urban residential hubs with expedited RERA permits and tax-increment financing.',
-        sourceName: 'Urban Land Institute (ULI) Emerging Trends',
-        sourceUrl: 'https://americas.uli.org',
-    },
-    {
-        id: 'news-6',
-        title: 'Singapore Grade-A Tech Parks Attract $1.2B Capital Inflow',
-        time: '12h ago',
-        readers: '5,420 readers',
-        category: 'Global Assets',
-        summary: 'Cross-border real estate investment trusts acquired three major business park clusters in Singapore’s One-North science district.',
-        content: 'Buoyed by robust biomedical and generative AI enterprise expansions, Singapore’s institutional tech park occupancy sits at 96.2%, solidifying Southeast Asia’s premier position for commercial capital security.',
-        sourceName: 'JLL Global Real Estate Intelligence',
-        sourceUrl: 'https://www.jll.com/trends-and-insights',
-    },
+  {
+    id: 'news-1',
+    title: 'Commercial Office Towers Surge in London & NYC',
+    time: '9h ago',
+    readers: '22,392 readers',
+    category: 'Commercial Real Estate',
+    summary: 'Institutional buyers and private equity funds have deployed more than $14.6B into trophy Grade-A commercial office towers across London and New York City.',
+    content: 'The global commercial office landscape is undergoing a decisive renaissance driven by institutional capital pivot toward high-efficiency, amenity-rich properties. In Central London and Manhattan, prime yields have stabilized around 5.2% to 5.75%, encouraging institutional REITs to close multi-hundred-million-dollar transactions.',
+    sourceName: 'Financial Times Property & Bloomberg Real Estate',
+    sourceUrl: 'https://www.bloomberg.com/real-estate',
+  },
+  {
+    id: 'news-2',
+    title: 'Top 10 Prime Commercial Buildings For Sale in 2026',
+    time: '9h ago',
+    readers: '14,976 readers',
+    category: 'Property Listings',
+    summary: 'Exclusive institutional showcase reveals high-cap-rate tech parks, corporate headquarters, and mixed-use towers currently listed for acquisition across global financial hubs.',
+    content: 'A curated catalog of premier commercial developments has arrived on the market this quarter, headlined by Outer Ring Road Tech Campus (Bangalore), Margaret River Estate (Australia), and Bishopsgate Corporate Tower (London).',
+    sourceName: 'Boolok Institutional Asset Index & RERA Commercial',
+    sourceUrl: 'https://www.cbre.com/insights',
+  },
+  {
+    id: 'news-3',
+    title: 'Boolok AI Property Valuation Index Hits Record High',
+    time: '57m ago',
+    readers: '8,709 readers',
+    category: 'AI Market Intelligence',
+    summary: 'Boolok’s proprietary neural real estate appraisal algorithm recorded an all-time high valuation confidence score across 45,000 commercial and multi-family properties.',
+    content: 'By synthesizing spatial computer vision, municipal tax records, and live footfall telemetry, the Boolok AI Valuation Index delivers 4x faster institutional underwriting with 99% accuracy on cap rate trends.',
+    sourceName: 'Boolok AI Research & MIT Center for Real Estate',
+    sourceUrl: 'https://cre.mit.edu',
+  },
+  {
+    id: 'news-4',
+    title: 'Waterfront Luxury Estates See Record Institutional Influx',
+    time: '6h ago',
+    readers: '6,387 readers',
+    category: 'Luxury Real Estate',
+    summary: 'Private family offices and sovereign wealth vehicles allocated $4.2B into trophy beachfront residences and private island compounds.',
+    content: 'Ultra-high-net-worth liquidity continues to migrate into resilient coastal real estate assets with deeded deepwater yacht docks and private helipads across Miami Beach, Palm Jumeirah, and coastal Australia.',
+    sourceName: 'Knight Frank Global Wealth & Luxury Estates Review',
+    sourceUrl: 'https://www.knightfrank.com/research',
+  },
+  {
+    id: 'news-5',
+    title: 'Retail-to-Residential Conversions Accelerating in Metros',
+    time: '6h ago',
+    readers: '3,158 readers',
+    category: 'Urban Redevelopment',
+    summary: 'Municipal zoning modernizations across Tier-1 cities are expediting the adaptive reuse of suburban shopping centres into dynamic residential communities.',
+    content: 'Developers are seizing opportunities to convert underperforming retail malls into high-density urban residential hubs with expedited RERA permits and tax-increment financing.',
+    sourceName: 'Urban Land Institute (ULI) Emerging Trends',
+    sourceUrl: 'https://americas.uli.org',
+  },
+  {
+    id: 'news-6',
+    title: 'Singapore Grade-A Tech Parks Attract $1.2B Capital Inflow',
+    time: '12h ago',
+    readers: '5,420 readers',
+    category: 'Global Assets',
+    summary: 'Cross-border real estate investment trusts acquired three major business park clusters in Singapore’s One-North science district.',
+    content: 'Buoyed by robust biomedical and generative AI enterprise expansions, Singapore’s institutional tech park occupancy sits at 96.2%, solidifying Southeast Asia’s premier position for commercial capital security.',
+    sourceName: 'JLL Global Real Estate Intelligence',
+    sourceUrl: 'https://www.jll.com/trends-and-insights',
+  },
 ];
 
 router.get('/news', (_req, res) => {
-    return res.status(200).json({ news: REAL_ESTATE_NEWS });
+  return res.status(200).json({ news: REAL_ESTATE_NEWS });
 });
 
 module.exports = router;

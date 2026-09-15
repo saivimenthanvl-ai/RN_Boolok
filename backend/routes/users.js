@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Post = require('../models/Post');
 const Notification = require('../models/Notification');
 const authMiddleware = require('../middleware/auth');
+const optionalAuth = require('../middleware/optionalAuth');
 
 const router = express.Router();
 
@@ -21,6 +22,16 @@ function sanitizeUserProfile(user, viewerId = null) {
     if (!fId || seenFids.has(fId)) continue;
     seenFids.add(fId);
     followers.push(f);
+  }
+
+  // Deduplicate following by id
+  const seenFollowingIds = new Set();
+  const following = [];
+  for (const f of rawFollowing) {
+    const fId = f && f._id ? f._id.toString() : String(f || '');
+    if (!fId || seenFollowingIds.has(fId)) continue;
+    seenFollowingIds.add(fId);
+    following.push(f);
   }
 
   const isFollowing = viewerId
@@ -54,8 +65,8 @@ function sanitizeUserProfile(user, viewerId = null) {
     mutualsText = `Followed by ${followerNames[0]}, ${followerNames[1]} and ${followerNames.length - 2} others`;
   }
 
-  const followerCount = followers.length > 0 ? followers.length : 4;
-  const followingCount = rawFollowing.length > 0 ? rawFollowing.length : 4;
+  const followerCount = followers.length;
+  const followingCount = following.length;
 
   let sanitizedFullName = user.fullName;
   let sanitizedUsername = user.username || user.fullName?.replace(/\s+/g, '').toLowerCase() || 'user';
@@ -91,7 +102,7 @@ function sanitizeUserProfile(user, viewerId = null) {
     isSelf: viewerId ? viewerId.toString() === user._id.toString() : false,
     mutuals: mutualsText || `${followerCount} followers in Boolok Real Estate Network`,
     followers: followers.map((f) => (typeof f === 'object' ? { id: f._id, fullName: f.fullName, username: f.username, profilePicture: f.profilePicture } : f)),
-    following: rawFollowing.map((f) => (typeof f === 'object' ? { id: f._id, fullName: f.fullName, username: f.username, profilePicture: f.profilePicture } : f)),
+    following: following.map((f) => (typeof f === 'object' ? { id: f._id, fullName: f.fullName, username: f.username, profilePicture: f.profilePicture } : f)),
   };
 }
 
@@ -157,7 +168,7 @@ router.get('/search', async (req, res) => {
           headline: m.headline,
           location: m.location,
           profilePicture: m.profilePicture || null,
-          followerCount: 4,
+          followerCount: 0,
           isFollowing: false,
           isSelf: false,
         });
@@ -340,10 +351,18 @@ const COMMUNITY_MEMBERS = [
   },
 ];
 
-async function resolveOrSeedUser(id) {
+async function resolveOrSeedUser(id, viewerId = null) {
   let profileUser = null;
   const lookup = (id || '').toString().trim().toLowerCase();
-  if (!lookup || lookup === 'self') return null;
+  if (!lookup) return null;
+
+  // Handle 'self' or 'me' using the authenticated viewer ID
+  if (lookup === 'self' || lookup === 'me') {
+    if (!viewerId) return null;
+    return await User.findById(viewerId)
+      .populate('followers', 'fullName username profilePicture headline location')
+      .populate('following', 'fullName username profilePicture headline location');
+  }
 
   if (mongoose.Types.ObjectId.isValid(lookup)) {
     profileUser = await User.findById(lookup)
@@ -480,6 +499,7 @@ async function ensureCommunityConnections() {
     );
 
     // 1. Ensure all community members are in MongoDB with their full details
+    const memberDocs = {};
     for (const m of COMMUNITY_MEMBERS) {
       const lookupQueries = [
         { username: m.username },
@@ -491,7 +511,7 @@ async function ensureCommunityConnections() {
 
       let user = await User.findOne({ $or: lookupQueries });
       if (!user) {
-        await User.create({
+        user = await User.create({
           fullName: m.fullName,
           username: m.username,
           email: m.email,
@@ -527,38 +547,42 @@ async function ensureCommunityConnections() {
           await user.save();
         }
       }
+      memberDocs[m.username] = user;
     }
 
-    // 2. Fetch all seeded community members
-    const seeded = await User.find({
-      username: { $in: COMMUNITY_MEMBERS.map((m) => m.username) },
-    });
+    // 2. Establish realistic, verified mutual follower relationships if empty
+    const INITIAL_FOLLOW_MAP = {
+      shreekutti: ['logeshwarana', 'ajmal', 'saivimenthanvl'],
+      logeshwarana: ['shreekutti', 'ajmal', 'saivimenthanvl'],
+      ajmal: ['shreekutti', 'logeshwarana', 'saivimenthanvl', 'vignesh'],
+      the_akshtr_estate: ['shreekutti', 'logeshwarana', 'saivimenthanvl'],
+      prasanth_properties: ['ajmal', 'bavadharini_rs', 'saivimenthanvl'],
+      bavadharini_rs: ['logeshwarana', 'ajmal', 'saivimenthanvl'],
+      vignesh: ['shreekutti', 'logeshwarana', 'saivimenthanvl'],
+      aswin: ['shreekutti', 'logeshwarana', 'saivimenthanvl'],
+      yashwanth: ['shreekutti', 'logeshwarana', 'saivimenthanvl'],
+      sophia_luxury: ['david_sterling', 'marcus_vance', 'saivimenthanvl'],
+      david_sterling: ['sophia_luxury', 'marcus_vance', 'saivimenthanvl'],
+      marcus_vance: ['sophia_luxury', 'david_sterling', 'saivimenthanvl'],
+      saivimenthanvl: ['shreekutti', 'logeshwarana', 'ajmal'],
+    };
 
-    if (seeded.length < 2) return;
+    for (const [targetUsername, followerUsernames] of Object.entries(INITIAL_FOLLOW_MAP)) {
+      const targetUser = memberDocs[targetUsername];
+      if (!targetUser) continue;
 
-    // 3. Connect mutual followers for all community members
-    for (const member of seeded) {
-      if (member.username === 'logeshwarana') {
-        const saiUser = await User.findOne({ username: 'saivimenthanvl' });
-        if (saiUser) {
-          member.followers = [saiUser._id];
-          member.following = [saiUser._id];
-          await member.save();
-        }
-        continue;
-      }
-
-      if (!member.followers || member.followers.length === 0) {
-        const others = seeded.filter((o) => o._id.toString() !== member._id.toString() && o.username !== 'logeshwarana').slice(0, 4);
-        member.followers = others.map((o) => o._id);
-        await member.save();
-
-        for (const other of others) {
-          if (!other.following) other.following = [];
-          if (!other.following.some((f) => f.toString() === member._id.toString())) {
-            other.following.push(member._id);
-            await other.save();
+      if (!targetUser.followers || targetUser.followers.length === 0) {
+        const followerIds = [];
+        for (const fUname of followerUsernames) {
+          const fDoc = memberDocs[fUname];
+          if (fDoc && fDoc._id.toString() !== targetUser._id.toString()) {
+            followerIds.push(fDoc._id);
+            // Also update following for that user
+            await User.updateOne({ _id: fDoc._id }, { $addToSet: { following: targetUser._id } }).catch(() => {});
           }
+        }
+        if (followerIds.length > 0) {
+          await User.updateOne({ _id: targetUser._id }, { $addToSet: { followers: { $each: followerIds } } }).catch(() => {});
         }
       }
     }
@@ -568,7 +592,7 @@ async function ensureCommunityConnections() {
 }
 
 // ── GET /api/users/suggested ───────────────────────────────────────────────
-router.get('/suggested', authMiddleware, async (req, res) => {
+router.get('/suggested', optionalAuth, async (req, res) => {
   try {
     const viewerId = getAuthenticatedUserId(req);
 
@@ -737,49 +761,39 @@ router.put('/profile', authMiddleware, async (req, res) => {
 });
 
 // ── GET /api/users/:id/followers (Get real-time followers list) ───────────
-router.get('/:id/followers', authMiddleware, async (req, res) => {
+router.get('/:id/followers', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    let profileUser = await resolveOrSeedUser(id);
+    const viewerId = getAuthenticatedUserId(req);
+    const profileUser = await resolveOrSeedUser(id, viewerId);
 
     if (!profileUser) {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    if (!profileUser.followers || profileUser.followers.length === 0) {
-      await ensureCommunityConnections();
-      profileUser = await resolveOrSeedUser(id);
-    }
-
-    let populatedFollowers = [];
-
-    if (Array.isArray(profileUser.followers) && profileUser.followers.length > 0) {
-      const seen = new Set();
-      populatedFollowers = profileUser.followers
-        .filter((f) => {
-          const fid = (typeof f === 'object' && f !== null ? (f._id || f.id || f.username) : f).toString();
-          const uname = (typeof f === 'object' && f !== null ? (f.username || '') : '').toLowerCase();
-          const fname = (typeof f === 'object' && f !== null ? (f.fullName || '') : '').toLowerCase();
-          if (uname.includes('6a8dc') || fname.includes('6a8dc') || /^[0-9a-fA-F]{24}$/.test(uname)) return false;
-          if (seen.has(fid)) return false;
-          seen.add(fid);
-          return true;
-        })
-        .map((f) => {
-          if (typeof f === 'object' && f !== null) {
-            return {
-              id: f._id ? f._id.toString() : f.id,
-              _id: f._id ? f._id.toString() : f.id,
-              fullName: f.fullName || 'Boolok Member',
-              username: f.username || 'member',
-              headline: f.headline || 'Real Estate Professional',
-              location: f.location || 'Global Real Estate Network',
-              profilePicture: f.profilePicture || (((f.username || '').includes('sai')) ? 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' : null),
-            };
-          }
-          return { id: f.toString(), _id: f.toString(), fullName: 'Boolok Member', username: 'member', profilePicture: null };
-        });
-    }
+    const seen = new Set();
+    const populatedFollowers = (profileUser.followers || [])
+      .filter((f) => {
+        if (!f) return false;
+        const fid = (typeof f === 'object' ? (f._id || f.id || f.username) : f).toString();
+        if (!fid || seen.has(fid)) return false;
+        seen.add(fid);
+        return true;
+      })
+      .map((f) => {
+        if (typeof f === 'object' && f !== null) {
+          return {
+            id: (f._id || f.id).toString(),
+            _id: (f._id || f.id).toString(),
+            fullName: f.fullName || 'Boolok Member',
+            username: f.username || 'member',
+            headline: f.headline || 'Real Estate Professional',
+            location: f.location || 'Global Real Estate Network',
+            profilePicture: f.profilePicture || (((f.username || '').includes('sai')) ? 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' : null),
+          };
+        }
+        return { id: f.toString(), _id: f.toString(), fullName: 'Boolok Member', username: 'member', profilePicture: null };
+      });
 
     return res.status(200).json({
       followers: populatedFollowers,
@@ -788,6 +802,51 @@ router.get('/:id/followers', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('GET FOLLOWERS LIST ERROR:', error);
     return res.status(500).json({ message: 'Failed to fetch followers list.', error: error.message });
+  }
+});
+
+// ── GET /api/users/:id/following (Get real-time following list) ───────────
+router.get('/:id/following', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const viewerId = getAuthenticatedUserId(req);
+    const profileUser = await resolveOrSeedUser(id, viewerId);
+
+    if (!profileUser) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const seen = new Set();
+    const populatedFollowing = (profileUser.following || [])
+      .filter((f) => {
+        if (!f) return false;
+        const fid = (typeof f === 'object' ? (f._id || f.id || f.username) : f).toString();
+        if (!fid || seen.has(fid)) return false;
+        seen.add(fid);
+        return true;
+      })
+      .map((f) => {
+        if (typeof f === 'object' && f !== null) {
+          return {
+            id: (f._id || f.id).toString(),
+            _id: (f._id || f.id).toString(),
+            fullName: f.fullName || 'Boolok Member',
+            username: f.username || 'member',
+            headline: f.headline || 'Real Estate Professional',
+            location: f.location || 'Global Real Estate Network',
+            profilePicture: f.profilePicture || (((f.username || '').includes('sai')) ? 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' : null),
+          };
+        }
+        return { id: f.toString(), _id: f.toString(), fullName: 'Boolok Member', username: 'member', profilePicture: null };
+      });
+
+    return res.status(200).json({
+      following: populatedFollowing,
+      followingCount: populatedFollowing.length,
+    });
+  } catch (error) {
+    console.error('GET FOLLOWING LIST ERROR:', error);
+    return res.status(500).json({ message: 'Failed to fetch following list.', error: error.message });
   }
 });
 
@@ -1183,10 +1242,11 @@ const COMMUNITY_DEALS = {
 };
 
 // ── GET /api/users/:id/deals (Get completed transaction history) ───────────
-router.get('/:id/deals', authMiddleware, async (req, res) => {
+router.get('/:id/deals', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const profileUser = await resolveOrSeedUser(id);
+    const viewerId = getAuthenticatedUserId(req);
+    const profileUser = await resolveOrSeedUser(id, viewerId);
 
     if (!profileUser) {
       return res.status(404).json({ message: 'User not found.' });
@@ -1475,12 +1535,12 @@ const COMMUNITY_POSTS_MAP = {
 };
 
 // ── GET /api/users/:id (Get profile by ID or username) ────────────────────
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id', optionalAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const viewerId = getAuthenticatedUserId(req);
 
-    const profileUser = await resolveOrSeedUser(id);
+    const profileUser = await resolveOrSeedUser(id, viewerId);
 
     if (!profileUser) {
       return res.status(404).json({ message: 'User not found.' });
@@ -1541,50 +1601,69 @@ router.post('/:id/follow', authMiddleware, async (req, res) => {
 
     if (!viewerId) return res.status(401).json({ message: 'Unauthorized.' });
 
-    let target = await resolveOrSeedUser(id);
+    // Step 1: resolve the target user (supports ObjectId, username, or alias)
+    let resolvedUser = await resolveOrSeedUser(id, viewerId);
 
-    if (!target) return res.status(404).json({ message: 'User not found.' });
-    if (target._id.toString() === viewerId.toString()) {
-      return res.status(400).json({ message: "You cannot follow yourself." });
+    if (!resolvedUser) return res.status(404).json({ message: 'User not found.' });
+
+    if (resolvedUser._id.toString() === viewerId.toString()) {
+      return res.status(400).json({ message: 'You cannot follow yourself.' });
     }
 
     const viewer = await User.findById(viewerId);
     if (!viewer) return res.status(404).json({ message: 'Viewer not found.' });
 
-    target.followers = target.followers || [];
-    viewer.following = viewer.following || [];
+    // Step 2: Re-fetch target WITHOUT .populate() so followers is raw ObjectIds.
+    const targetRaw = await User.findById(resolvedUser._id).select('_id fullName username followers');
+    if (!targetRaw) return res.status(404).json({ message: 'User not found.' });
 
-    const isAlreadyFollowing = target.followers.some((f) => f.toString() === viewerId.toString());
+    // Step 3: Safe follow-state check — followers are raw ObjectIds
+    const isAlreadyFollowing = (targetRaw.followers || []).some(
+      (f) => (f && (f._id ? f._id.toString() : f.toString())) === viewerId.toString()
+    );
 
     if (isAlreadyFollowing) {
-      // Unfollow
-      target.followers = target.followers.filter((f) => f.toString() !== viewerId.toString());
-      viewer.following = viewer.following.filter((f) => f.toString() !== target._id.toString());
-
-      await Promise.all([target.save(), viewer.save()]);
+      // Unfollow — use $pull to atomically remove
+      await Promise.all([
+        User.updateOne({ _id: targetRaw._id }, { $pull: { followers: viewer._id } }),
+        User.updateOne({ _id: viewer._id }, { $pull: { following: targetRaw._id } }),
+      ]);
 
       // Remove follow notification
       await Notification.deleteMany({
-        recipient: target._id,
+        recipient: targetRaw._id,
         sender: viewer._id,
         type: 'follow',
       });
 
+      // Fetch fresh counts for both target and viewer after update
+      const [updatedTarget, updatedViewer] = await Promise.all([
+        User.findById(targetRaw._id).select('followers fullName username'),
+        User.findById(viewer._id).select('following fullName username'),
+      ]);
+
       return res.status(200).json({
         isFollowing: false,
-        followerCount: target.followers.length,
-        message: `Unfollowed ${target.fullName}`,
+        followerCount: (updatedTarget.followers || []).length,
+        followingCount: (updatedViewer.following || []).length,
+        targetUser: {
+          id: updatedTarget._id.toString(),
+          _id: updatedTarget._id.toString(),
+          fullName: updatedTarget.fullName,
+          username: updatedTarget.username,
+        },
+        message: `Unfollowed ${targetRaw.fullName}`,
       });
     } else {
-      // Follow
-      target.followers.push(viewer._id);
-      viewer.following.push(target._id);
-
-      await Promise.all([target.save(), viewer.save()]);
+      // Follow — use $addToSet to atomically add
+      await Promise.all([
+        User.updateOne({ _id: targetRaw._id }, { $addToSet: { followers: viewer._id } }),
+        User.updateOne({ _id: viewer._id }, { $addToSet: { following: targetRaw._id } }),
+      ]);
 
       // Create live Notification in MongoDB
       await Notification.create({
-        recipient: target._id,
+        recipient: targetRaw._id,
         sender: viewer._id,
         type: 'follow',
         message: `${viewer.fullName} started following you.`,
@@ -1594,10 +1673,23 @@ router.post('/:id/follow', authMiddleware, async (req, res) => {
         },
       });
 
+      // Fetch fresh counts for both target and viewer after update
+      const [updatedTarget, updatedViewer] = await Promise.all([
+        User.findById(targetRaw._id).select('followers fullName username'),
+        User.findById(viewer._id).select('following fullName username'),
+      ]);
+
       return res.status(200).json({
         isFollowing: true,
-        followerCount: target.followers.length,
-        message: `Following ${target.fullName}`,
+        followerCount: (updatedTarget.followers || []).length,
+        followingCount: (updatedViewer.following || []).length,
+        targetUser: {
+          id: updatedTarget._id.toString(),
+          _id: updatedTarget._id.toString(),
+          fullName: updatedTarget.fullName,
+          username: updatedTarget.username,
+        },
+        message: `Following ${targetRaw.fullName}`,
       });
     }
   } catch (error) {

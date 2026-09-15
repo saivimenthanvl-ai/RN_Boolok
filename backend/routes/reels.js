@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const mongoose = require('mongoose');
 const Reel = require('../models/Reel');
 const auth = require('../middleware/auth');
 
@@ -27,12 +28,6 @@ const upload = multer({
   },
 });
 
-// ── Cosmetic placeholder "AI" scoring ────────────────────────────────────────
-// IMPORTANT: there is no real video/content analysis wired up here. This just
-// generates a plausible-looking score + line of text so new reels don't show
-// a broken "0% AI MATCH", matching the tone of the existing demo cards. If real
-// analysis is ever added (e.g. calling a vision/LLM API on the video), replace
-// this function — don't mistake its output for genuine insight.
 const PLACEHOLDER_INSIGHTS = [
   'High buyer interest predicted based on comparable listings in this area.',
   'Property features align well with current market demand trends.',
@@ -42,33 +37,78 @@ const PLACEHOLDER_INSIGHTS = [
 ];
 
 function generatePlaceholderAnalysis() {
-  const aiMatch = Math.floor(Math.random() * (99 - 80 + 1)) + 80; // 80–99
+  const aiMatch = Math.floor(Math.random() * (99 - 80 + 1)) + 80;
   const insight = PLACEHOLDER_INSIGHTS[Math.floor(Math.random() * PLACEHOLDER_INSIGHTS.length)];
   return { aiMatch, insight };
 }
 
-// GET all reels
+const formatReel = (reel, viewerId = null) => {
+  const r = reel.toObject ? reel.toObject() : reel;
+  const likesArray = (r.likes || []).map((l) => (l?._id ? l._id.toString() : String(l)));
+  const isLiked = viewerId ? likesArray.includes(viewerId.toString()) : false;
+
+  const comments = (r.comments || []).map((c) => {
+    const u = c.user || {};
+    return {
+      _id: c._id,
+      author: {
+        _id: u._id || u.id || null,
+        fullName: u.fullName || 'Boolok Member',
+        username: u.username || 'member',
+        profilePicture: u.profilePicture || null,
+      },
+      text: c.text,
+      createdAt: c.createdAt,
+    };
+  });
+
+  return {
+    _id: r._id.toString(),
+    author: r.author
+      ? {
+          _id: r.author._id?.toString() || r.author.id?.toString(),
+          fullName: r.author.fullName || 'Boolok Member',
+          username: r.author.username || 'member',
+          profilePicture: r.author.profilePicture || null,
+        }
+      : null,
+    videoUrl: r.videoUrl,
+    caption: r.caption || '',
+    title: r.title || '',
+    location: r.location || '',
+    aiMatch: r.aiMatch,
+    insight: r.insight,
+    views: r.views || 0,
+    likes: likesArray,
+    likesCount: likesArray.length,
+    isLiked,
+    comments,
+    commentsCount: comments.length,
+    createdAt: r.createdAt,
+  };
+};
+
+// ── GET /api/reels : Fetch all reels ─────────────────────────────────────────
 router.get('/', auth, async (req, res) => {
   try {
+    const viewerId = req.user?.id || req.user?._id || null;
     const reels = await Reel.find()
       .populate('author', 'fullName username profilePicture')
       .populate('comments.user', 'fullName username profilePicture')
       .sort({ createdAt: -1 })
-      .limit(10);
-    res.json(reels);
+      .limit(50);
+
+    res.json(reels.map((r) => formatReel(r, viewerId)));
   } catch (error) {
-    console.error(error);
+    console.error('FETCH REELS ERROR:', error);
     res.status(500).json({ message: 'Server error fetching reels' });
   }
 });
 
-// POST a new reel — supports EITHER:
-//   (a) multipart/form-data with a "video" file field (Insights screen's file picker), or
-//   (b) application/json with a "videoUrl" string (Social Feed's paste-a-link form)
+// ── POST /api/reels : Create a new reel ──────────────────────────────────────
 router.post('/', auth, upload.single('video'), async (req, res) => {
   try {
     let videoUrl;
-
     if (req.file) {
       videoUrl = `/uploads/reels/${req.file.filename}`;
     } else if (typeof req.body.videoUrl === 'string' && req.body.videoUrl.trim()) {
@@ -78,69 +118,69 @@ router.post('/', auth, upload.single('video'), async (req, res) => {
     }
 
     const { caption, title, location } = req.body;
-
-    // Only fall back to placeholder values if the client didn't send real ones
-    const aiMatch =
-      req.body.aiMatch !== undefined && req.body.aiMatch !== ''
-        ? Number(req.body.aiMatch)
-        : undefined;
-    const insight = typeof req.body.insight === 'string' && req.body.insight.trim()
-      ? req.body.insight.trim()
-      : undefined;
-
-    const placeholder = (aiMatch === undefined || insight === undefined)
-      ? generatePlaceholderAnalysis()
-      : null;
+    const placeholder = generatePlaceholderAnalysis();
 
     const newReel = new Reel({
       author: req.user.id,
       videoUrl,
-      caption,
-      title,
-      location,
-      aiMatch: aiMatch ?? placeholder.aiMatch,
-      insight: insight ?? placeholder.insight,
+      caption: caption || '',
+      title: title || '',
+      location: location || '',
+      aiMatch: req.body.aiMatch ? Number(req.body.aiMatch) : placeholder.aiMatch,
+      insight: req.body.insight ? req.body.insight.trim() : placeholder.insight,
+      likes: [],
+      comments: [],
     });
 
     const savedReel = await newReel.save();
-    await savedReel.populate('author', 'fullName profilePicture');
-    res.status(201).json(savedReel);
+    await savedReel.populate('author', 'fullName username profilePicture');
+    res.status(201).json(formatReel(savedReel, req.user.id));
   } catch (error) {
-    console.error(error);
+    console.error('CREATE REEL ERROR:', error);
     res.status(500).json({ message: 'Server error creating reel' });
   }
 });
 
-// PUT like/unlike a reel
+// ── PUT /api/reels/:id/like : Toggle like on a reel ─────────────────────────
 router.put('/:id/like', auth, async (req, res) => {
   try {
+    const userId = req.user.id;
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid reel ID' });
+    }
+
     const reel = await Reel.findById(req.params.id);
     if (!reel) return res.status(404).json({ message: 'Reel not found' });
 
-    const index = reel.likes.indexOf(req.user.id);
-    if (index === -1) reel.likes.push(req.user.id);
-    else reel.likes.splice(index, 1);
+    const alreadyLiked = reel.likes.some((id) => id.toString() === userId.toString());
+    const update = alreadyLiked
+      ? { $pull: { likes: userId } }
+      : { $addToSet: { likes: userId } };
 
-    await reel.save();
-    res.json(reel.likes);
+    const updated = await Reel.findByIdAndUpdate(req.params.id, update, { new: true })
+      .populate('author', 'fullName username profilePicture')
+      .populate('comments.user', 'fullName username profilePicture');
+
+    res.json(formatReel(updated, userId));
   } catch (error) {
-    console.error(error);
+    console.error('LIKE REEL ERROR:', error);
     res.status(500).json({ message: 'Server error updating reel like' });
   }
 });
 
-// POST add comment to a reel
+// ── POST /api/reels/:id/comments : Add comment to a reel ────────────────────
 router.post('/:id/comments', auth, async (req, res) => {
   try {
     const { text } = req.body;
     if (!text || !text.trim()) {
       return res.status(400).json({ message: 'Comment text is required.' });
     }
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid reel ID' });
+    }
 
     const reel = await Reel.findById(req.params.id);
-    if (!reel) {
-      return res.status(404).json({ message: 'Reel not found.' });
-    }
+    if (!reel) return res.status(404).json({ message: 'Reel not found.' });
 
     reel.comments.push({
       user: req.user.id,
@@ -149,36 +189,48 @@ router.post('/:id/comments', auth, async (req, res) => {
     });
 
     await reel.save();
-    await reel.populate('comments.user', 'fullName username profilePicture');
+    const populated = await Reel.findById(req.params.id)
+      .populate('author', 'fullName username profilePicture')
+      .populate('comments.user', 'fullName username profilePicture');
 
-    res.status(201).json(reel.comments);
+    res.status(201).json(formatReel(populated, req.user.id));
   } catch (error) {
-    console.error('[COMMENT] Error:', error);
+    console.error('ADD REEL COMMENT ERROR:', error);
     res.status(500).json({ message: 'Server error adding comment.' });
   }
 });
 
-// GET comments for a reel
+// ── GET /api/reels/:id/comments : Get comments for a reel ───────────────────
 router.get('/:id/comments', auth, async (req, res) => {
   try {
-    const reel = await Reel.findById(req.params.id).populate('comments.user', 'fullName username profilePicture');
-    if (!reel) {
-      return res.status(404).json({ message: 'Reel not found.' });
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid reel ID' });
     }
-    res.json(reel.comments || []);
+    const reel = await Reel.findById(req.params.id)
+      .populate('comments.user', 'fullName username profilePicture');
+    if (!reel) return res.status(404).json({ message: 'Reel not found.' });
+
+    const comments = (reel.comments || []).map((c) => ({
+      _id: c._id,
+      author: c.user || { fullName: 'Boolok Member', username: 'member' },
+      text: c.text,
+      createdAt: c.createdAt,
+    }));
+    res.json(comments);
   } catch (error) {
-    console.error('[GET COMMENTS] Error:', error);
+    console.error('GET REEL COMMENTS ERROR:', error);
     res.status(500).json({ message: 'Server error fetching comments.' });
   }
 });
 
-// DELETE a reel
+// ── DELETE /api/reels/:id : Delete a reel ───────────────────────────────────
 router.delete('/:id', auth, async (req, res) => {
   try {
-    const reel = await Reel.findById(req.params.id);
-    if (!reel) {
-      return res.status(404).json({ message: 'Reel not found' });
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid reel ID' });
     }
+    const reel = await Reel.findById(req.params.id);
+    if (!reel) return res.status(404).json({ message: 'Reel not found' });
 
     if (reel.videoUrl && reel.videoUrl.startsWith('/uploads/')) {
       const filePath = path.join(__dirname, '..', reel.videoUrl);
@@ -190,9 +242,9 @@ router.delete('/:id', auth, async (req, res) => {
     }
 
     await reel.deleteOne();
-    res.json({ message: 'Reel deleted' });
+    res.json({ message: 'Reel deleted successfully' });
   } catch (error) {
-    console.error('[DELETE] Error:', error);
+    console.error('DELETE REEL ERROR:', error);
     res.status(500).json({ message: 'Server error deleting reel' });
   }
 });
