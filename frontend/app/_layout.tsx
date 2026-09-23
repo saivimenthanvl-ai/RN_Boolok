@@ -9,11 +9,12 @@ import { MaterialIcons, MaterialCommunityIcons, Feather, Ionicons, FontAwesome }
 import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '../context/AuthContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
+import StorageConsentBanner from '../components/StorageConsentBanner';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -27,31 +28,36 @@ function RootLayoutNav() {
   }, [isDark]);
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        animation: 'fade',
-        contentStyle: { backgroundColor: isDark ? '#060b13' : '#ffffff' },
-      }}
-    >
-      {/* Public routes: never wrapped by the authenticated app layout */}
-      <Stack.Screen name="index" />
-      <Stack.Screen name="brand-vision" />
+    <View style={{ flex: 1 }}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: 'fade',
+          contentStyle: { backgroundColor: isDark ? '#060b13' : '#ffffff' },
+        }}
+      >
+        {/* Public routes: never wrapped by the authenticated app layout */}
+        <Stack.Screen name="index" />
+        <Stack.Screen name="brand-vision" />
 
-      {/*
-        FIX: explicitly registered. This Stack declares its children
-        manually, which stops expo-router from auto-registering any
-        file not listed here — auth-callback.tsx existed on disk but
-        was invisible to the router without this line, producing
-        "Unmatched Route" every time Google's OAuth popup redirected
-        back to it.
-      */}
-      <Stack.Screen name="auth-callback" />
+        {/*
+          FIX: explicitly registered. This Stack declares its children
+          manually, which stops expo-router from auto-registering any
+          file not listed here — auth-callback.tsx existed on disk but
+          was invisible to the router without this line, producing
+          "Unmatched Route" every time Google's OAuth popup redirected
+          back to it.
+        */}
+        <Stack.Screen name="auth-callback" />
 
-      {/* Route groups */}
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(app)" />
-    </Stack>
+        {/* Route groups */}
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(app)" />
+      </Stack>
+
+      {/* First-launch storage/consent notice — shown once, auto-dismissed */}
+      <StorageConsentBanner />
+    </View>
   );
 }
 

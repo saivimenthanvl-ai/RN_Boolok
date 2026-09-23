@@ -87,6 +87,12 @@ app.use(
   })
 );
 
+const http = require('http');
+const { Server: SocketServer } = require('socket.io');
+const jwt = require('jsonwebtoken');
+const Message = require('./models/Message');
+const Conversation = require('./models/Conversation');
+
 /*
  * API routes
  */
@@ -95,6 +101,7 @@ app.use('/api/feed', require('./routes/feedRoutes'));
 app.use('/api/reels', require('./routes/reels'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/messages', require('./routes/messages'));
 
 /*
  * Public uploaded files
@@ -175,6 +182,153 @@ app.use((error, req, res, next) => {
   });
 });
 
+const server = http.createServer(app);
+const io = new SocketServer(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    credentials: true,
+  },
+});
+
+app.set('io', io);
+
+// Socket JWT authentication middleware
+io.use((socket, next) => {
+  const token =
+    socket.handshake.auth?.token ||
+    socket.handshake.headers?.authorization?.replace('Bearer ', '');
+
+  if (!token) {
+    return next(new Error('Authentication token required'));
+  }
+
+  try {
+    const secret = process.env.JWT_SECRET || 'boolok_default_jwt_secret_key_2026';
+    const decoded = jwt.verify(token, secret);
+    socket.userId = (decoded.userId || decoded.id || '').toString();
+    next();
+  } catch (err) {
+    console.warn('[socket] Token verification failed:', err.message);
+    next(new Error('Invalid token'));
+  }
+});
+
+io.on('connection', (socket) => {
+  if (socket.userId) {
+    const userRoom = `user_${socket.userId}`;
+    socket.join(userRoom);
+  }
+
+  // Join active conversation channel
+  socket.on('join_conversation', (conversationId) => {
+    if (conversationId) {
+      socket.join(`conv_${conversationId}`);
+    }
+  });
+
+  socket.on('leave_conversation', (conversationId) => {
+    if (conversationId) {
+      socket.leave(`conv_${conversationId}`);
+    }
+  });
+
+  // Typing indicator broadcast
+  socket.on('typing', ({ conversationId }) => {
+    if (conversationId) {
+      socket.to(`conv_${conversationId}`).emit('user_typing', {
+        conversationId,
+        userId: socket.userId,
+      });
+    }
+  });
+
+  socket.on('stop_typing', ({ conversationId }) => {
+    if (conversationId) {
+      socket.to(`conv_${conversationId}`).emit('user_stop_typing', {
+        conversationId,
+        userId: socket.userId,
+      });
+    }
+  });
+
+  // Direct socket message delivery
+  socket.on('send_message', async ({ conversationId, recipientId, text, mediaUrl }, callback) => {
+    try {
+      if (!conversationId && !recipientId) return;
+      let conv = null;
+      if (conversationId && mongoose.Types.ObjectId.isValid(conversationId)) {
+        conv = await Conversation.findById(conversationId);
+      }
+      if (!conv && recipientId) {
+        conv = await Conversation.findOne({
+          participants: { $all: [socket.userId, recipientId], $size: 2 },
+        });
+        if (!conv) {
+          conv = await Conversation.create({
+            participants: [socket.userId, recipientId],
+            unreadCounts: new Map([[socket.userId, 0], [recipientId, 0]]),
+          });
+        }
+      }
+      if (!conv) return;
+
+      const targetRecipient = (conv.participants || []).find(
+        (p) => p.toString() !== socket.userId.toString()
+      );
+
+      const msg = await Message.create({
+        conversationId: conv._id,
+        sender: socket.userId,
+        recipient: targetRecipient,
+        text: (text || '').trim(),
+        mediaUrl: mediaUrl || null,
+        read: false,
+      });
+
+      const currentUnread = conv.unreadCounts ? conv.unreadCounts.get(targetRecipient.toString()) || 0 : 0;
+      const newUnreadMap = new Map(conv.unreadCounts || []);
+      newUnreadMap.set(targetRecipient.toString(), currentUnread + 1);
+
+      conv.lastMessage = {
+        text: (text || '').trim() || 'Shared a media attachment',
+        sender: socket.userId,
+        createdAt: new Date(),
+        mediaUrl: mediaUrl || null,
+      };
+      conv.unreadCounts = newUnreadMap;
+      await conv.save();
+
+      const populated = await Message.findById(msg._id)
+        .populate('sender', 'fullName username profilePicture')
+        .populate('recipient', 'fullName username profilePicture');
+
+      // Dispatch to conversation room, recipient personal room, and sender personal room
+      io.to(`conv_${conv._id}`).emit('new_message', populated);
+      if (targetRecipient) {
+        const recipientRoom = `user_${targetRecipient.toString()}`;
+        io.to(recipientRoom).emit('new_message', populated);
+        io.to(recipientRoom).emit('message_notification', {
+          message: populated,
+          conversationId: conv._id,
+        });
+      }
+      if (socket.userId) {
+        io.to(`user_${socket.userId.toString()}`).emit('new_message', populated);
+      }
+
+      if (typeof callback === 'function') {
+        callback({ success: true, message: populated });
+      }
+    } catch (err) {
+      console.error('[socket] send_message error:', err);
+      if (typeof callback === 'function') {
+        callback({ success: false, error: err.message });
+      }
+    }
+  });
+});
+
 let httpServer;
 
 async function startServer() {
@@ -189,8 +343,8 @@ async function startServer() {
 
     console.log(`MongoDB connected: ${mongoose.connection.host}`);
 
-    httpServer = app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on http://0.0.0.0:${PORT}`);
+    httpServer = server.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running with WebSockets on http://0.0.0.0:${PORT}`);
     });
   } catch (error) {
     console.error('SERVER STARTUP ERROR:', error.message);

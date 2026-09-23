@@ -37,7 +37,7 @@ export const lightColors: ColorTheme = {
   secondaryContainer: '#F1F5F9',  // Slate 100
   primary: '#D97706',             // Warm, professional luxury gold/amber
   primaryFixed: '#F59E0B',        // Amber 500
-  primaryContainer: '#FEF3C7',    // Light amber container
+  primaryContainer: '#D97706',    // Warm luxury gold/amber container (matches primary)
   onPrimary: '#FFFFFF',           // Crisp white text on primary
   outline: '#94A3B8',             // Slate 400
   outlineVariant: '#E2E8F0',      // Slate 200 - refined micro borders
@@ -132,10 +132,12 @@ export const spacing = {
   gutter: 24,
   lg: 40,
   xl: 64,
+  xxl: 80,
 };
 
 export const radius = {
   default: 4,
+  sm: 4,
   md: 6,
   lg: 8,
   xl: 12,
@@ -154,5 +156,6 @@ export const typography = {
   bodyLg: { fontFamily: 'Poppins_400Regular', fontSize: 17, lineHeight: 26 },
   bodyMd: { fontFamily: 'Poppins_400Regular', fontSize: 15, lineHeight: 22 },
   bodySm: { fontFamily: 'Poppins_400Regular', fontSize: 13, lineHeight: 19 },
+  labelLg: { fontFamily: 'Poppins_600SemiBold', fontSize: 15, lineHeight: 20, letterSpacing: 0.4 },
   labelMd: { fontFamily: 'Poppins_600SemiBold', fontSize: 13, lineHeight: 15, letterSpacing: 0.6 },
 };

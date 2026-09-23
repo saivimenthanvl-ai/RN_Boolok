@@ -346,19 +346,110 @@ router.post('/login', async (req, res) => {
 router.post('/forgot-password', async (req, res) => {
   try {
     const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
-    if (email) {
-      const otp = generateOtp();
-      storeOtp(email, otp);
-      console.log(`[auth] Password reset OTP for ${email}: ${otp}`);
+    if (!email) {
+      return res.status(400).json({ message: 'Email address is required.' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'No registered account found with this email address.' });
+    }
+
+    const otp = generateOtp();
+    storeOtp(email, otp);
+    console.log(`[auth] Password reset 6-digit OTP for ${email}: ${otp}`);
+
+    const emailSent = await sendOtpEmail(email, otp, 'Password Reset');
+    if (!emailSent && !process.env.GMAIL_APP_PASSWORD) {
+      console.warn(`[auth] Note: GMAIL_APP_PASSWORD is not configured in backend/.env.`);
     }
 
     return res.status(200).json({
-      message: 'If an account matches that email, a password reset code has been sent.',
+      message: `A 6-digit password reset code has been sent to ${email}.`,
       success: true,
+      email,
+      ...(process.env.NODE_ENV !== 'production' ? { debugOtp: otp } : {}),
     });
   } catch (error) {
     console.error('Forgot password error:', error);
-    return res.status(500).json({ message: 'Failed to process request.', error: error.message });
+    return res.status(500).json({ message: 'Failed to process password reset request.', error: error.message });
+  }
+});
+
+// POST /api/auth/verify-reset-otp
+router.post('/verify-reset-otp', async (req, res) => {
+  try {
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const otp = typeof req.body.otp === 'string' ? req.body.otp.trim() : '';
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and verification code are required.' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const entry = otpStore.get(normalizedEmail);
+
+    if (!entry) {
+      return res.status(400).json({ message: 'No reset request found for this email, or the code expired.' });
+    }
+
+    if (Date.now() > entry.expiresAt) {
+      otpStore.delete(normalizedEmail);
+      return res.status(400).json({ message: 'Verification code has expired. Please request a new one.' });
+    }
+
+    if (entry.otp !== otp) {
+      return res.status(400).json({ message: 'Incorrect 6-digit code. Please check and try again.' });
+    }
+
+    return res.status(200).json({
+      message: 'Code verified successfully.',
+      success: true,
+    });
+  } catch (error) {
+    console.error('Verify reset OTP error:', error);
+    return res.status(500).json({ message: 'Failed to verify code.', error: error.message });
+  }
+});
+
+// POST /api/auth/reset-password
+router.post('/reset-password', async (req, res) => {
+  try {
+    const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const otp = typeof req.body.otp === 'string' ? req.body.otp.trim() : '';
+    const newPassword = typeof req.body.newPassword === 'string' ? req.body.newPassword : '';
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and 6-digit verification code are required.' });
+    }
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ message: 'New password must contain at least 8 characters.' });
+    }
+
+    const isValidOtp = verifyOtpHelper(email, otp);
+    if (!isValidOtp) {
+      return res.status(400).json({ message: 'Invalid or expired verification code. Please request a new code.' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'No registered account found with this email.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    user.password = hashedPassword;
+    await user.save();
+
+    console.log(`[auth] Password successfully reset for ${email}`);
+
+    return res.status(200).json({
+      message: 'Your password has been reset successfully! You can now log in.',
+      success: true,
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return res.status(500).json({ message: 'Failed to reset password.', error: error.message });
   }
 });
 
@@ -468,6 +559,21 @@ router.put('/personalize', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Personalization error:', error);
     return res.status(500).json({ message: 'Failed to save personalization.', error: error.message });
+  }
+});
+
+// GET /api/auth/me
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user?.id || req.user?._id || req.userId;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    return res.status(200).json({ user: sanitizeUser(user) });
+  } catch (error) {
+    console.error('Fetch me error:', error);
+    return res.status(500).json({ message: 'Failed to fetch current user.', error: error.message });
   }
 });
 

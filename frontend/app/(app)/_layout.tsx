@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions, Image, Platform, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet, useWindowDimensions, Image, Platform, ScrollView, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Stack, router, usePathname } from 'expo-router';
+import { Stack, router, usePathname, Redirect } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,13 +12,15 @@ import { useTheme } from '../../context/ThemeContext';
 import { spacing, typography, radius, shadows } from '../../constants/theme';
 import BoolokLogo from '../../components/BoolokLogo';
 import axios from 'axios';
-import { API_BASE_URL } from '../../lib/api';
+import { API_BASE_URL, resolveImageUrl } from '../../lib/api';
+import { SocketProvider, useSocket } from '../../context/SocketContext';
 
 const MD_BREAKPOINT = 768;
 
 const NAV_ITEMS = [
   { id: 'dashboard', icon: 'dashboard', label: 'Dashboard', route: '/(app)/dashboard' },
   { id: 'feed', icon: 'forum', label: 'Social Feed', route: '/(app)/feed' },
+  { id: 'messages', icon: 'chat', label: 'Messages', route: '/(app)/messages' },
   { id: 'search', icon: 'search', label: 'AI Search', route: '/(app)/search' },
   { id: 'insights', icon: 'dynamic-feed', label: 'Insights Feed', route: '/(app)/insights' },
   { id: 'predictions', icon: 'trending-up', label: 'Price Predictions', route: '/(app)/predictions' },
@@ -26,12 +28,15 @@ const NAV_ITEMS = [
   { id: 'blueprint', icon: 'home-work', label: 'House Plan', route: '/(app)/blueprint' },
 ];
 
-export default function AppLayout() {
+function AppLayoutContent() {
   const { width } = useWindowDimensions();
   const isWide = width >= MD_BREAKPOINT;
-  const { user, token, signOut } = useAuth();
+  const { user, token, signOut, loading: authLoading } = useAuth();
+  const { unreadTotal } = useSocket();
   const pathname = usePathname();
   const { theme, isDark, toggleTheme } = useTheme();
+
+
 
   const getAuthToken = async () =>
     token || (Platform.OS === 'web' ? localStorage.getItem('userToken') : await SecureStore.getItemAsync('userToken'));
@@ -153,12 +158,17 @@ export default function AppLayout() {
                   return (
                     <View style={{ flexDirection: 'row', alignItems: 'center', width: 260 }}>
                       {/* Strict text-color only state as requested */}
-                      <View style={{ width: 80, alignItems: 'center', justifyContent: 'center' }}>
+                      <View style={{ width: 80, alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                         <MaterialIcons
                           name={item.icon as any}
                           size={24}
                           color={color}
                         />
+                        {item.id === 'messages' && unreadTotal > 0 && (
+                          <View style={{ position: 'absolute', top: -2, right: 22, backgroundColor: '#daa520', borderRadius: 7, minWidth: 15, height: 15, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3 }}>
+                            <Text style={{ color: '#000000', fontSize: 9, fontWeight: '900' }}>{unreadTotal > 9 ? '9+' : unreadTotal}</Text>
+                          </View>
+                        )}
                       </View>
                       <Animated.Text style={[typography.labelMd, { color: color, fontSize: 15, width: 140 }, animatedExpandStyle]} numberOfLines={1}>
                         {item.label}
@@ -236,6 +246,7 @@ export default function AppLayout() {
   };
 
   useEffect(() => {
+    if (!token || !user) return;
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 8000);
     return () => clearInterval(interval);
@@ -470,6 +481,7 @@ export default function AppLayout() {
   const MOBILE_NAV_ITEMS = [
     { id: 'dashboard', icon: 'dashboard', label: 'Home', route: '/(app)/dashboard' },
     { id: 'feed', icon: 'forum', label: 'Social', route: '/(app)/feed' },
+    { id: 'messages', icon: 'chat', label: 'Chat', route: '/(app)/messages' },
     { id: 'search', icon: 'search', label: 'Search', route: '/(app)/search' },
     { id: 'insights', icon: 'dynamic-feed', label: 'Reels', route: '/(app)/insights' },
     { id: 'profile', icon: 'person', label: 'Profile', route: '/(app)/profile' },
@@ -497,7 +509,14 @@ export default function AppLayout() {
                 onPress={() => router.push(item.route as any)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <MaterialIcons name={item.icon as any} size={24} color={isActive ? theme.primary : theme.onSurfaceVariant} />
+                <View style={{ position: 'relative' }}>
+                  <MaterialIcons name={item.icon as any} size={24} color={isActive ? theme.primary : theme.onSurfaceVariant} />
+                  {item.id === 'messages' && unreadTotal > 0 && (
+                    <View style={{ position: 'absolute', top: -3, right: -6, backgroundColor: '#daa520', borderRadius: 6, minWidth: 14, height: 14, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 2 }}>
+                      <Text style={{ color: '#000000', fontSize: 8, fontWeight: '900' }}>{unreadTotal > 9 ? '9+' : unreadTotal}</Text>
+                    </View>
+                  )}
+                </View>
                 <Text style={{ fontSize: 10, marginTop: 4, color: isActive ? theme.primary : theme.onSurfaceVariant, fontWeight: isActive ? '800' : '500' }}>
                   {item.label}
                 </Text>
@@ -510,6 +529,21 @@ export default function AppLayout() {
   };
 
   const insets = useSafeAreaInsets();
+
+  // ── Auth Guard (Placed after all hooks to comply with React Rules of Hooks) ──
+  if (authLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#060b13', alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color="#daa520" />
+      </View>
+    );
+  }
+
+  // If auth has resolved and user is NOT authenticated, redirect to login
+  if (!user || !token) {
+    return <Redirect href="/(auth)/login" />;
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <View style={[styles.root, { backgroundColor: theme.surface }]}>
@@ -583,8 +617,8 @@ export default function AppLayout() {
                           ]}
                           onPress={() => handleSelectUser(u)}
                         >
-                          {u.profilePicture ? (
-                            <Image source={{ uri: u.profilePicture }} style={{ width: 34, height: 34, borderRadius: 17, marginRight: 10 }} />
+                          {resolveImageUrl(u.profilePicture) ? (
+                            <Image source={{ uri: resolveImageUrl(u.profilePicture)! }} style={{ width: 34, height: 34, borderRadius: 17, marginRight: 10 }} />
                           ) : (
                             <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: isDark ? '#1e293b' : '#e2e8f0', justifyContent: 'center', alignItems: 'center', marginRight: 10, borderWidth: 1, borderColor: '#daa520' }}>
                               <Text style={{ color: '#daa520', fontWeight: '700', fontSize: 14 }}>{initial}</Text>
@@ -618,6 +652,18 @@ export default function AppLayout() {
                 <MaterialIcons name="search" size={22} color={theme.onSurfaceVariant} />
               </Pressable>
             )}
+
+            {/* Direct Messages Icon Button */}
+            <View style={{ position: 'relative' }}>
+              <Pressable onPress={() => router.push('/(app)/messages')} style={styles.iconBtn}>
+                <MaterialIcons name="chat" size={22} color={pathname?.includes('messages') ? theme.primary : theme.onSurfaceVariant} />
+                {unreadTotal > 0 && (
+                  <View style={[styles.notificationDot, { backgroundColor: '#daa520', borderColor: theme.surface, width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' }]}>
+                    <Text style={{ color: '#000000', fontSize: 9, fontWeight: '800' }}>{unreadTotal > 9 ? '9+' : unreadTotal}</Text>
+                  </View>
+                )}
+              </Pressable>
+            </View>
 
             <View style={{ position: 'relative' }}>
               <Pressable onPress={handleToggleNotifications} style={styles.iconBtn}>
@@ -673,8 +719,8 @@ export default function AppLayout() {
                               }
                             }}
                           >
-                            {sender.profilePicture ? (
-                              <Image source={{ uri: sender.profilePicture }} style={{ width: 32, height: 32, borderRadius: 16, marginRight: 10 }} />
+                            {resolveImageUrl(sender.profilePicture) ? (
+                              <Image source={{ uri: resolveImageUrl(sender.profilePicture)! }} style={{ width: 32, height: 32, borderRadius: 16, marginRight: 10 }} />
                             ) : (
                               <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#daa520', justifyContent: 'center', alignItems: 'center', marginRight: 10 }}>
                                 <Text style={{ color: '#000000', fontWeight: '800', fontSize: 13 }}>{initial}</Text>
@@ -731,7 +777,7 @@ export default function AppLayout() {
               )}
 
               {(() => {
-                const navAvatar = user?.profilePicture || (((user?.username || '').includes('sai') || (user?.fullName || '').includes('Sai')) ? 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' : null);
+                const navAvatar = resolveImageUrl(user?.profilePicture);
                 if (navAvatar) {
                   return (
                     <Image
@@ -769,7 +815,7 @@ export default function AppLayout() {
           {
             backgroundColor: isDark ? '#060B13' : '#F8FAFC',
             flex: 1,
-            paddingBottom: !isWide ? (56 + Math.max(insets.bottom, 10)) : 0,
+            paddingBottom: (!isWide && !pathname?.includes('insights')) ? (56 + Math.max(insets.bottom, 10)) : 0,
           }
         ]}>
           <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: isDark ? '#060B13' : '#F8FAFC' } }} />
@@ -778,6 +824,14 @@ export default function AppLayout() {
         {!isWide && <BottomNav />}
       </View>
     </View>
+  );
+}
+
+export default function AppLayout() {
+  return (
+    <SocketProvider>
+      <AppLayoutContent />
+    </SocketProvider>
   );
 }
 

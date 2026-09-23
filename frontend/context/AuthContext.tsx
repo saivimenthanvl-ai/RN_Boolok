@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { API_BASE_URL } from '../lib/api';
 
 const TOKEN_KEY = 'userToken';
 const USER_KEY = 'userData';
@@ -80,12 +81,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (storedToken && storedUser) {
           const parsed = JSON.parse(storedUser);
-          if (!parsed.profilePicture && ((parsed.username || '').includes('sai') || (parsed.email || '').includes('sai') || parsed.fullName === 'Sai')) {
-            parsed.profilePicture = 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c';
-            await saveValue(USER_KEY, JSON.stringify(parsed));
-          }
           setToken(storedToken);
           setUser(parsed);
+
+          // Asynchronously synchronize fresh user profile directly from MongoDB database
+          try {
+            const apiRes = await fetch(`${API_BASE_URL}/api/users/self`, {
+              headers: { Authorization: `Bearer ${storedToken}` }
+            });
+            if (apiRes.ok) {
+              const resData = await apiRes.json();
+              if (resData?.user) {
+                const freshUser = { ...parsed, ...resData.user };
+                setUser(freshUser);
+                await saveValue(USER_KEY, JSON.stringify(freshUser));
+              }
+            }
+          } catch (_) {}
         }
       } catch (error) {
         console.error('Failed to restore authentication session:', error);

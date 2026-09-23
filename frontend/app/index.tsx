@@ -14,6 +14,9 @@ export default function SplashScreen() {
   const opacity = useRef(new Animated.Value(0.75)).current;
   const fadeOut = useRef(new Animated.Value(1)).current;
 
+  // Track whether the minimum display time (1.4 s) has elapsed
+  const [minTimeDone, setMinTimeDone] = React.useState(false);
+
   useEffect(() => {
     // Elegant breathing pulse loop for the 8-dot star logo
     const pulseAnim = Animated.loop(
@@ -50,26 +53,31 @@ export default function SplashScreen() {
     );
     pulseAnim.start();
 
-    // After auth check / 1.4 seconds, smoothly navigate to the app
-    const timer = setTimeout(() => {
-      Animated.timing(fadeOut, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }).start(() => {
-        if (user) {
-          router.replace('/(app)/dashboard');
-        } else {
-          router.replace('/login');
-        }
-      });
-    }, 1400);
+    // Enforce a minimum 1.4 s branding display, then signal readiness
+    const timer = setTimeout(() => setMinTimeDone(true), 1400);
 
     return () => {
       pulseAnim.stop();
       clearTimeout(timer);
     };
-  }, [user, loading]);
+  }, []);
+
+  // Navigate only once BOTH the minimum time has passed AND auth has resolved
+  useEffect(() => {
+    if (!minTimeDone || loading) return;
+
+    Animated.timing(fadeOut, {
+      toValue: 0,
+      duration: 400,
+      useNativeDriver: true,
+    }).start(() => {
+      if (user) {
+        router.replace('/(app)/dashboard');
+      } else {
+        router.replace('/(auth)/login');
+      }
+    });
+  }, [minTimeDone, loading, user]);
 
   return (
     <View style={[styles.root, Platform.OS === 'web' && styles.rootWeb]}>

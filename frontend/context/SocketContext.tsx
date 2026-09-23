@@ -1,0 +1,164 @@
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { useAuth } from './AuthContext';
+import { API_BASE_URL } from '../lib/api';
+import axios from 'axios';
+
+type SocketContextType = {
+  socket: Socket | null;
+  isConnected: boolean;
+  unreadTotal: number;
+  refreshUnreadTotal: () => Promise<void>;
+  joinConversation: (conversationId: string) => void;
+  leaveConversation: (conversationId: string) => void;
+  sendTyping: (conversationId: string) => void;
+  sendStopTyping: (conversationId: string) => void;
+  markConversationRead: (conversationId: string) => Promise<void>;
+};
+
+const SocketContext = createContext<SocketContextType | undefined>(undefined);
+
+export function SocketProvider({ children }: { children: React.ReactNode }) {
+  const { token, user, isAuthenticated } = useAuth();
+  const socketRef = useRef<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [unreadTotal, setUnreadTotal] = useState(0);
+
+  const refreshUnreadTotal = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/messages/unread-count`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (typeof res.data?.unreadCount === 'number') {
+        setUnreadTotal(res.data.unreadCount);
+      }
+    } catch {
+      // ignore
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      setIsConnected(false);
+      setUnreadTotal(0);
+      return;
+    }
+
+    refreshUnreadTotal();
+
+    const socketInstance: Socket = io(API_BASE_URL, {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      autoConnect: true,
+      reconnection: true,
+      reconnectionDelay: 1500,
+      reconnectionAttempts: 10,
+    });
+
+    socketRef.current = socketInstance;
+
+    socketInstance.on('connect', () => {
+      setIsConnected(true);
+    });
+
+    socketInstance.on('disconnect', () => {
+      setIsConnected(false);
+    });
+
+    socketInstance.on('message_notification', () => {
+      setUnreadTotal((prev) => prev + 1);
+      refreshUnreadTotal();
+    });
+
+    socketInstance.on('new_message', () => {
+      refreshUnreadTotal();
+    });
+
+    return () => {
+      socketInstance.disconnect();
+      socketRef.current = null;
+    };
+  }, [isAuthenticated, token, refreshUnreadTotal]);
+
+  const joinConversation = useCallback((conversationId: string) => {
+    if (socketRef.current && conversationId) {
+      socketRef.current.emit('join_conversation', conversationId);
+    }
+  }, []);
+
+  const leaveConversation = useCallback((conversationId: string) => {
+    if (socketRef.current && conversationId) {
+      socketRef.current.emit('leave_conversation', conversationId);
+    }
+  }, []);
+
+  const sendTyping = useCallback((conversationId: string) => {
+    if (socketRef.current && conversationId) {
+      socketRef.current.emit('typing', { conversationId });
+    }
+  }, []);
+
+  const sendStopTyping = useCallback((conversationId: string) => {
+    if (socketRef.current && conversationId) {
+      socketRef.current.emit('stop_typing', { conversationId });
+    }
+  }, []);
+
+  const markConversationRead = useCallback(
+    async (conversationId: string) => {
+      if (!token || !conversationId) return;
+      try {
+        await axios.put(
+          `${API_BASE_URL}/api/messages/read/${conversationId}`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        refreshUnreadTotal();
+      } catch {
+        // ignore
+      }
+    },
+    [token, refreshUnreadTotal]
+  );
+
+  return (
+    <SocketContext.Provider
+      value={{
+        socket: socketRef.current,
+        isConnected,
+        unreadTotal,
+        refreshUnreadTotal,
+        joinConversation,
+        leaveConversation,
+        sendTyping,
+        sendStopTyping,
+        markConversationRead,
+      }}
+    >
+      {children}
+    </SocketContext.Provider>
+  );
+}
+
+export function useSocket() {
+  const context = useContext(SocketContext);
+  if (!context) {
+    return {
+      socket: null,
+      isConnected: false,
+      unreadTotal: 0,
+      refreshUnreadTotal: async () => {},
+      joinConversation: () => {},
+      leaveConversation: () => {},
+      sendTyping: () => {},
+      sendStopTyping: () => {},
+      markConversationRead: async () => {},
+    };
+  }
+  return context;
+}

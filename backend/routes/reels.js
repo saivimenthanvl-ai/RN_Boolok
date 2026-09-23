@@ -6,6 +6,7 @@ const fs = require('fs');
 const mongoose = require('mongoose');
 const Reel = require('../models/Reel');
 const auth = require('../middleware/auth');
+const optionalAuth = require('../middleware/optionalAuth');
 
 // ── Multer storage: save uploaded video files to /uploads/reels/ ────────────
 const uploadDir = path.join(__dirname, '..', 'uploads', 'reels');
@@ -89,7 +90,7 @@ const formatReel = (reel, viewerId = null) => {
 };
 
 // ── GET /api/reels : Fetch all reels ─────────────────────────────────────────
-router.get('/', auth, async (req, res) => {
+router.get('/', optionalAuth, async (req, res) => {
   try {
     const viewerId = req.user?.id || req.user?._id || null;
     const reels = await Reel.find()
@@ -201,7 +202,7 @@ router.post('/:id/comments', auth, async (req, res) => {
 });
 
 // ── GET /api/reels/:id/comments : Get comments for a reel ───────────────────
-router.get('/:id/comments', auth, async (req, res) => {
+router.get('/:id/comments', optionalAuth, async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ message: 'Invalid reel ID' });

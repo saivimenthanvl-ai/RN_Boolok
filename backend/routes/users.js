@@ -1,5 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 const User = require('../models/User');
 const Post = require('../models/Post');
 const Notification = require('../models/Notification');
@@ -7,6 +9,28 @@ const authMiddleware = require('../middleware/auth');
 const optionalAuth = require('../middleware/optionalAuth');
 
 const router = express.Router();
+
+function saveBase64Image(base64Data, subfolder = 'posts') {
+  if (!base64Data || typeof base64Data !== 'string') return null;
+  const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+  if (!matches || matches.length !== 3) {
+    return null;
+  }
+  const mimeType = matches[1];
+  let ext = 'jpg';
+  if (mimeType.includes('png')) ext = 'png';
+  else if (mimeType.includes('webp')) ext = 'webp';
+  else if (mimeType.includes('jpeg') || mimeType.includes('jpg')) ext = 'jpg';
+
+  const buffer = Buffer.from(matches[2], 'base64');
+  const filename = `avatar-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+  const uploadDir = path.join(__dirname, '../uploads', subfolder);
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  fs.writeFileSync(path.join(uploadDir, filename), buffer);
+  return `/uploads/${subfolder}/${filename}`;
+}
 
 const getAuthenticatedUserId = (req) => req.user?.id || req.user?._id || req.userId || null;
 
@@ -94,7 +118,7 @@ function sanitizeUserProfile(user, viewerId = null) {
     headline: user.headline || 'Real Estate Professional & Boolok Member',
     location: user.location || 'Chennai, Tamil Nadu · Prime Assets',
     coverImage: user.coverImage || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
-    profilePicture: user.profilePicture || ((sanitizedUsername || '').includes('sai') ? 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' : null),
+    profilePicture: user.profilePicture || null,
     closedDeals: user.closedDeals || '0',
     followerCount,
     followingCount,
@@ -214,7 +238,7 @@ const COMMUNITY_MEMBERS = [
     location: 'Western Australia',
     bio: 'Focused on precision cap-rate calculations, commercial yield optimization, and real estate investment portfolios.',
     closedDeals: '3',
-    profilePicture: 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c',
+    profilePicture: null,
     coverImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200',
   },
   {
@@ -412,8 +436,8 @@ async function resolveOrSeedUser(id, viewerId = null) {
           existing.fullName = memberDef.fullName;
           needsSave = true;
         }
-        if (existing.profilePicture && existing.profilePicture.includes('images.unsplash.com')) {
-          existing.profilePicture = memberDef.profilePicture || null;
+        if (!existing.profilePicture && memberDef.profilePicture) {
+          existing.profilePicture = memberDef.profilePicture;
           needsSave = true;
         }
         if (memberDef.headline && (!existing.headline || existing.headline.includes('Boolok Member'))) {
@@ -705,6 +729,17 @@ router.post('/avatar', authMiddleware, upload.single('avatar'), async (req, res)
       return res.status(400).json({ message: 'No avatar image provided.' });
     }
 
+    if (profilePicture.startsWith('blob:') || profilePicture.startsWith('file:')) {
+      return res.status(400).json({ message: 'Cannot save temporary client blob URI. Please upload as multipart file.' });
+    }
+
+    if (profilePicture.startsWith('data:image/')) {
+      const savedPath = saveBase64Image(profilePicture);
+      if (savedPath) {
+        profilePicture = savedPath;
+      }
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       viewerId,
       { $set: { profilePicture } },
@@ -742,7 +777,16 @@ router.put('/profile', authMiddleware, async (req, res) => {
     if (typeof location === 'string') updateData.location = location.trim();
     if (typeof coverImage === 'string') updateData.coverImage = coverImage.trim();
     if (typeof closedDeals === 'string') updateData.closedDeals = closedDeals.trim();
-    if (profilePicture !== undefined) updateData.profilePicture = profilePicture ? profilePicture.trim() : null;
+    if (profilePicture !== undefined) {
+      if (!profilePicture) {
+        updateData.profilePicture = null;
+      } else if (typeof profilePicture === 'string' && profilePicture.startsWith('data:image/')) {
+        const savedPath = saveBase64Image(profilePicture);
+        updateData.profilePicture = savedPath || profilePicture;
+      } else if (typeof profilePicture === 'string' && !profilePicture.startsWith('blob:') && !profilePicture.startsWith('file:')) {
+        updateData.profilePicture = profilePicture.trim();
+      }
+    }
 
     const updatedUser = await User.findByIdAndUpdate(viewerId, { $set: updateData }, { new: true })
       .populate('followers', 'fullName username profilePicture')
@@ -789,7 +833,7 @@ router.get('/:id/followers', optionalAuth, async (req, res) => {
             username: f.username || 'member',
             headline: f.headline || 'Real Estate Professional',
             location: f.location || 'Global Real Estate Network',
-            profilePicture: f.profilePicture || (((f.username || '').includes('sai')) ? 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c' : null),
+            profilePicture: f.profilePicture || null,
           };
         }
         return { id: f.toString(), _id: f.toString(), fullName: 'Boolok Member', username: 'member', profilePicture: null };
@@ -1698,4 +1742,44 @@ router.post('/:id/follow', authMiddleware, async (req, res) => {
   }
 });
 
-module.exports = router;
+// ── DELETE /api/users/me (Account Deletion — GDPR / DPDP Act 2023 Right to Erasure) ──
+router.delete('/me', authMiddleware, async (req, res) => {
+  try {
+    const viewerId = getAuthenticatedUserId(req);
+    if (!viewerId) return res.status(401).json({ message: 'Unauthorized.' });
+
+    // 1. Delete all posts created by this user
+    await Post.deleteMany({ author: viewerId });
+
+    // 2. Remove this user from all followers/following arrays of other users
+    await User.updateMany(
+      { followers: viewerId },
+      { $pull: { followers: viewerId } }
+    );
+    await User.updateMany(
+      { following: viewerId },
+      { $pull: { following: viewerId } }
+    );
+
+    // 3. Delete all notifications involving this user
+    await Notification.deleteMany({
+      $or: [{ recipient: viewerId }, { sender: viewerId }],
+    });
+
+    // 4. Finally, delete the user document itself
+    await User.findByIdAndDelete(viewerId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Your account and all associated data have been permanently deleted.',
+    });
+  } catch (error) {
+    console.error('DELETE ACCOUNT ERROR:', error);
+    return res.status(500).json({
+      message: 'Failed to delete account. Please try again or contact support.',
+      error: error.message,
+    });
+  }
+});
+
+module.exports = router;

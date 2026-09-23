@@ -65,6 +65,24 @@ function resolveApiBaseUrl(): string {
 
 export const API_BASE_URL = resolveApiBaseUrl();
 
+/**
+ * Safely resolves an image path or URL into a fully-qualified URL for <Image source={{ uri }} />.
+ * Automatically prepends API_BASE_URL for relative paths like /uploads/posts/...
+ */
+export function resolveImageUrl(path: string | null | undefined): string | null {
+  if (!path || typeof path !== 'string') return null;
+  const trimmed = path.trim();
+  if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return null;
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('file:')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `${API_BASE_URL}${cleanPath}`;
+}
+
 async function getStoredToken(): Promise<string | null> {
   try {
     if (Platform.OS === 'web') {

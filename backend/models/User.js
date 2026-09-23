@@ -55,6 +55,8 @@ const userSchema = new mongoose.Schema(
     },
     coverImage: {
       type: String,
+      // Default cover photo — Unsplash free-to-use license (https://unsplash.com/license)
+      // Photo by Philipp Berndt: https://unsplash.com/photos/5i0GnoTTjSE
       default: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200',
     },
     closedDeals: {

@@ -18,6 +18,7 @@ import {
   Platform,
   StyleSheet,
   useWindowDimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { router, Link } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -32,7 +33,7 @@ type SubmitState = 'idle' | 'loading' | 'success';
 
 const FEATURES = [
   { icon: 'search', title: 'Smart Search', desc: 'Find exactly what you need with semantic property discovery.' },
-  { icon: 'auto-awesome', title: 'AI Advisor', desc: 'Get professional guidance on valuations and legalities.' },
+  { icon: 'auto-awesome', title: 'AI Advisor', desc: 'Get AI-assisted insights on valuations and property data. Not professional legal or financial advice.' },
   { icon: 'trending-up', title: 'Market Insights', desc: 'Real-time data visualization of global market trends.' },
   { icon: 'public', title: 'Global Reach', desc: 'Connect with opportunities across borders instantly.' },
 ] as const;
@@ -197,7 +198,7 @@ export default function RegisterScreen() {
               </View>
 
               <Text style={[typography.labelMd, styles.copyright]}>
-                © 2024 BOOLOK AI. INTELLIGENT PRECISION.
+                © {new Date().getFullYear()} BOOLOK AI. INTELLIGENT PRECISION.
               </Text>
             </Animated.View>
           )}
@@ -238,6 +239,7 @@ export default function RegisterScreen() {
                   value={fullName}
                   onChangeText={setFullName}
                   autoCapitalize="words"
+                  accessibilityLabel="Full name"
                 />
               </Field>
 
@@ -249,6 +251,7 @@ export default function RegisterScreen() {
                   value={username}
                   onChangeText={setUsername}
                   autoCapitalize="none"
+                  accessibilityLabel="Username"
                 />
               </Field>
 
@@ -261,6 +264,7 @@ export default function RegisterScreen() {
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  accessibilityLabel="Email address"
                 />
               </Field>
 
@@ -273,8 +277,14 @@ export default function RegisterScreen() {
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
+                    accessibilityLabel="Password, minimum 8 characters"
                   />
-                  <Pressable style={styles.eyeButton} onPress={() => setShowPassword((v) => !v)}>
+                  <Pressable
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword((v) => !v)}
+                    accessibilityRole="button"
+                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                  >
                     <MaterialIcons
                       name={showPassword ? 'visibility-off' : 'visibility'}
                       size={22}
@@ -284,13 +294,36 @@ export default function RegisterScreen() {
                 </View>
               </Field>
 
-              <Pressable style={styles.termsRow} onPress={() => setAgreed((v) => !v)}>
+              <Pressable
+                style={styles.termsRow}
+                onPress={() => setAgreed((v) => !v)}
+                accessibilityRole="checkbox"
+                accessibilityLabel="I agree to the Terms of Service and Privacy Policy"
+                accessibilityState={{ checked: agreed }}
+              >
                 <View style={[styles.checkbox, agreed && styles.checkboxChecked]}>
                   {agreed && <MaterialIcons name="check" size={14} color={colors.onPrimary} />}
                 </View>
                 <Text style={[typography.bodySm, { color: colors.onSurfaceVariant, flex: 1 }]}>
-                  I agree to the <Text style={styles.link}>Terms of Service</Text> and{' '}
-                  <Text style={styles.link}>Privacy Policy</Text>.
+                  {'I agree to the '}
+                  <Text
+                    style={styles.link}
+                    onPress={() => router.push({ pathname: '/terms', params: { tab: 'terms' } } as any)}
+                    accessibilityRole="link"
+                    accessibilityLabel="View Terms of Service"
+                  >
+                    Terms of Service
+                  </Text>
+                  {' and '}
+                  <Text
+                    style={styles.link}
+                    onPress={() => router.push({ pathname: '/terms', params: { tab: 'privacy' } } as any)}
+                    accessibilityRole="link"
+                    accessibilityLabel="View Privacy Policy"
+                  >
+                    Privacy Policy
+                  </Text>
+                  {'.'}
                 </Text>
               </Pressable>
 
@@ -303,6 +336,7 @@ export default function RegisterScreen() {
                     value={otp}
                     onChangeText={setOtp}
                     keyboardType="number-pad"
+                    accessibilityLabel="One-time password sent to your email"
                   />
                 </Field>
               )}
@@ -312,11 +346,22 @@ export default function RegisterScreen() {
                   styles.submitButton,
                   submitState === 'success' && { backgroundColor: colors.success },
                   (!(isOtpSent ? canSubmitRegistration : canSendOtp) && submitState === 'idle') && { opacity: 0.5 },
+                  submitState === 'loading' && { opacity: 0.9 },
                 ]}
                 onPress={isOtpSent ? handleSubmit : handleSendOtp}
                 disabled={submitState !== 'idle'}
+                accessibilityRole="button"
+                accessibilityLabel={buttonLabel}
+                accessibilityState={{ disabled: submitState !== 'idle' }}
               >
-                <Text style={[typography.headlineSm, { color: colors.onPrimary }]}>{buttonLabel}</Text>
+                {submitState === 'loading' ? (
+                  <View style={styles.loadingButtonContent}>
+                    <ActivityIndicator size="small" color={colors.onPrimary} />
+                    <Text style={[typography.headlineSm, { color: colors.onPrimary }]}>{buttonLabel}</Text>
+                  </View>
+                ) : (
+                  <Text style={[typography.headlineSm, { color: colors.onPrimary }]}>{buttonLabel}</Text>
+                )}
               </Pressable>
 
               <View style={styles.dividerRow}>
@@ -470,15 +515,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 2,
   },
-  checkboxChecked: { backgroundColor: colors.primaryContainer, borderColor: colors.primaryContainer },
+  checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
   link: { color: colors.primary, fontFamily: 'Poppins_600SemiBold' },
   submitButton: {
     height: 52,
-    backgroundColor: colors.primaryContainer,
+    backgroundColor: colors.primary,
     borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
+  },
+  loadingButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
   },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.outlineVariant },

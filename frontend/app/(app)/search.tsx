@@ -20,7 +20,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { spacing, typography, radius } from '../../constants/theme';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import axios from 'axios';
-import { API_BASE_URL } from '../../lib/api';
+import { API_BASE_URL, resolveImageUrl } from '../../lib/api';
 
 export interface SearchItem {
   id: string;
@@ -517,11 +517,11 @@ export default function AISearchHubScreen() {
 
     let photoUri: string | null = null;
     if (isSai) {
-      photoUri = user?.profilePicture || 'https://lh3.googleusercontent.com/a/ACg8ocK0o5SZUMa-JTOuTUTxS6t1Bl20HPwVkbFAz98dCG6e1rbpGA=s96-c';
+      photoUri = resolveImageUrl(user?.profilePicture);
     } else if (isLogesh) {
-      photoUri = 'https://lh3.googleusercontent.com/a/ACg8ocJ_TV7-lpSTfRAQI0wc76yPHoIWaWg_5lgW-i9RxbiPx4tlFk0r=s96-c';
-    } else if (seller.avatar && typeof seller.avatar === 'string' && !seller.avatar.includes('images.unsplash.com') && (seller.avatar.startsWith('http') || seller.avatar.startsWith('data:'))) {
-      photoUri = seller.avatar;
+      photoUri = resolveImageUrl(seller.profilePicture || seller.avatar || user?.profilePicture);
+    } else if (seller.avatar && typeof seller.avatar === 'string' && !seller.avatar.includes('images.unsplash.com')) {
+      photoUri = resolveImageUrl(seller.avatar);
     }
 
     const initial = (name[0] || 'A').toUpperCase();

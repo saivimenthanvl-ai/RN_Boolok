@@ -19,6 +19,7 @@ import {
   Platform,
   StyleSheet,
   useWindowDimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { router, Link } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -323,11 +324,19 @@ export default function LoginScreen() {
                     ((loginMethod === 'username' && !canSubmitUsername) ||
                       (loginMethod === 'email' && !(isOtpSent ? canSubmitEmail : canSendOtp))) &&
                     submitState === 'idle' && { opacity: 0.5 },
+                    submitState === 'loading' && { opacity: 0.9 },
                   ]}
                   onPress={loginMethod === 'email' && !isOtpSent ? handleSendOtp : handleSubmit}
                   disabled={submitState !== 'idle'}
                 >
-                  <Text style={[typography.labelMd, { color: '#fff' }]}>{buttonLabel}</Text>
+                  {submitState === 'loading' ? (
+                    <View style={styles.loadingButtonContent}>
+                      <ActivityIndicator size="small" color="#fff" />
+                      <Text style={[typography.labelMd, { color: '#fff' }]}>{buttonLabel}</Text>
+                    </View>
+                  ) : (
+                    <Text style={[typography.labelMd, { color: '#fff' }]}>{buttonLabel}</Text>
+                  )}
                 </Pressable>
 
                 {/* Divider */}
@@ -481,11 +490,17 @@ const styles = StyleSheet.create({
   link: { color: colors.primary },
   submitButton: {
     height: 48,
-    backgroundColor: colors.primaryContainer,
+    backgroundColor: colors.primary,
     borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.sm,
+  },
+  loadingButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
   },
   dividerRow: {
     flexDirection: 'row',

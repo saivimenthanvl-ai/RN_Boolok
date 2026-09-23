@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    backgroundColor: colors.primaryContainer,
+    backgroundColor: colors.primary,
     paddingVertical: spacing.md,
     borderRadius: radius.lg,
     ...Platform.select({
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     }),
   },
   goBtnHovered: {
-    backgroundColor: colors.primary,
+    opacity: 0.9,
     transform: [{ scale: 0.98 }],
   },
   desktopFooter: {
