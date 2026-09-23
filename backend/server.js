@@ -11,7 +11,7 @@ dotenv.config();
  * Windows can occasionally fail MongoDB Atlas SRV lookups through c-ares.
  * Using public DNS resolvers is acceptable for local development.
  */
-if (process.env.DISABLE_CUSTOM_DNS !== 'true') {
+if (process.platform === 'win32' && process.env.DISABLE_CUSTOM_DNS !== 'true') {
   try {
     dns.setServers(['8.8.8.8', '1.1.1.1']);
   } catch (error) {
@@ -352,16 +352,21 @@ async function startServer() {
     const mongoUri = requireEnvironmentVariable('MONGO_URI');
     requireEnvironmentVariable('JWT_SECRET');
 
-    await mongoose.connect(mongoUri, {
-      family: 4,
-      serverSelectionTimeoutMS: 15000,
-    });
-
-    console.log(`MongoDB connected: ${mongoose.connection.host}`);
-
+    // 1. Immediately bind to port so Render and cloud hosts detect the service as live
     httpServer = server.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running with WebSockets on http://0.0.0.0:${PORT}`);
     });
+
+    // 2. Connect to MongoDB
+    const connectOptions = {
+      serverSelectionTimeoutMS: 15000,
+    };
+    if (process.platform === 'win32') {
+      connectOptions.family = 4;
+    }
+
+    await mongoose.connect(mongoUri, connectOptions);
+    console.log(`MongoDB connected: ${mongoose.connection.host}`);
   } catch (error) {
     console.error('SERVER STARTUP ERROR:', error.message);
     process.exit(1);
