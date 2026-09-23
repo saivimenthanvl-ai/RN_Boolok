@@ -36,32 +36,43 @@ app.disable('x-powered-by');
 
 /*
  * Robust CORS setup allowing requests from mobile apps (no Origin header)
- * as well as web applications.
+ * as well as web applications (localhost, vercel.app, render.com, and configured domains).
  */
+function isAllowedOrigin(origin) {
+  // Mobile apps, Postman, curl, and server-to-server calls don't send an Origin header.
+  if (!origin) return true;
+
+  // Allow all local subnet IP addresses (192.168.x.x, 10.x.x.x, 172.x.x.x) and localhost
+  const isLocalSubnet = /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(origin);
+  if (isLocalSubnet) return true;
+
+  // Allow all Vercel deployments (*.vercel.app, preview branches, production)
+  const isVercel = /^https?:\/\/([a-zA-Z0-9_-]+\.)*vercel\.app(:\d+)?$/.test(origin);
+  if (isVercel) return true;
+
+  // Allow Render deployments (*.onrender.com)
+  const isRender = /^https?:\/\/([a-zA-Z0-9_-]+\.)*onrender\.com(:\d+)?$/.test(origin);
+  if (isRender) return true;
+
+  const configuredOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.WEB_APP_URL,
+    process.env.CORS_ORIGINS,
+  ]
+    .filter(Boolean)
+    .flatMap((val) => String(val).split(',').map((v) => v.trim()).filter(Boolean));
+
+  if (configuredOrigins.some((allowed) => allowed === origin || origin.endsWith(allowed))) {
+    return true;
+  }
+
+  return false;
+}
+
 app.use(
   cors({
     origin(origin, callback) {
-      // Mobile apps, Postman, curl, and server-to-server calls don't send an Origin header.
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      // Allow all local subnet IP addresses (192.168.x.x, 10.x.x.x, 172.x.x.x), localhost, and configured origins
-      const isLocalSubnet = /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(:\d+)?$/.test(origin);
-
-      if (isLocalSubnet) {
-        return callback(null, true);
-      }
-
-      const configuredOrigins = [
-        process.env.FRONTEND_URL,
-        process.env.WEB_APP_URL,
-        process.env.CORS_ORIGINS,
-      ]
-        .filter(Boolean)
-        .flatMap((val) => String(val).split(',').map((s) => s.trim()).filter(Boolean));
-
-      if (configuredOrigins.includes(origin)) {
+      if (isAllowedOrigin(origin)) {
         return callback(null, true);
       }
 
@@ -185,7 +196,12 @@ app.use((error, req, res, next) => {
 const server = http.createServer(app);
 const io = new SocketServer(server, {
   cors: {
-    origin: '*',
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('This origin is not allowed by the Socket CORS policy.'));
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
   },
